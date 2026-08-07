@@ -347,20 +347,58 @@ export default function LeaveHistoryPage() {
                 <option value="daily">รายวัน</option>
               </select>
 
-              <div className="relative inline-block w-[180px]">
+              <div className="relative flex items-center h-full">
                 {filterType === "monthly" ? (
-                  <ThaiMonthPicker 
-                    value={selectedMonthRaw} 
-                    onChange={(newMonth) => setSelectedMonthRaw(newMonth)} 
-                    className="w-full h-full bg-transparent border-none text-black text-[15px] font-bold py-3 px-4 focus:outline-none cursor-pointer flex items-center justify-between rounded-r-xl"
-                  />
+                  <div className="flex items-center h-full bg-white rounded-r-xl">
+                    <div className="relative h-full flex items-center">
+                      <select
+                        value={parseInt(selectedMonthRaw.split('-')[1]) - 1}
+                        onChange={(e) => {
+                          const year = selectedMonthRaw.split('-')[0];
+                          const month = String(parseInt(e.target.value) + 1).padStart(2, '0');
+                          setSelectedMonthRaw(`${year}-${month}`);
+                        }}
+                        className="appearance-none bg-transparent hover:bg-blue-50/50 pl-4 pr-8 py-3 font-extrabold text-[15px] text-gray-800 outline-none focus:ring-2 focus:ring-blue-500/20 transition-colors cursor-pointer"
+                      >
+                        {["มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน", "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"].map((m, i) => (
+                          <option key={i} value={i}>{m}</option>
+                        ))}
+                      </select>
+                      <div className="absolute inset-y-0 right-2 flex items-center pointer-events-none text-blue-600">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+                      </div>
+                    </div>
+                    
+                    <div className="w-[1px] h-6 bg-gray-200 mx-1"></div>
+
+                    <div className="relative h-full flex items-center">
+                      <select
+                        value={parseInt(selectedMonthRaw.split('-')[0])}
+                        onChange={(e) => {
+                          const year = e.target.value;
+                          const month = selectedMonthRaw.split('-')[1];
+                          setSelectedMonthRaw(`${year}-${month}`);
+                        }}
+                        className="appearance-none bg-transparent hover:bg-blue-50/50 pl-3 pr-8 py-3 font-extrabold text-[15px] text-gray-800 outline-none focus:ring-2 focus:ring-blue-500/20 transition-colors cursor-pointer rounded-r-xl"
+                      >
+                        {Array.from({ length: 21 }, (_, i) => new Date().getFullYear() - 10 + i).map(y => (
+                          <option key={y} value={y}>{y + 543}</option>
+                        ))}
+                      </select>
+                      <div className="absolute inset-y-0 right-2 flex items-center pointer-events-none text-blue-600">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+                      </div>
+                    </div>
+                  </div>
                 ) : (
-                  <ThaiDatePicker 
-                    selected={selectedDate}
-                    onChange={(date: Date | null) => setSelectedDate(date)}
-                    placeholderText="เลือกวันที่"
-                    className="w-full h-full bg-transparent border-none text-black text-[15px] font-bold py-3 px-4 focus:outline-none cursor-pointer rounded-r-xl"
-                  />
+                  <div className="w-[180px] h-full">
+                    <ThaiDatePicker 
+                      selected={selectedDate}
+                      onChange={(date: Date | null) => setSelectedDate(date)}
+                      placeholderText="เลือกวันที่"
+                      className="w-full h-full bg-transparent border-none text-black text-[15px] font-bold py-3 px-4 focus:outline-none cursor-pointer rounded-r-xl"
+                    />
+                  </div>
                 )}
               </div>
             </div>
