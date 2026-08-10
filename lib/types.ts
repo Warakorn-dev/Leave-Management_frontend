@@ -16,7 +16,8 @@ export interface Position {
   departmentName?: string;
   departmentId?: string;
   department?: Department;
-  role?: string;
+  roleId?: string;
+  role?: any;
   status?: 'active' | 'inactive';
 }
 
