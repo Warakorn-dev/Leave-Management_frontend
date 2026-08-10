@@ -237,7 +237,7 @@ export default function LeaveSummaryView() {
                             <FileSpreadsheet size={28} strokeWidth={1.5} />
                         </div>
                         <div className="flex-1">
-                            <h1 className="text-2xl font-bold text-slate-900 mb-2">สรุปการลานะครับพี่ๆจจจจ (Leave Summary)</h1>
+                            <h1 className="text-2xl font-bold text-slate-900 mb-2">สรุปการลา (Leave Summary)</h1>
                             <p className="text-slate-500 text-sm max-w-xl leading-relaxed">
                                 ดูภาพรวมสถิติการลางานของพนักงานในองค์กรแบบรวมกลุ่ม สามารถดูจำนวนวันที่ลาไปของแต่ละประเภทในแต่ละช่วงเวลาได้
                             </p>
