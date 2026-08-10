@@ -99,10 +99,7 @@ export default function LeaveSummaryView() {
 
                 setLeaveTypes(sortedApiLeaveTypes);
 
-<<<<<<< HEAD
                 // Map summary data keys if name was changed
-=======
->>>>>>> NTH
                 const mappedSummary = apiSummary.map((row: any) => {
                     if (row.leaveData && row.leaveData['ลาพักผ่อนประจำปี (พักร้อน)'] !== undefined) {
                         row.leaveData['ลาพักผ่อนประจำปี'] = row.leaveData['ลาพักผ่อนประจำปี (พักร้อน)'];
@@ -223,11 +220,6 @@ export default function LeaveSummaryView() {
             return;
         }
 
-<<<<<<< HEAD
-        summaryData.forEach((row, index) => {
-            textContent += `ลำดับที่ ${index + 1} | พนักงาน: ${row.employeeCode} - ${row.firstName} ${row.lastName} (${row.department})\n`;
-            displayedLeaveTypes.forEach(lt => {
-=======
         const doc = new jsPDF('landscape');
         
         // Load & Register Thai Font in jsPDF
@@ -252,18 +244,9 @@ export default function LeaveSummaryView() {
         // Prepare table data
         const data = summaryData.map(row => {
             const leaveValues = displayedLeaveTypes.map(lt => {
->>>>>>> NTH
                 const days = row.leaveData[lt.name] || 0;
                 return days > 0 ? `${days} วัน` : '-';
             });
-<<<<<<< HEAD
-            
-            const rowTotalUsed = displayedLeaveTypes.reduce((sum, lt) => sum + (row.leaveData[lt.name] || 0), 0);
-            const rowTotalRemaining = displayedLeaveTypes.reduce((sum, lt) => sum + ((lt.defaultDays || 0) - (row.leaveData[lt.name] || 0)), 0);
-            
-            textContent += `-> รวมการลาทั้งหมด: ${rowTotalUsed} วัน (คงเหลือรวม: ${rowTotalRemaining} วัน)\n`;
-            textContent += "--------------------------------------------------\n";
-=======
             return [
                 row.employeeCode,
                 row.firstName,
@@ -273,7 +256,6 @@ export default function LeaveSummaryView() {
                 `${row.totalUsedDays} วัน`,
                 `${row.totalRemainingDays} วัน`
             ];
->>>>>>> NTH
         });
 
         autoTable(doc, {

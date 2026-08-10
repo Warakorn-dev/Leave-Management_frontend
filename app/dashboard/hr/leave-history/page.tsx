@@ -350,61 +350,6 @@ export default function LeaveHistoryPage() {
                 <option value="daily">รายวัน</option>
               </select>
 
-<<<<<<< HEAD
-              <div className="relative flex items-center h-full">
-                {filterType === "monthly" ? (
-                  <div className="flex items-center h-full bg-white rounded-r-xl">
-                    <div className="relative h-full flex items-center">
-                      <select
-                        value={parseInt(selectedMonthRaw.split('-')[1]) - 1}
-                        onChange={(e) => {
-                          const year = selectedMonthRaw.split('-')[0];
-                          const month = String(parseInt(e.target.value) + 1).padStart(2, '0');
-                          setSelectedMonthRaw(`${year}-${month}`);
-                        }}
-                        className="appearance-none bg-transparent hover:bg-blue-50/50 pl-4 pr-8 py-3 font-extrabold text-[15px] text-gray-800 outline-none focus:ring-2 focus:ring-blue-500/20 transition-colors cursor-pointer"
-                      >
-                        {["มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน", "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"].map((m, i) => (
-                          <option key={i} value={i}>{m}</option>
-                        ))}
-                      </select>
-                      <div className="absolute inset-y-0 right-2 flex items-center pointer-events-none text-blue-600">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6" /></svg>
-                      </div>
-                    </div>
-
-                    <div className="w-[1px] h-6 bg-gray-200 mx-1"></div>
-
-                    <div className="relative h-full flex items-center">
-                      <select
-                        value={parseInt(selectedMonthRaw.split('-')[0])}
-                        onChange={(e) => {
-                          const year = e.target.value;
-                          const month = selectedMonthRaw.split('-')[1];
-                          setSelectedMonthRaw(`${year}-${month}`);
-                        }}
-                        className="appearance-none bg-transparent hover:bg-blue-50/50 pl-3 pr-8 py-3 font-extrabold text-[15px] text-gray-800 outline-none focus:ring-2 focus:ring-blue-500/20 transition-colors cursor-pointer rounded-r-xl"
-                      >
-                        {Array.from({ length: 21 }, (_, i) => new Date().getFullYear() - 10 + i).map(y => (
-                          <option key={y} value={y}>{y + 543}</option>
-                        ))}
-                      </select>
-                      <div className="absolute inset-y-0 right-2 flex items-center pointer-events-none text-blue-600">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6" /></svg>
-                      </div>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="w-[180px] h-full">
-                    <ThaiDatePicker
-                      selected={selectedDate}
-                      onChange={(date: Date | null) => setSelectedDate(date)}
-                      placeholderText="เลือกวันที่"
-                      isPlain={true}
-                      className="w-full h-full bg-transparent border-none text-black text-[15px] font-bold py-3 px-4 focus:outline-none cursor-pointer rounded-r-xl"
-                    />
-                  </div>
-=======
               <div className="relative inline-block w-[180px] h-full flex items-center">
                 {filterType === "monthly" ? (
                   <DatePicker 
@@ -433,7 +378,6 @@ export default function LeaveHistoryPage() {
                     placeholderText="เลือกวันที่"
                     className="w-full bg-transparent border-none text-black text-[15px] font-bold py-3 px-4 focus:outline-none cursor-pointer rounded-r-xl"
                   />
->>>>>>> NTH
                 )}
               </div>
             </div>
@@ -884,11 +828,7 @@ export default function LeaveHistoryPage() {
                     <>
                       <div className="md:col-span-2 md:w-[calc(50%-1.5rem)]">
                         <label className="block text-[13px] font-bold text-gray-800 mb-2">วันที่ลา</label>
-<<<<<<< HEAD
-                        <ThaiDatePicker
-=======
                         <DatePicker 
->>>>>>> NTH
                           selected={editForm.leaveDate ? new Date(editForm.leaveDate) : null}
                           onChange={(date: Date | null) => {
                             if (date) {
@@ -920,11 +860,7 @@ export default function LeaveHistoryPage() {
                     <>
                       <div className="md:col-span-1">
                         <label className="block text-[13px] font-bold text-gray-800 mb-2">วันที่เริ่มต้น</label>
-<<<<<<< HEAD
-                        <ThaiDatePicker
-=======
                         <DatePicker 
->>>>>>> NTH
                           selected={editForm.startDate ? new Date(editForm.startDate) : null}
                           onChange={(date: Date | null) => {
                             if (date) {
@@ -957,11 +893,7 @@ export default function LeaveHistoryPage() {
                       </div>
                       <div className="md:col-span-1">
                         <label className="block text-[13px] font-bold text-gray-800 mb-2">วันที่สิ้นสุด</label>
-<<<<<<< HEAD
-                        <ThaiDatePicker
-=======
                         <DatePicker 
->>>>>>> NTH
                           selected={editForm.endDate ? new Date(editForm.endDate) : null}
                           onChange={(date: Date | null) => {
                             if (date) {

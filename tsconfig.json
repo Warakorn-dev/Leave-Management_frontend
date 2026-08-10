@@ -30,9 +30,6 @@
     ".next/dev/types/**/*.ts",
     "**/*.mts"
   ],
-<<<<<<< HEAD
-  "exclude": ["node_modules", "src_bak", "test_bak"]
-=======
   "exclude": [
     "node_modules",
     "add-leaders.ts",
@@ -51,5 +48,4 @@
     "prisma",
     "_backend_src_backup"
   ]
->>>>>>> NTH
 }
