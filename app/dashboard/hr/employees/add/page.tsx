@@ -9,7 +9,7 @@ import { usePositionsQuery } from '@/hooks/usePosition';
 import { UserPlus, ArrowLeft, ChevronDown, Eye, EyeOff } from 'lucide-react';
 import Swal from 'sweetalert2';
 import Link from 'next/link';
-import { Employee } from '@/types';
+import { Employee } from '@/lib/types';
 import { ThaiDatePicker } from '@/components/ThaiCalendarPicker';
 
 export default function AddEmployeePage() {

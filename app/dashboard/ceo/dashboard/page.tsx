@@ -20,7 +20,7 @@ import { format, parseISO } from 'date-fns';
 import { th } from 'date-fns/locale';
 import Swal from 'sweetalert2';
 import { previewAttachment } from "@/lib/attachmentPreview";
-import { Leave } from '@/types';
+import { Leave } from '@/lib/types';
 
 export default function CEODashboard() {
   const [isMounted, setIsMounted] = useState(false);

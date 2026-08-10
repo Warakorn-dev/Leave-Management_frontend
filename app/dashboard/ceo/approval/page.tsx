@@ -9,7 +9,7 @@ import Swal from 'sweetalert2';
 import { Calendar as CalendarIcon, X, User, Download, Check, Clock, Eye, Hourglass, ListOrdered, Clock4, CalendarDays, CheckCircle2 } from "lucide-react";
 import { format, parseISO, formatDistanceToNow } from 'date-fns';
 import { th } from 'date-fns/locale';
-import { Leave } from '@/types';
+import { Leave } from '@/lib/types';
 import { leaveApi, employeeApi, ceoApi } from '@/api';
 
 export default function CEOApproval() {

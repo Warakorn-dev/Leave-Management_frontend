@@ -5,7 +5,7 @@ import { Building2, Briefcase, Plus, Search, MoreVertical, Edit, Trash2, X, User
 import { useDepartmentsQuery, useCreateDepartmentMutation, useUpdateDepartmentMutation, useDeleteDepartmentMutation } from '@/hooks/useDepartment';
 import { usePositionsQuery, useCreatePositionMutation, useUpdatePositionMutation, useDeletePositionMutation } from '@/hooks/usePosition';
 import { useEmployeesQuery } from '@/hooks/useEmployee';
-import { Department, Position, Employee } from '@/types';
+import { Department, Position, Employee } from '@/lib/types';
 
 // Helper functions for dynamic icons and colors based on name
 const getDepartmentStyle = (name: string) => {

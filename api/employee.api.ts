@@ -1,6 +1,6 @@
 import axiosInstance from './axios';
 import { ApiResponse } from './types';
-import { Employee } from '@/types';
+import { Employee } from '@/lib/types';
 
 export const employeeApi = {
   getAll: async (): Promise<ApiResponse<Employee[]>> => {

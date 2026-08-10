@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Position } from '@/types';
+import { Position } from '@/lib/types';
 
 import { axiosInstance } from '@/api';
 

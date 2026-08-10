@@ -12,7 +12,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import Swal from 'sweetalert2';
 import { Plus, Search, Edit2, Trash2, ChevronLeft, ChevronRight, Briefcase } from 'lucide-react';
-import { Position } from '@/types';
+import { Position } from '@/lib/types';
 
 const positionSchema = z.object({
   code: z.string().min(2, 'รหัสตำแหน่งต้องมีอย่างน้อย 2 ตัวอักษร (Code must be 2+ chars)').toUpperCase(),
