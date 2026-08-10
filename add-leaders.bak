@@ -8,7 +8,7 @@ async function main() {
   });
 
   for (const dept of departments) {
-    const hasLeader = dept.positions.some((p: any) => p.name.toLowerCase() === 'leader');
+    const hasLeader = dept.positions.some(p => p.name.toLowerCase() === 'leader');
     if (!hasLeader) {
       console.log(`Adding "Leader" to department: ${dept.name}`);
       await prisma.position.create({
@@ -33,5 +33,3 @@ main()
   .finally(() => {
     prisma.$disconnect();
   });
-
-export {};
