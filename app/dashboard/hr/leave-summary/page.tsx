@@ -4,20 +4,16 @@ import React, { useState, useEffect } from 'react';
 import axiosInstance from '@/api/axios';
 import {
     FileSpreadsheet,
-    CheckCircle2,
-    Clock,
-    XCircle,
     Filter,
-    ChevronDown,
-    Download,
-    FileText,
+    FileDown,
     RefreshCw,
-    X,
-    Calendar,
-    Loader2
+    Loader2,
+    Search
 } from 'lucide-react';
-import DatePicker from 'react-datepicker';
-import 'react-datepicker/dist/react-datepicker.css';
+import { ThaiDatePicker } from '@/components/ThaiCalendarPicker';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
+import * as XLSX from 'xlsx';
 
 // --- TypeScript Interfaces ---
 interface LeaveType {
@@ -54,7 +50,6 @@ export default function LeaveSummaryView() {
 
     // Other states
     const [currentPage, setCurrentPage] = useState<number>(1);
-    const [isDownloadModalOpen, setIsDownloadModalOpen] = useState<boolean>(false);
     const itemsPerPage = 10;
 
     // Fetch Data from API
@@ -170,303 +165,337 @@ export default function LeaveSummaryView() {
     const paginatedData = summaryData.slice(startIndex, endIndex);
 
     // Download Handlers
-    const handleDownloadExcel = () => {
-        const leaveHeaders = displayedLeaveTypes.map(lt => lt.name).join(",");
-        const header = `ลำดับ,รหัสพนักงาน,ชื่อ,นามสกุล,แผนก,${leaveHeaders},รวม,ยอดคงเหลือรวม\n`;
 
-        const rows = summaryData.map((row, index) => {
-            const leaveValues = displayedLeaveTypes.map(lt => row.leaveData[lt.name] || 0).join(",");
-            const rowTotalUsed = displayedLeaveTypes.reduce((sum, lt) => sum + (row.leaveData[lt.name] || 0), 0);
-            const rowTotalRemaining = displayedLeaveTypes.reduce((sum, lt) => sum + ((lt.defaultDays || 0) - (row.leaveData[lt.name] || 0)), 0);
-            return `"${index + 1}","${row.employeeCode}","${row.firstName}","${row.lastName}","${row.department}",${leaveValues},"${rowTotalUsed}","${rowTotalRemaining}"`;
-        }).join("\n");
-
-        // Add BOM for Thai characters in Excel
-        const blob = new Blob(["\uFEFF" + header + rows], { type: "text/csv;charset=utf-8;" });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement("a");
-        link.href = url;
-        link.download = "leave_summary_report.csv";
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-
-        setIsDownloadModalOpen(false);
+    // Helper to load Sarabun Thai font as Base64 for jsPDF
+    const loadThaiFontBase64 = async (): Promise<string | null> => {
+        try {
+            const response = await fetch('/fonts/Sarabun-Regular.ttf');
+            if (!response.ok) return null;
+            const buffer = await response.arrayBuffer();
+            let binary = '';
+            const bytes = new Uint8Array(buffer);
+            for (let i = 0; i < bytes.byteLength; i++) {
+                binary += String.fromCharCode(bytes[i]);
+            }
+            return btoa(binary);
+        } catch (error) {
+            console.error('Failed to load Sarabun Thai font:', error);
+            return null;
+        }
     };
 
-    const handleDownloadPDF = () => {
-        let textContent = "==== รายงานสรุปการลางาน (Simulated PDF) ====\n\n";
-        textContent += `วันที่พิมพ์: ${new Date().toLocaleDateString('th-TH')}\n`;
-        textContent += `ช่วงเวลา: ${getPeriodString()}\n\n`;
-
-        summaryData.forEach((row, index) => {
-            textContent += `ลำดับที่ ${index + 1} | พนักงาน: ${row.employeeCode} - ${row.firstName} ${row.lastName} (${row.department})\n`;
+    const handleDownloadExcel = () => {
+        const formattedData = summaryData.map((row, index) => {
+            const leaveValues: Record<string, number> = {};
             displayedLeaveTypes.forEach(lt => {
-                const days = row.leaveData[lt.name] || 0;
-                if (days > 0) textContent += `- ${lt.name}: ${days} วัน\n`;
+                leaveValues[lt.name] = row.leaveData[lt.name] || 0;
             });
-
             const rowTotalUsed = displayedLeaveTypes.reduce((sum, lt) => sum + (row.leaveData[lt.name] || 0), 0);
             const rowTotalRemaining = displayedLeaveTypes.reduce((sum, lt) => sum + ((lt.defaultDays || 0) - (row.leaveData[lt.name] || 0)), 0);
 
-            textContent += `-> รวมการลาทั้งหมด: ${rowTotalUsed} วัน (คงเหลือรวม: ${rowTotalRemaining} วัน)\n`;
-            textContent += "--------------------------------------------------\n";
+            return {
+                '#': index + 1,
+                'รหัสพนักงาน': row.employeeCode || '-',
+                'ชื่อ': row.firstName,
+                'นามสกุล': row.lastName,
+                'แผนก': row.department,
+                ...leaveValues,
+                'รวม (วัน)': rowTotalUsed,
+                'ยอดคงเหลือรวม (วัน)': rowTotalRemaining,
+            };
         });
 
-        const blob = new Blob([textContent], { type: "text/plain;charset=utf-8;" });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement("a");
-        link.href = url;
-        link.download = "leave_summary_report.txt";
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
+        const worksheet = XLSX.utils.json_to_sheet(formattedData);
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, 'Leave Summary');
 
-        setIsDownloadModalOpen(false);
+        // Column widths
+        worksheet['!cols'] = [
+            { wch: 5 }, { wch: 15 }, { wch: 15 }, { wch: 15 }, { wch: 20 },
+            ...displayedLeaveTypes.map(() => ({ wch: 18 })),
+            { wch: 12 }, { wch: 18 }
+        ];
+
+        const filename = `leave_summary_report_${new Date().toISOString().split('T')[0]}.xlsx`;
+        XLSX.writeFile(workbook, filename);
+    };
+
+    const handleDownloadPDF = async () => {
+        const doc = new jsPDF('landscape');
+
+        // Load & Register Thai Font in jsPDF
+        const fontBase64 = await loadThaiFontBase64();
+        if (fontBase64) {
+            doc.addFileToVFS('Sarabun-Regular.ttf', fontBase64);
+            doc.addFont('Sarabun-Regular.ttf', 'Sarabun', 'normal');
+            doc.setFont('Sarabun');
+        }
+
+        // Title
+        doc.setFontSize(18);
+        doc.text('รายงานสรุปการลางานพนักงาน (Leave Summary Report)', 14, 15);
+        doc.setFontSize(10);
+        doc.text(`วันที่พิมพ์: ${new Date().toLocaleString('th-TH')}`, 14, 22);
+        doc.text(`ช่วงเวลา: ${getPeriodString()}`, 14, 27);
+        doc.text(`จำนวนพนักงาน: ${summaryData.length} คน`, 14, 32);
+
+        // Build table headers and data
+        const leaveTypeHeaders = displayedLeaveTypes.map(lt => lt.name);
+        const headers = [['#', 'รหัสพนักงาน', 'ชื่อ', 'นามสกุล', 'แผนก', ...leaveTypeHeaders, 'รวม (วัน)', 'คงเหลือรวม (วัน)']];
+
+        const data = summaryData.map((row, index) => {
+            const leaveValues = displayedLeaveTypes.map(lt => {
+                const days = row.leaveData[lt.name] || 0;
+                return days > 0 ? `${days}` : '-';
+            });
+            const rowTotalUsed = displayedLeaveTypes.reduce((sum, lt) => sum + (row.leaveData[lt.name] || 0), 0);
+            const rowTotalRemaining = displayedLeaveTypes.reduce((sum, lt) => sum + ((lt.defaultDays || 0) - (row.leaveData[lt.name] || 0)), 0);
+            return [
+                index + 1,
+                row.employeeCode || '-',
+                row.firstName,
+                row.lastName,
+                row.department,
+                ...leaveValues,
+                rowTotalUsed,
+                rowTotalRemaining
+            ];
+        });
+
+        autoTable(doc, {
+            head: headers,
+            body: data,
+            startY: 37,
+            theme: 'striped',
+            headStyles: {
+                fillColor: [79, 70, 229],
+                font: fontBase64 ? 'Sarabun' : undefined,
+                fontStyle: 'normal',
+                fontSize: 8
+            },
+            styles: {
+                font: fontBase64 ? 'Sarabun' : undefined,
+                fontSize: 8
+            },
+            columnStyles: {
+                0: { cellWidth: 8 },
+                1: { cellWidth: 22 },
+                2: { cellWidth: 25 },
+                3: { cellWidth: 25 },
+                4: { cellWidth: 30 },
+            }
+        });
+
+        doc.save(`leave_summary_report_${new Date().toISOString().split('T')[0]}.pdf`);
+        
     };
 
     return (
-        <div className="min-h-screen bg-[#f8fafc] font-sans text-slate-800 p-4 md:p-8">
-            <div className="max-w-[1200px] mx-auto space-y-6">
+        <div className="space-y-6 max-w-7xl mx-auto pb-10">
 
-                {/* Header Area for Summary */}
-                <div className="bg-white rounded-3xl p-8 border border-slate-100 shadow-sm relative overflow-hidden">
-                    <div className="absolute right-0 top-0 w-64 h-64 bg-indigo-50 rounded-full blur-3xl -z-10 translate-x-1/2 -translate-y-1/4"></div>
-                    <div className="flex items-start gap-5">
-                        <div className="w-14 h-14 bg-indigo-100 text-indigo-600 rounded-2xl flex items-center justify-center shadow-inner mt-1">
-                            <FileSpreadsheet size={28} strokeWidth={1.5} />
-                        </div>
-                        <div className="flex-1">
-                            <h1 className="text-2xl font-bold text-slate-900 mb-2">สรุปการลา (Leave Summary)</h1>
-                            <p className="text-slate-500 text-sm max-w-xl leading-relaxed">
-                                ดูภาพรวมสถิติการลางานของพนักงานในองค์กรแบบรวมกลุ่ม สามารถดูจำนวนวันที่ลาไปของแต่ละประเภทในแต่ละช่วงเวลาได้
-                            </p>
-                        </div>
-                    </div>
+            {/* Title Header & Action Buttons */}
+            <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                <div>
+                    <h1 className="text-2xl font-bold tracking-tight text-slate-900">
+                        สรุปการลา (Leave Summary)
+                    </h1>
+                    <p className="text-sm text-slate-500 mt-1">
+                        ดูภาพรวมสถิติการลางานของพนักงานในองค์กรแบบรวมกลุ่ม สามารถดูจำนวนวันที่ลาไปของแต่ละประเภทในแต่ละช่วงเวลาได้
+                    </p>
                 </div>
 
-                {/* Advanced Filter and Action Bar */}
-                <div className="bg-white rounded-2xl shadow-sm border border-slate-100 z-50 relative overflow-visible">
-                    <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
-                        <div className="flex items-center gap-2 text-indigo-600">
-                            <Filter size={18} />
-                            <span className="font-semibold text-sm sm:text-base">ตัวกรองรายงานขั้นสูง (Advanced Report Filter)</span>
-                        </div>
-                        <div className="flex items-center gap-4">
-                            <button
-                                onClick={resetFilters}
-                                className="flex items-center gap-1.5 text-sm text-indigo-500 hover:text-indigo-700 font-medium transition-colors"
-                            >
-                                <RefreshCw size={14} />
-                                ล้างค่าทั้งหมด (Reset)
-                            </button>
-                            <button
-                                onClick={() => setIsDownloadModalOpen(true)}
-                                className="hidden md:flex items-center justify-center gap-2 bg-slate-800 hover:bg-slate-900 text-white px-5 py-2 rounded-xl font-medium text-sm transition-all duration-200 shadow-sm hover:shadow group"
-                            >
-                                <Download size={16} className="group-hover:animate-bounce" />
-                                ดาวน์โหลดรายงาน
-                            </button>
-                        </div>
+                {/* Export Buttons */}
+                <div className="flex flex-wrap items-center gap-3 shrink-0">
+                    <button
+                        onClick={handleDownloadExcel}
+                        className="inline-flex items-center space-x-2 px-5 py-2.5 rounded-xl text-sm font-bold text-white bg-[#00C853] hover:bg-emerald-600 cursor-pointer shadow-sm transition-all active:scale-95"
+                    >
+                        <FileSpreadsheet className="w-4 h-4" />
+                        <span>ส่งออก Excel (.xlsx)</span>
+                    </button>
+                    <button
+                        onClick={handleDownloadPDF}
+                        className="inline-flex items-center space-x-2 px-5 py-2.5 rounded-xl text-sm font-bold text-white bg-[#0056b3] hover:bg-[#004494] cursor-pointer shadow-sm transition-all active:scale-95"
+                    >
+                        <FileDown className="w-4 h-4" />
+                        <span>ส่งออก PDF Report</span>
+                    </button>
+                </div>
+            </div>
+
+            {/* Advanced Filter Panel */}
+            <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-visible">
+                <div className="bg-slate-50/50 rounded-t-2xl border-b border-slate-100 px-6 py-4 flex flex-row items-center justify-between">
+                    <div className="text-sm font-bold flex items-center space-x-2 text-slate-800">
+                        <Filter className="w-4 h-4 text-blue-600" />
+                        <span>ตัวกรองรายงานขั้นสูง (Advanced Report Filter)</span>
                     </div>
-                    {/* Filter Fields */}
-                    <div className="p-6 grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-4">
-                        {/* 1. ค้นหาพนักงาน */}
+                    <button
+                        onClick={resetFilters}
+                        className="text-xs font-bold text-blue-600 hover:text-blue-800 transition-colors cursor-pointer flex items-center space-x-1"
+                    >
+                        <RefreshCw className="w-3.5 h-3.5" />
+                        <span>ล้างค่าทั้งหมด (Reset)</span>
+                    </button>
+                </div>
+
+                <div className="p-6">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+
+                        {/* Search Input */}
                         <div>
-                            <label className="block text-xs font-medium text-slate-500 mb-1.5">ค้นหาพนักงาน</label>
-                            <input
-                                type="text"
-                                value={searchQuery}
-                                onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
-                                placeholder="ชื่อ, รหัสพนักงาน..."
-                                className="w-full appearance-none bg-white border border-slate-200 text-slate-700 py-2.5 px-4 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
+                            <label className="block text-[12px] font-bold text-slate-600 uppercase mb-1.5">ค้นหาพนักงาน</label>
+                            <div className="relative">
+                                <Search className="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400 w-4 h-4 my-auto" />
+                                <input
+                                    type="text"
+                                    value={searchQuery}
+                                    onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
+                                    placeholder="ชื่อ, รหัสพนักงาน..."
+                                    className="block w-full pl-9 pr-3 py-2.5 rounded-xl border border-slate-300 bg-white text-slate-800 placeholder-slate-400 text-xs focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+                                />
+                            </div>
+                        </div>
+
+                        {/* Leave Type Filter */}
+                        <div>
+                            <label className="block text-[12px] font-bold text-slate-600 uppercase mb-1.5">ประเภทการลา</label>
+                            <select
+                                value={filterType}
+                                onChange={(e) => { setFilterType(e.target.value); setCurrentPage(1); }}
+                                className="block w-full rounded-xl border border-slate-300 bg-white text-slate-800 py-2.5 px-3 text-xs focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all cursor-pointer"
+                            >
+                                <option value="all">ทุกประเภทการลา</option>
+                                {leaveTypes.map(lt => (
+                                    <option key={lt.id} value={lt.id}>{lt.name}</option>
+                                ))}
+                            </select>
+                        </div>
+
+                        {/* Start Date */}
+                        <div>
+                            <label className="block text-[12px] font-bold text-slate-600 uppercase mb-1.5">ตั้งแต่วันที่</label>
+                            <ThaiDatePicker
+                                selected={fromDate}
+                                onChange={(date: Date | null) => {
+                                    let newDate = date;
+                                    const today = new Date();
+                                    if (newDate && newDate > today) newDate = today;
+                                    setFromDate(newDate);
+                                    if (newDate && toDate && toDate < newDate) setToDate(newDate);
+                                    setCurrentPage(1);
+                                }}
+                                maxDate={new Date()}
+                                placeholderText="วว-ดด-ปปปป"
+                                isPlain={true}
+                                className="block w-full rounded-xl border border-slate-300 bg-white text-slate-800 py-2.5 pl-3 pr-9 text-xs focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all cursor-pointer"
                             />
                         </div>
 
-                        {/* 2. ประเภทการลา */}
+                        {/* End Date */}
                         <div>
-                            <label className="block text-xs font-medium text-slate-500 mb-1.5">ประเภทการลา</label>
-                            <div className="relative">
-                                <select
-                                    value={filterType}
-                                    onChange={(e) => { setFilterType(e.target.value); setCurrentPage(1); }}
-                                    className="w-full appearance-none bg-white border border-slate-200 text-slate-700 py-2.5 pl-4 pr-10 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 cursor-pointer transition-all"
-                                >
-                                    <option value="all">ทุกประเภทการลา</option>
-                                    {leaveTypes.map(lt => (
-                                        <option key={lt.id} value={lt.id}>{lt.name}</option>
-                                    ))}
-                                </select>
-                                <ChevronDown size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
-                            </div>
+                            <label className="block text-[12px] font-bold text-slate-600 uppercase mb-1.5">ถึงวันที่</label>
+                            <ThaiDatePicker
+                                selected={toDate}
+                                onChange={(date: Date | null) => {
+                                    let newDate = date;
+                                    const today = new Date();
+                                    if (newDate && newDate > today) newDate = today;
+                                    if (newDate && fromDate && newDate < fromDate) newDate = fromDate;
+                                    setToDate(newDate);
+                                    setCurrentPage(1);
+                                }}
+                                minDate={fromDate || undefined}
+                                maxDate={new Date()}
+                                placeholderText="วว-ดด-ปปปป"
+                                isPlain={true}
+                                className="block w-full rounded-xl border border-slate-300 bg-white text-slate-800 py-2.5 pl-3 pr-9 text-xs focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all cursor-pointer"
+                            />
                         </div>
 
-
-
-                        {/* 4. ตั้งแต่วันที่ */}
-                        <div>
-                            <label className="block text-xs font-medium text-slate-500 mb-1.5">ตั้งแต่วันที่</label>
-                            <div className="relative">
-                                <DatePicker
-                                    selected={fromDate}
-                                    onChange={(date: Date | null) => {
-                                        let newDate = date;
-                                        const today = new Date();
-                                        // ป้องกันเลือกวันล่วงหน้า (เด้งกลับเป็นวันนี้)
-                                        if (newDate && newDate > today) newDate = today;
-
-                                        setFromDate(newDate);
-                                        // ถ้า "ถึงวันที่" ดันน้อยกว่า "ตั้งแต่วันที่" ให้ดัน "ถึงวันที่" ให้เท่ากัน
-                                        if (newDate && toDate && toDate < newDate) {
-                                            setToDate(newDate);
-                                        }
-                                        setCurrentPage(1);
-                                    }}
-                                    maxDate={new Date()}
-                                    dateFormat="dd-MM-yyyy"
-                                    placeholderText="dd-MM-yyyy"
-                                    showMonthDropdown
-                                    showYearDropdown
-                                    dropdownMode="select"
-                                    className="w-full appearance-none bg-white border border-slate-200 text-slate-700 py-2.5 pl-4 pr-10 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
-                                />
-                                <Calendar size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
-                            </div>
-                        </div>
-
-                        {/* 5. ถึงวันที่ */}
-                        <div>
-                            <label className="block text-xs font-medium text-slate-500 mb-1.5">ถึงวันที่</label>
-                            <div className="relative">
-                                <DatePicker
-                                    selected={toDate}
-                                    onChange={(date: Date | null) => {
-                                        let newDate = date;
-                                        const today = new Date();
-                                        // ป้องกันเลือกวันล่วงหน้า
-                                        if (newDate && newDate > today) newDate = today;
-                                        // ป้องกัน "ถึงวันที่" น้อยกว่า "ตั้งแต่วันที่" (เด้งกลับ)
-                                        if (newDate && fromDate && newDate < fromDate) newDate = fromDate;
-
-                                        setToDate(newDate);
-                                        setCurrentPage(1);
-                                    }}
-                                    minDate={fromDate || undefined}
-                                    maxDate={new Date()}
-                                    dateFormat="dd-MM-yyyy"
-                                    placeholderText="dd-MM-yyyy"
-                                    showMonthDropdown
-                                    showYearDropdown
-                                    dropdownMode="select"
-                                    className="w-full appearance-none bg-white border border-slate-200 text-slate-700 py-2.5 pl-4 pr-10 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
-                                />
-                                <Calendar size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
-                            </div>
-                        </div>
-                    </div>
-                    {/* Mobile Download Button */}
-                    <div className="px-6 pb-6 md:hidden">
-                        <button
-                            onClick={() => setIsDownloadModalOpen(true)}
-                            className="w-full flex items-center justify-center gap-2 bg-slate-800 hover:bg-slate-900 text-white px-5 py-2.5 rounded-xl font-medium text-sm transition-all duration-200 shadow-sm"
-                        >
-                            <Download size={16} />
-                            ดาวน์โหลดรายงาน
-                        </button>
                     </div>
                 </div>
+            </div>
 
-                {/* Data Table */}
-                <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+            {/* Data Table */}
+            <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+                {isLoading ? (
+                    <div className="flex flex-col items-center justify-center py-20 text-indigo-500">
+                        <Loader2 className="w-8 h-8 animate-spin mb-4" />
+                        <span className="text-sm font-medium text-slate-500">กำลังโหลดข้อมูล...</span>
+                    </div>
+                ) : summaryData.length === 0 ? (
+                    <div className="text-center py-16 text-slate-500 font-medium">
+                        ไม่พบข้อมูลสรุปการลา
+                    </div>
+                ) : (
                     <div className="overflow-x-auto">
-                        <table className="w-full text-left border-collapse min-w-[1000px]">
-                            <thead>
-                                <tr className="bg-slate-50/50 border-b border-slate-100">
-                                    <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider sticky left-0 bg-slate-50/95 backdrop-blur z-10 w-[80px] min-w-[80px] border-r border-slate-100 shadow-[1px_0_0_0_#f1f5f9] text-center">ลำดับ</th>
-                                    <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider sticky left-[80px] bg-slate-50/95 backdrop-blur z-10 w-[150px] min-w-[150px] border-r border-slate-100 shadow-[1px_0_0_0_#f1f5f9]">รหัสพนักงาน</th>
-                                    <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider sticky left-[230px] bg-slate-50/95 backdrop-blur z-10 w-[200px] min-w-[200px] border-r border-slate-100 shadow-[1px_0_0_0_#f1f5f9]">ชื่อ</th>
-                                    <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider sticky left-[430px] bg-slate-50/95 backdrop-blur z-10 w-[150px] min-w-[150px] border-r border-slate-100 shadow-[1px_0_0_0_#f1f5f9]">นามสกุล</th>
+                        <table className="w-full text-center border-collapse text-sm min-w-[1000px]">
+                            <thead className="bg-[#add8e6] text-slate-800 font-bold border-b border-slate-200">
+                                <tr>
+                                    <th className="py-4 px-5 font-bold whitespace-nowrap text-center">ลำดับ</th>
+                                    <th className="py-4 px-5 font-bold whitespace-nowrap text-center">รหัสพนักงาน</th>
+                                    <th className="py-4 px-5 font-bold whitespace-nowrap text-left">ชื่อ</th>
+                                    <th className="py-4 px-5 font-bold whitespace-nowrap text-left">นามสกุล</th>
+                                    <th className="py-4 px-5 font-bold whitespace-nowrap text-center">แผนก</th>
                                     {displayedLeaveTypes.map(lt => (
-                                        <th key={lt.id} className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider text-center whitespace-nowrap">
+                                        <th key={lt.id} className="py-4 px-5 font-bold whitespace-nowrap text-center">
                                             {lt.name}
                                         </th>
                                     ))}
-                                    <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider text-center bg-indigo-50/50 whitespace-nowrap">รวม</th>
-                                    <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider text-center bg-amber-50/50 whitespace-nowrap">ยอดคงเหลือรวม</th>
+                                    <th className="py-4 px-5 font-bold whitespace-nowrap text-center bg-indigo-100">รวม (วัน)</th>
+                                    <th className="py-4 px-5 font-bold whitespace-nowrap text-center bg-amber-100">คงเหลือรวม (วัน)</th>
                                 </tr>
                             </thead>
-                            <tbody className="divide-y divide-slate-100 relative">
-                                {isLoading ? (
-                                    <tr>
-                                        <td colSpan={displayedLeaveTypes.length + 6} className="px-6 py-20 text-center">
-                                            <div className="flex flex-col items-center justify-center text-indigo-500">
-                                                <Loader2 className="w-8 h-8 animate-spin mb-4" />
-                                                <span className="text-sm font-medium text-slate-500">กำลังโหลดข้อมูล...</span>
-                                            </div>
+                            <tbody className="divide-y divide-slate-100 text-slate-700">
+                                {paginatedData.map((row, index) => (
+                                    <tr key={row.id} className="hover:bg-slate-50/80 transition-colors">
+                                        <td className="py-4 px-5 font-mono text-xs font-semibold text-slate-500 whitespace-nowrap text-center">
+                                            {startIndex + index + 1}
+                                        </td>
+                                        <td className="py-4 px-5 font-mono text-xs font-semibold text-slate-500 whitespace-nowrap text-center">
+                                            {row.employeeCode || '-'}
+                                        </td>
+                                        <td className="py-4 px-5 text-left whitespace-nowrap">
+                                            <div className="font-bold text-slate-900">{row.firstName}</div>
+                                        </td>
+                                        <td className="py-4 px-5 text-left whitespace-nowrap">
+                                            <div className="font-bold text-slate-900">{row.lastName}</div>
+                                        </td>
+                                        <td className="py-4 px-5 text-slate-600 text-xs whitespace-nowrap text-center">
+                                            {row.department}
+                                        </td>
+                                        {displayedLeaveTypes.map(lt => {
+                                            const days = row.leaveData[lt.name] || 0;
+                                            return (
+                                                <td key={lt.id} className="py-4 px-5 text-center font-medium">
+                                                    <span className={days > 0 ? 'text-indigo-600 font-bold' : 'text-slate-300'}>
+                                                        {days > 0 ? `${days} วัน` : '-'}
+                                                    </span>
+                                                </td>
+                                            );
+                                        })}
+                                        <td className="py-4 px-5 text-center bg-indigo-50/40">
+                                            <span className="font-bold text-indigo-700">
+                                                {displayedLeaveTypes.reduce((sum, lt) => sum + (row.leaveData[lt.name] || 0), 0)} วัน
+                                            </span>
+                                        </td>
+                                        <td className="py-4 px-5 text-center bg-amber-50/40">
+                                            <span className="font-bold text-amber-700">
+                                                {displayedLeaveTypes.reduce((sum, lt) => sum + ((lt.defaultDays || 0) - (row.leaveData[lt.name] || 0)), 0)} วัน
+                                            </span>
                                         </td>
                                     </tr>
-                                ) : paginatedData.length > 0 ? (
-                                    paginatedData.map((row, index) => (
-                                        <tr key={row.id} className="hover:bg-slate-50/80 transition-colors group">
-                                            <td className="px-6 py-4 sticky left-0 bg-white group-hover:bg-slate-50 border-r border-slate-100 transition-colors z-10 shadow-[1px_0_0_0_#f1f5f9] text-center">
-                                                <span className="text-sm font-medium text-slate-600">{startIndex + index + 1}</span>
-                                            </td>
-                                            <td className="px-6 py-4 sticky left-[80px] bg-white group-hover:bg-slate-50 border-r border-slate-100 transition-colors z-10 shadow-[1px_0_0_0_#f1f5f9]">
-                                                <span className="text-sm text-slate-700 font-medium">{row.employeeCode || '-'}</span>
-                                            </td>
-                                            <td className="px-6 py-4 sticky left-[230px] bg-white group-hover:bg-slate-50 border-r border-slate-100 transition-colors z-10 shadow-[1px_0_0_0_#f1f5f9]">
-                                                <div className="flex items-center gap-3">
-                                                    <div className="w-9 h-9 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center font-bold text-sm shrink-0">
-                                                        {row.firstName.charAt(0)}
-                                                    </div>
-                                                    <div className="min-w-0">
-                                                        <div className="font-medium text-slate-800 truncate">{row.firstName}</div>
-                                                    </div>
-                                                </div>
-                                            </td>
-                                            <td className="px-6 py-4 sticky left-[430px] bg-white group-hover:bg-slate-50 border-r border-slate-100 transition-colors z-10 shadow-[1px_0_0_0_#f1f5f9]">
-                                                <div className="min-w-0">
-                                                    <div className="font-medium text-slate-800 truncate">{row.lastName}</div>
-                                                    <div className="text-xs text-slate-500 truncate">{row.department}</div>
-                                                </div>
-                                            </td>
-
-                                            {displayedLeaveTypes.map(lt => {
-                                                const days = row.leaveData[lt.name] || 0;
-                                                return (
-                                                    <td key={lt.id} className="px-6 py-4 text-center">
-                                                        <span className={`text-sm font-medium ${days > 0 ? 'text-indigo-600' : 'text-slate-300'}`}>
-                                                            {days > 0 ? `${days} วัน` : '-'}
-                                                        </span>
-                                                    </td>
-                                                );
-                                            })}
-                                            <td className="px-6 py-4 text-center bg-indigo-50/30">
-                                                <span className="text-sm font-bold text-indigo-700">
-                                                    {displayedLeaveTypes.reduce((sum, lt) => sum + (row.leaveData[lt.name] || 0), 0)} วัน
-                                                </span>
-                                            </td>
-                                            <td className="px-6 py-4 text-center bg-amber-50/30">
-                                                <span className="text-sm font-bold text-amber-700">
-                                                    {displayedLeaveTypes.reduce((sum, lt) => sum + ((lt.defaultDays || 0) - (row.leaveData[lt.name] || 0)), 0)} วัน
-                                                </span>
-                                            </td>
-                                        </tr>
-                                    ))
-                                ) : (
-                                    <tr>
-                                        <td colSpan={displayedLeaveTypes.length + 6} className="px-6 py-16 text-center text-slate-500">
-                                            ไม่พบข้อมูลสรุปการลา
-                                        </td>
-                                    </tr>
-                                )}
+                                ))}
                             </tbody>
                         </table>
                     </div>
-                    {/* Pagination */}
+                )}
+
+                {/* Pagination */}
+                {!isLoading && summaryData.length > 0 && (
                     <div className="p-4 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-slate-500 bg-slate-50/50">
                         <span>แสดง {totalItems > 0 ? startIndex + 1 : 0} ถึง {endIndex} จาก {totalItems} รายการ</span>
-
                         <div className="flex gap-1">
                             <button
                                 onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
@@ -475,23 +504,22 @@ export default function LeaveSummaryView() {
                             >
                                 ก่อนหน้า
                             </button>
-
                             {Array.from({ length: totalPages }).map((_, i) => {
                                 const pageNum = i + 1;
                                 return (
                                     <button
                                         key={pageNum}
                                         onClick={() => setCurrentPage(pageNum)}
-                                        className={`px-3 py-1 rounded-lg transition-colors ${currentPage === pageNum
-                                            ? "bg-indigo-600 text-white shadow-sm"
-                                            : "border border-slate-200 hover:bg-white"
-                                            }`}
+                                        className={`px-3 py-1 rounded-lg transition-colors ${
+                                            currentPage === pageNum
+                                                ? 'bg-indigo-600 text-white shadow-sm'
+                                                : 'border border-slate-200 hover:bg-white'
+                                        }`}
                                     >
                                         {pageNum}
                                     </button>
                                 );
                             })}
-
                             <button
                                 onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
                                 disabled={currentPage === totalPages}
@@ -501,59 +529,8 @@ export default function LeaveSummaryView() {
                             </button>
                         </div>
                     </div>
-                </div>
+                )}
             </div>
-
-            {/* Download Modal Popup */}
-            {isDownloadModalOpen && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6 animate-in fade-in duration-200">
-                    <div
-                        className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm"
-                        onClick={() => setIsDownloadModalOpen(false)}
-                    />
-                    <div className="relative w-full max-w-sm bg-white rounded-3xl shadow-xl overflow-hidden animate-in zoom-in-95 duration-200">
-                        <div className="flex items-center justify-between p-5 border-b border-slate-100 bg-slate-50/50">
-                            <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
-                                <Download className="w-5 h-5 text-indigo-600" />
-                                เลือกรูปแบบไฟล์
-                            </h3>
-                            <button
-                                onClick={() => setIsDownloadModalOpen(false)}
-                                className="p-2 text-slate-400 hover:text-slate-600 bg-white hover:bg-slate-100 rounded-xl transition-colors shadow-sm"
-                            >
-                                <X className="w-4 h-4" />
-                            </button>
-                        </div>
-                        <div className="p-6 space-y-3">
-                            <button
-                                onClick={handleDownloadPDF}
-                                className="w-full flex items-center gap-4 p-4 rounded-2xl border border-slate-100 hover:border-red-200 hover:bg-red-50 transition-colors group text-left"
-                            >
-                                <div className="w-10 h-10 rounded-xl bg-red-100 text-red-600 flex items-center justify-center group-hover:scale-110 transition-transform">
-                                    <FileText size={20} />
-                                </div>
-                                <div>
-                                    <div className="font-semibold text-slate-800 group-hover:text-red-700">ดาวน์โหลด PDF</div>
-                                    <div className="text-xs text-slate-500">รูปแบบเอกสาร (จำลองด้วย .txt)</div>
-                                </div>
-                            </button>
-
-                            <button
-                                onClick={handleDownloadExcel}
-                                className="w-full flex items-center gap-4 p-4 rounded-2xl border border-slate-100 hover:border-emerald-200 hover:bg-emerald-50 transition-colors group text-left"
-                            >
-                                <div className="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-600 flex items-center justify-center group-hover:scale-110 transition-transform">
-                                    <FileSpreadsheet size={20} />
-                                </div>
-                                <div>
-                                    <div className="font-semibold text-slate-800 group-hover:text-emerald-700">ดาวน์โหลด Excel</div>
-                                    <div className="text-xs text-slate-500">รูปแบบตารางนำไปคำนวณต่อ (.csv)</div>
-                                </div>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
         </div>
     );
 }
