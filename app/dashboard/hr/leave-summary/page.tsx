@@ -2,6 +2,8 @@
 
 import React, { useState, useEffect } from 'react';
 import axiosInstance from '@/api/axios';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 import {
     FileSpreadsheet,
     CheckCircle2,
@@ -97,7 +99,10 @@ export default function LeaveSummaryView() {
 
                 setLeaveTypes(sortedApiLeaveTypes);
 
+<<<<<<< HEAD
                 // Map summary data keys if name was changed
+=======
+>>>>>>> NTH
                 const mappedSummary = apiSummary.map((row: any) => {
                     if (row.leaveData && row.leaveData['ลาพักผ่อนประจำปี (พักร้อน)'] !== undefined) {
                         row.leaveData['ลาพักผ่อนประจำปี'] = row.leaveData['ลาพักผ่อนประจำปี (พักร้อน)'];
@@ -169,6 +174,24 @@ export default function LeaveSummaryView() {
     const endIndex = Math.min(startIndex + itemsPerPage, totalItems);
     const paginatedData = summaryData.slice(startIndex, endIndex);
 
+    // Helper to fetch Sarabun Thai font as Base64 for jsPDF
+    const loadThaiFontBase64 = async (): Promise<string | null> => {
+        try {
+            const response = await fetch('/fonts/Sarabun-Regular.ttf');
+            if (!response.ok) return null;
+            const buffer = await response.arrayBuffer();
+            let binary = '';
+            const bytes = new Uint8Array(buffer);
+            for (let i = 0; i < bytes.byteLength; i++) {
+                binary += String.fromCharCode(bytes[i]);
+            }
+            return btoa(binary);
+        } catch (error) {
+            console.error('Failed to load Sarabun Thai font:', error);
+            return null;
+        }
+    };
+
     // Download Handlers
     const handleDownloadExcel = () => {
         const leaveHeaders = displayedLeaveTypes.map(lt => lt.name).join(",");
@@ -194,34 +217,93 @@ export default function LeaveSummaryView() {
         setIsDownloadModalOpen(false);
     };
 
-    const handleDownloadPDF = () => {
-        let textContent = "==== รายงานสรุปการลางาน (Simulated PDF) ====\n\n";
-        textContent += `วันที่พิมพ์: ${new Date().toLocaleDateString('th-TH')}\n`;
-        textContent += `ช่วงเวลา: ${getPeriodString()}\n\n`;
+    const handleDownloadPDF = async () => {
+        if (summaryData.length === 0) {
+            alert('ไม่มีข้อมูลสำหรับส่งออก (No data to export)');
+            return;
+        }
 
+<<<<<<< HEAD
         summaryData.forEach((row, index) => {
             textContent += `ลำดับที่ ${index + 1} | พนักงาน: ${row.employeeCode} - ${row.firstName} ${row.lastName} (${row.department})\n`;
             displayedLeaveTypes.forEach(lt => {
+=======
+        const doc = new jsPDF('landscape');
+        
+        // Load & Register Thai Font in jsPDF
+        const fontBase64 = await loadThaiFontBase64();
+        if (fontBase64) {
+            doc.addFileToVFS('Sarabun-Regular.ttf', fontBase64);
+            doc.addFont('Sarabun-Regular.ttf', 'Sarabun', 'normal');
+            doc.setFont('Sarabun');
+        }
+
+        doc.setFontSize(18);
+        doc.text('รายงานสรุปผลการลางาน (Leave Summary Report)', 14, 15);
+        doc.setFontSize(10);
+        doc.text(`วันที่พิมพ์: ${new Date().toLocaleDateString('th-TH')}`, 14, 22);
+        doc.text(`ช่วงเวลา: ${getPeriodString()}`, 14, 27);
+
+        // Prepare table headers
+        const headers = [
+            ['รหัสพนักงาน', 'ชื่อ', 'นามสกุล', 'แผนก', ...displayedLeaveTypes.map(lt => lt.name), 'รวม', 'คงเหลือรวม']
+        ];
+
+        // Prepare table data
+        const data = summaryData.map(row => {
+            const leaveValues = displayedLeaveTypes.map(lt => {
+>>>>>>> NTH
                 const days = row.leaveData[lt.name] || 0;
-                if (days > 0) textContent += `- ${lt.name}: ${days} วัน\n`;
+                return days > 0 ? `${days} วัน` : '-';
             });
+<<<<<<< HEAD
             
             const rowTotalUsed = displayedLeaveTypes.reduce((sum, lt) => sum + (row.leaveData[lt.name] || 0), 0);
             const rowTotalRemaining = displayedLeaveTypes.reduce((sum, lt) => sum + ((lt.defaultDays || 0) - (row.leaveData[lt.name] || 0)), 0);
             
             textContent += `-> รวมการลาทั้งหมด: ${rowTotalUsed} วัน (คงเหลือรวม: ${rowTotalRemaining} วัน)\n`;
             textContent += "--------------------------------------------------\n";
+=======
+            return [
+                row.employeeCode,
+                row.firstName,
+                row.lastName,
+                row.department,
+                ...leaveValues,
+                `${row.totalUsedDays} วัน`,
+                `${row.totalRemainingDays} วัน`
+            ];
+>>>>>>> NTH
         });
 
-        const blob = new Blob([textContent], { type: "text/plain;charset=utf-8;" });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement("a");
-        link.href = url;
-        link.download = "leave_summary_report.txt";
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
+        autoTable(doc, {
+            head: headers,
+            body: data,
+            startY: 32,
+            theme: 'striped',
+            styles: { 
+                font: fontBase64 ? 'Sarabun' : undefined, 
+                fontSize: 7,
+                valign: 'middle',
+                cellPadding: 2,
+                overflow: 'linebreak'
+            },
+            headStyles: { 
+                fillColor: [79, 70, 229], // Indigo-600
+                font: fontBase64 ? 'Sarabun' : undefined,
+                fontStyle: 'normal',
+                textColor: 255,
+                halign: 'center'
+            },
+            columnStyles: {
+                0: { cellWidth: 22 }, // รหัสพนักงาน
+                1: { cellWidth: 22 }, // ชื่อ
+                2: { cellWidth: 22 }, // นามสกุล
+                3: { cellWidth: 25 }, // แผนก
+            }
+        });
 
+        doc.save(`leave_summary_report_${new Date().toISOString().split('T')[0]}.pdf`);
         setIsDownloadModalOpen(false);
     };
 
@@ -534,7 +616,7 @@ export default function LeaveSummaryView() {
                                 </div>
                                 <div>
                                     <div className="font-semibold text-slate-800 group-hover:text-red-700">ดาวน์โหลด PDF</div>
-                                    <div className="text-xs text-slate-500">รูปแบบเอกสาร (จำลองด้วย .txt)</div>
+                                    <div className="text-xs text-slate-500">รูปแบบเอกสารรายงานฉบับสมบูรณ์ (.pdf)</div>
                                 </div>
                             </button>
 
