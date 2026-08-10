@@ -69,13 +69,21 @@ function yearList(center: number, span = 15): number[] {
 
 // ─── Internal: Calendar Navigation Header ──────────────────────
 function CalendarNav({
-  month, year, onPrev, onNext, onMonthChange, onYearChange,
+  month, year, onPrev, onNext, onMonthChange, onYearChange, minYear, maxYear
 }: {
   month: number; year: number;
   onPrev: () => void; onNext: () => void;
   onMonthChange: (m: number) => void; onYearChange: (y: number) => void;
+  minYear?: number; maxYear?: number;
 }) {
-  const years = useMemo(() => yearList(new Date().getFullYear()), []);
+  const years = useMemo(() => {
+    if (minYear !== undefined && maxYear !== undefined) {
+      const list = [];
+      for (let y = minYear; y <= maxYear; y++) list.push(y);
+      return list;
+    }
+    return yearList(new Date().getFullYear());
+  }, [minYear, maxYear]);
 
   return (
     <div className="flex flex-col items-center gap-2 mb-3">
@@ -139,10 +147,13 @@ export interface ThaiDatePickerProps {
   className?: string;
   disabled?: boolean;
   minDate?: Date | null;
+  isPlain?: boolean;
+  minYear?: number;
+  maxYear?: number;
 }
 
 export function ThaiDatePicker({
-  selected, onChange, placeholderText = "วว/ดด/ปปปป", className, disabled, minDate
+  selected, onChange, placeholderText = "วว/ดด/ปปปป", className, disabled, minDate, isPlain = false, minYear, maxYear
 }: ThaiDatePickerProps) {
   const { useHolidaysQuery, useLeavesQuery } = useLeave();
   const { data: holidays = [] } = useHolidaysQuery();
@@ -243,6 +254,8 @@ export function ThaiDatePicker({
             onNext={next}
             onMonthChange={setVMonth}
             onYearChange={setVYear}
+            minYear={minYear}
+            maxYear={maxYear}
           />
 
           {/* Day-of-week headers */}
@@ -260,10 +273,10 @@ export function ThaiDatePicker({
               const isSel = c.dateStr === selStr;
               const cellTime = new Date(c.year, c.month, c.day).getTime();
               const isBeforeMin = minDateNorm !== null && cellTime < minDateNorm;
-              const isHoliday = holidays.some((h: any) => h.date && h.date.split('T')[0] === c.dateStr);
+              const isHoliday = !isPlain && holidays.some((h: any) => h.date && h.date.split('T')[0] === c.dateStr);
               
               // Check if date overlaps with existing leave
-              const isLeave = myLeaves.some((l: any) => {
+              const isLeave = !isPlain && myLeaves.some((l: any) => {
                 if (l.status === 'Rejected' || l.status === 'Cancelled') return false;
                 if (!l.startDate || !l.endDate) return false;
                 const s = new Date(l.startDate);

@@ -23,6 +23,7 @@ import 'react-datepicker/dist/react-datepicker.css';
 interface LeaveType {
     id: string;
     name: string;
+    defaultDays: number;
 }
 
 interface LeaveSummaryRecord {
@@ -74,107 +75,41 @@ export default function LeaveSummaryView() {
                 const apiLeaveTypes = response.data.data.leaveTypes || [];
                 const apiSummary = response.data.data.summary || [];
 
-                // --- MOCK DATA FALLBACK ---
-                if (apiLeaveTypes.length === 0 || apiSummary.length === 0) {
-                    const mockLeaveTypes = [
-                        { id: '1', name: 'ลาป่วย' },
-                        { id: '2', name: 'ลากิจ' },
-                        { id: '3', name: 'ลาพักผ่อนประจำปี' },
-                        { id: '4', name: 'ลาเพื่อคลอดบุตร' },
-                        { id: '5', name: 'ลาเพื่อช่วยเหลือภริยาคลอดบุตร' },
-                        { id: '6', name: 'ลาเพื่อทำหมัน' },
-                        { id: '7', name: 'ลาเพื่อรับราชการทหาร' }
-                    ];
+                const customOrder: Record<string, number> = {
+                    'ลาป่วย': 1,
+                    'ลากิจ': 2,
+                    'ลาพักผ่อนประจำปี (พักร้อน)': 3,
+                    'ลาพักผ่อนประจำปี': 3,
+                    'ลาเพื่อคลอดบุตร': 4,
+                    'ลาเพื่อช่วยเหลือภริยาคลอดบุตร': 5,
+                    'ลาเพื่อทำหมัน': 6,
+                    'ลาเพื่อรับราชการทหาร': 7
+                };
 
-                    const mockSummary = [
-                        {
-                            id: 'EMP1',
-                            employeeCode: 'EMP-001',
-                            firstName: 'สมศักดิ์',
-                            lastName: 'พนักงานดีเด่น',
-                            department: 'Software Development',
-                            leaveData: { 'ลาป่วย': 2, 'ลาพักผ่อนประจำปี': 3, 'ลากิจ': 0, 'ลาเพื่อคลอดบุตร': 0, 'ลาเพื่อช่วยเหลือภริยาคลอดบุตร': 0, 'ลาเพื่อทำหมัน': 0, 'ลาเพื่อรับราชการทหาร': 0 },
-                            remainingData: { 'ลาป่วย': 3, 'ลากิจ': 5, 'ลาพักผ่อนประจำปี': 2, 'ลาเพื่อคลอดบุตร': 5, 'ลาเพื่อช่วยเหลือภริยาคลอดบุตร': 5, 'ลาเพื่อทำหมัน': 5, 'ลาเพื่อรับราชการทหาร': 5 },
-                            totalUsedDays: 5,
-                            totalRemainingDays: 15,
-                            leaveDates: ['10 ส.ค. 2026', '15-17 ส.ค. 2026']
-                        },
-                        {
-                            id: 'EMP2',
-                            employeeCode: 'EMP-002',
-                            firstName: 'สมชาย',
-                            lastName: 'ยอดบริหาร',
-                            department: 'Project Management',
-                            leaveData: { 'ลากิจ': 1, 'ลาป่วย': 0, 'ลาพักผ่อนประจำปี': 0, 'ลาเพื่อคลอดบุตร': 0, 'ลาเพื่อช่วยเหลือภริยาคลอดบุตร': 0, 'ลาเพื่อทำหมัน': 0, 'ลาเพื่อรับราชการทหาร': 0 },
-                            remainingData: { 'ลาป่วย': 5, 'ลากิจ': 4, 'ลาพักผ่อนประจำปี': 5, 'ลาเพื่อคลอดบุตร': 5, 'ลาเพื่อช่วยเหลือภริยาคลอดบุตร': 5, 'ลาเพื่อทำหมัน': 5, 'ลาเพื่อรับราชการทหาร': 5 },
-                            totalUsedDays: 1,
-                            totalRemainingDays: 24,
-                            leaveDates: ['05 ก.ค. 2026']
-                        },
-                        {
-                            id: 'EMP3',
-                            employeeCode: 'EMP-003',
-                            firstName: 'วิไล',
-                            lastName: 'ใจดี',
-                            department: 'Human Resource',
-                            leaveData: { 'ลาป่วย': 0, 'ลากิจ': 0, 'ลาพักผ่อนประจำปี': 0, 'ลาเพื่อคลอดบุตร': 0, 'ลาเพื่อช่วยเหลือภริยาคลอดบุตร': 0, 'ลาเพื่อทำหมัน': 0, 'ลาเพื่อรับราชการทหาร': 0 },
-                            remainingData: { 'ลาป่วย': 5, 'ลากิจ': 5, 'ลาพักผ่อนประจำปี': 5, 'ลาเพื่อคลอดบุตร': 5, 'ลาเพื่อช่วยเหลือภริยาคลอดบุตร': 5, 'ลาเพื่อทำหมัน': 5, 'ลาเพื่อรับราชการทหาร': 5 },
-                            totalUsedDays: 0,
-                            totalRemainingDays: 12,
-                            leaveDates: []
-                        }
-                    ] as LeaveSummaryRecord[];
-                    setLeaveTypes(mockLeaveTypes);
-                    setSummaryData(mockSummary);
-                } else {
-                    const customOrder: Record<string, number> = {
-                        'ลาป่วย': 1,
-                        'ลากิจ': 2,
-                        'ลาพักผ่อนประจำปี (พักร้อน)': 3,
-                        'ลาพักผ่อนประจำปี': 3,
-                        'ลาเพื่อคลอดบุตร': 4,
-                        'ลาเพื่อช่วยเหลือภริยาคลอดบุตร': 5,
-                        'ลาเพื่อทำหมัน': 6,
-                        'ลาเพื่อรับราชการทหาร': 7
-                    };
+                const sortedApiLeaveTypes = apiLeaveTypes.map((lt: any) => ({
+                    ...lt,
+                    name: lt.name === 'ลาพักผ่อนประจำปี (พักร้อน)' ? 'ลาพักผ่อนประจำปี' : lt.name
+                })).sort((a: any, b: any) => {
+                    const orderA = customOrder[a.name] || 99;
+                    const orderB = customOrder[b.name] || 99;
+                    return orderA - orderB;
+                });
 
-                    const sortedApiLeaveTypes = apiLeaveTypes.map((lt: any) => ({
-                        ...lt,
-                        name: lt.name === 'ลาพักผ่อนประจำปี (พักร้อน)' ? 'ลาพักผ่อนประจำปี' : lt.name
-                    })).sort((a: any, b: any) => {
-                        const orderA = customOrder[a.name] || 99;
-                        const orderB = customOrder[b.name] || 99;
-                        return orderA - orderB;
-                    });
+                setLeaveTypes(sortedApiLeaveTypes);
 
-                    setLeaveTypes(sortedApiLeaveTypes);
+                // Map summary data keys if name was changed
+                const mappedSummary = apiSummary.map((row: any) => {
+                    if (row.leaveData && row.leaveData['ลาพักผ่อนประจำปี (พักร้อน)'] !== undefined) {
+                        row.leaveData['ลาพักผ่อนประจำปี'] = row.leaveData['ลาพักผ่อนประจำปี (พักร้อน)'];
+                    }
+                    if (row.remainingData && row.remainingData['ลาพักผ่อนประจำปี (พักร้อน)'] !== undefined) {
+                        row.remainingData['ลาพักผ่อนประจำปี'] = row.remainingData['ลาพักผ่อนประจำปี (พักร้อน)'];
+                    }
 
-                    // Map summary data keys if name was changed
-                    const mappedSummary = apiSummary.map((row: any) => {
-                        if (row.leaveData && row.leaveData['ลาพักผ่อนประจำปี (พักร้อน)'] !== undefined) {
-                            row.leaveData['ลาพักผ่อนประจำปี'] = row.leaveData['ลาพักผ่อนประจำปี (พักร้อน)'];
-                        }
-                        if (row.remainingData && row.remainingData['ลาพักผ่อนประจำปี (พักร้อน)'] !== undefined) {
-                            row.remainingData['ลาพักผ่อนประจำปี'] = row.remainingData['ลาพักผ่อนประจำปี (พักร้อน)'];
-                        }
+                    return row;
+                });
 
-                        // --- INJECT MOCK REMAINING DATA FOR TESTING ---
-                        row.remainingData = {
-                            'ลาป่วย': 5 - (row.leaveData?.['ลาป่วย'] || 0),
-                            'ลากิจ': 5 - (row.leaveData?.['ลากิจ'] || 0),
-                            'ลาพักผ่อนประจำปี': 5 - (row.leaveData?.['ลาพักผ่อนประจำปี'] || 0),
-                            'ลาเพื่อคลอดบุตร': 5 - (row.leaveData?.['ลาเพื่อคลอดบุตร'] || 0),
-                            'ลาเพื่อช่วยเหลือภริยาคลอดบุตร': 5 - (row.leaveData?.['ลาเพื่อช่วยเหลือภริยาคลอดบุตร'] || 0),
-                            'ลาเพื่อทำหมัน': 5 - (row.leaveData?.['ลาเพื่อทำหมัน'] || 0),
-                            'ลาเพื่อรับราชการทหาร': 5 - (row.leaveData?.['ลาเพื่อรับราชการทหาร'] || 0)
-                        };
-                        // ----------------------------------------------
-
-                        return row;
-                    });
-
-                    setSummaryData(mappedSummary);
-                }
+                setSummaryData(mappedSummary);
             }
         } catch (error) {
             console.error("Failed to fetch leave summary:", error);
@@ -237,11 +172,13 @@ export default function LeaveSummaryView() {
     // Download Handlers
     const handleDownloadExcel = () => {
         const leaveHeaders = displayedLeaveTypes.map(lt => lt.name).join(",");
-        const header = `รหัสพนักงาน,ชื่อ,นามสกุล,แผนก,${leaveHeaders},รวม,ยอดคงเหลือรวม,ช่วงเวลา\n`;
+        const header = `ลำดับ,รหัสพนักงาน,ชื่อ,นามสกุล,แผนก,${leaveHeaders},รวม,ยอดคงเหลือรวม\n`;
 
-        const rows = summaryData.map(row => {
+        const rows = summaryData.map((row, index) => {
             const leaveValues = displayedLeaveTypes.map(lt => row.leaveData[lt.name] || 0).join(",");
-            return `"${row.employeeCode}","${row.firstName}","${row.lastName}","${row.department}",${leaveValues},"${row.totalUsedDays}","${row.totalRemainingDays}","${getPeriodString()}"`;
+            const rowTotalUsed = displayedLeaveTypes.reduce((sum, lt) => sum + (row.leaveData[lt.name] || 0), 0);
+            const rowTotalRemaining = displayedLeaveTypes.reduce((sum, lt) => sum + ((lt.defaultDays || 0) - (row.leaveData[lt.name] || 0)), 0);
+            return `"${index + 1}","${row.employeeCode}","${row.firstName}","${row.lastName}","${row.department}",${leaveValues},"${rowTotalUsed}","${rowTotalRemaining}"`;
         }).join("\n");
 
         // Add BOM for Thai characters in Excel
@@ -262,13 +199,17 @@ export default function LeaveSummaryView() {
         textContent += `วันที่พิมพ์: ${new Date().toLocaleDateString('th-TH')}\n`;
         textContent += `ช่วงเวลา: ${getPeriodString()}\n\n`;
 
-        summaryData.forEach(row => {
-            textContent += `พนักงาน: ${row.employeeCode} - ${row.firstName} ${row.lastName} (${row.department})\n`;
+        summaryData.forEach((row, index) => {
+            textContent += `ลำดับที่ ${index + 1} | พนักงาน: ${row.employeeCode} - ${row.firstName} ${row.lastName} (${row.department})\n`;
             displayedLeaveTypes.forEach(lt => {
                 const days = row.leaveData[lt.name] || 0;
                 if (days > 0) textContent += `- ${lt.name}: ${days} วัน\n`;
             });
-            textContent += `-> รวมการลาทั้งหมด: ${row.totalUsedDays} วัน (คงเหลือรวม: ${row.totalRemainingDays} วัน)\n`;
+            
+            const rowTotalUsed = displayedLeaveTypes.reduce((sum, lt) => sum + (row.leaveData[lt.name] || 0), 0);
+            const rowTotalRemaining = displayedLeaveTypes.reduce((sum, lt) => sum + ((lt.defaultDays || 0) - (row.leaveData[lt.name] || 0)), 0);
+            
+            textContent += `-> รวมการลาทั้งหมด: ${rowTotalUsed} วัน (คงเหลือรวม: ${rowTotalRemaining} วัน)\n`;
             textContent += "--------------------------------------------------\n";
         });
 
@@ -305,7 +246,7 @@ export default function LeaveSummaryView() {
                 </div>
 
                 {/* Advanced Filter and Action Bar */}
-                <div className="bg-white rounded-2xl shadow-sm border border-slate-100 z-10 relative overflow-visible">
+                <div className="bg-white rounded-2xl shadow-sm border border-slate-100 z-50 relative overflow-visible">
                     <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
                         <div className="flex items-center gap-2 text-indigo-600">
                             <Filter size={18} />
@@ -441,22 +382,23 @@ export default function LeaveSummaryView() {
                         <table className="w-full text-left border-collapse min-w-[1000px]">
                             <thead>
                                 <tr className="bg-slate-50/50 border-b border-slate-100">
-                                    <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider sticky left-0 bg-slate-50/95 backdrop-blur z-10 w-[200px] min-w-[200px] border-r border-slate-100 shadow-[1px_0_0_0_#f1f5f9]">ชื่อ</th>
-                                    <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider sticky left-[200px] bg-slate-50/95 backdrop-blur z-10 w-[150px] min-w-[150px] border-r border-slate-100 shadow-[1px_0_0_0_#f1f5f9]">นามสกุล</th>
+                                    <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider sticky left-0 bg-slate-50/95 backdrop-blur z-10 w-[80px] min-w-[80px] border-r border-slate-100 shadow-[1px_0_0_0_#f1f5f9] text-center">ลำดับ</th>
+                                    <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider sticky left-[80px] bg-slate-50/95 backdrop-blur z-10 w-[150px] min-w-[150px] border-r border-slate-100 shadow-[1px_0_0_0_#f1f5f9]">รหัสพนักงาน</th>
+                                    <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider sticky left-[230px] bg-slate-50/95 backdrop-blur z-10 w-[200px] min-w-[200px] border-r border-slate-100 shadow-[1px_0_0_0_#f1f5f9]">ชื่อ</th>
+                                    <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider sticky left-[430px] bg-slate-50/95 backdrop-blur z-10 w-[150px] min-w-[150px] border-r border-slate-100 shadow-[1px_0_0_0_#f1f5f9]">นามสกุล</th>
                                     {displayedLeaveTypes.map(lt => (
                                         <th key={lt.id} className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider text-center whitespace-nowrap">
                                             {lt.name}
                                         </th>
                                     ))}
                                     <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider text-center bg-indigo-50/50 whitespace-nowrap">รวม</th>
-                                    <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider text-center bg-emerald-50/50 whitespace-nowrap">ช่วงเวลา</th>
                                     <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider text-center bg-amber-50/50 whitespace-nowrap">ยอดคงเหลือรวม</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100 relative">
                                 {isLoading ? (
                                     <tr>
-                                        <td colSpan={leaveTypes.length + 4} className="px-6 py-20 text-center">
+                                        <td colSpan={displayedLeaveTypes.length + 6} className="px-6 py-20 text-center">
                                             <div className="flex flex-col items-center justify-center text-indigo-500">
                                                 <Loader2 className="w-8 h-8 animate-spin mb-4" />
                                                 <span className="text-sm font-medium text-slate-500">กำลังโหลดข้อมูล...</span>
@@ -466,18 +408,23 @@ export default function LeaveSummaryView() {
                                 ) : paginatedData.length > 0 ? (
                                     paginatedData.map((row, index) => (
                                         <tr key={row.id} className="hover:bg-slate-50/80 transition-colors group">
-                                            <td className="px-6 py-4 sticky left-0 bg-white group-hover:bg-slate-50 border-r border-slate-100 transition-colors z-10 shadow-[1px_0_0_0_#f1f5f9]">
+                                            <td className="px-6 py-4 sticky left-0 bg-white group-hover:bg-slate-50 border-r border-slate-100 transition-colors z-10 shadow-[1px_0_0_0_#f1f5f9] text-center">
+                                                <span className="text-sm font-medium text-slate-600">{startIndex + index + 1}</span>
+                                            </td>
+                                            <td className="px-6 py-4 sticky left-[80px] bg-white group-hover:bg-slate-50 border-r border-slate-100 transition-colors z-10 shadow-[1px_0_0_0_#f1f5f9]">
+                                                <span className="text-sm text-slate-700 font-medium">{row.employeeCode || '-'}</span>
+                                            </td>
+                                            <td className="px-6 py-4 sticky left-[230px] bg-white group-hover:bg-slate-50 border-r border-slate-100 transition-colors z-10 shadow-[1px_0_0_0_#f1f5f9]">
                                                 <div className="flex items-center gap-3">
                                                     <div className="w-9 h-9 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center font-bold text-sm shrink-0">
                                                         {row.firstName.charAt(0)}
                                                     </div>
                                                     <div className="min-w-0">
                                                         <div className="font-medium text-slate-800 truncate">{row.firstName}</div>
-                                                        <div className="text-xs text-slate-500 truncate">{row.employeeCode}</div>
                                                     </div>
                                                 </div>
                                             </td>
-                                            <td className="px-6 py-4 sticky left-[200px] bg-white group-hover:bg-slate-50 border-r border-slate-100 transition-colors z-10 shadow-[1px_0_0_0_#f1f5f9]">
+                                            <td className="px-6 py-4 sticky left-[430px] bg-white group-hover:bg-slate-50 border-r border-slate-100 transition-colors z-10 shadow-[1px_0_0_0_#f1f5f9]">
                                                 <div className="min-w-0">
                                                     <div className="font-medium text-slate-800 truncate">{row.lastName}</div>
                                                     <div className="text-xs text-slate-500 truncate">{row.department}</div>
@@ -499,19 +446,16 @@ export default function LeaveSummaryView() {
                                                     {displayedLeaveTypes.reduce((sum, lt) => sum + (row.leaveData[lt.name] || 0), 0)} วัน
                                                 </span>
                                             </td>
-                                            <td className="px-6 py-4 text-center bg-emerald-50/30">
-                                                <span className="text-xs font-medium text-emerald-700 whitespace-nowrap">{getPeriodString()}</span>
-                                            </td>
                                             <td className="px-6 py-4 text-center bg-amber-50/30">
                                                 <span className="text-sm font-bold text-amber-700">
-                                                    {displayedLeaveTypes.reduce((sum, lt) => sum + (row.remainingData ? (row.remainingData[lt.name] || 0) : 0), 0)} วัน
+                                                    {displayedLeaveTypes.reduce((sum, lt) => sum + ((lt.defaultDays || 0) - (row.leaveData[lt.name] || 0)), 0)} วัน
                                                 </span>
                                             </td>
                                         </tr>
                                     ))
                                 ) : (
                                     <tr>
-                                        <td colSpan={displayedLeaveTypes.length + 5} className="px-6 py-16 text-center text-slate-500">
+                                        <td colSpan={displayedLeaveTypes.length + 6} className="px-6 py-16 text-center text-slate-500">
                                             ไม่พบข้อมูลสรุปการลา
                                         </td>
                                     </tr>

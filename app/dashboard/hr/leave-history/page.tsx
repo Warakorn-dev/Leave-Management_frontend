@@ -76,7 +76,7 @@ export default function LeaveHistoryPage() {
     if (storedUsername && storedUsername !== "Manager") {
       setUsername(sessionStorage.getItem("fullName") || storedUsername);
     }
-    
+
     // Filter leaves
     const storedUserId = sessionStorage.getItem("userId");
     let targetRequests = [];
@@ -185,11 +185,11 @@ export default function LeaveHistoryPage() {
   const handleEditClick = () => {
     let mode = "full_day";
     let prd = "full";
-    
+
     // Try leaveMode field first (new format), then fall back to startFormat (old format)
     const rawLeaveMode = selectedRequest?.raw?.leaveMode;
     const rawStartFormat = selectedRequest?.raw?.startFormat;
-    
+
     if (rawLeaveMode === 'hourly' || rawStartFormat === 'hourly') {
       mode = "hourly";
     } else if (rawLeaveMode === 'half_day' || rawStartFormat === 'morning' || rawStartFormat === 'afternoon') {
@@ -233,7 +233,7 @@ export default function LeaveHistoryPage() {
       }
       setEditFile(file);
       setEditForm(prev => ({ ...prev, attachmentName: file.name }));
-      
+
       const reader = new FileReader();
       reader.onloadend = () => {
         setEditForm(prev => ({ ...prev, attachment: reader.result as string }));
@@ -267,7 +267,7 @@ export default function LeaveHistoryPage() {
         reason: editForm.reason,
         leaveMode: editForm.leaveMode
       };
-      
+
       if (editForm.leaveMode === 'hourly') {
         payload.leaveDate = editForm.leaveDate;
         payload.startTime = editForm.startTime;
@@ -287,7 +287,7 @@ export default function LeaveHistoryPage() {
         const formData = new FormData();
         formData.append('file', editFile);
         formData.append('leaveRequestId', selectedRequest.id);
-        
+
         try {
           await uploadApi.uploadFile(formData);
         } catch (e) {
@@ -300,7 +300,7 @@ export default function LeaveHistoryPage() {
       setIsEditing(false);
       setSelectedRequest(null);
       setEditFile(null);
-      
+
       Swal.fire({
         icon: 'success',
         title: 'สำเร็จ',
@@ -365,10 +365,10 @@ export default function LeaveHistoryPage() {
                         ))}
                       </select>
                       <div className="absolute inset-y-0 right-2 flex items-center pointer-events-none text-blue-600">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6" /></svg>
                       </div>
                     </div>
-                    
+
                     <div className="w-[1px] h-6 bg-gray-200 mx-1"></div>
 
                     <div className="relative h-full flex items-center">
@@ -386,16 +386,17 @@ export default function LeaveHistoryPage() {
                         ))}
                       </select>
                       <div className="absolute inset-y-0 right-2 flex items-center pointer-events-none text-blue-600">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6" /></svg>
                       </div>
                     </div>
                   </div>
                 ) : (
                   <div className="w-[180px] h-full">
-                    <ThaiDatePicker 
+                    <ThaiDatePicker
                       selected={selectedDate}
                       onChange={(date: Date | null) => setSelectedDate(date)}
                       placeholderText="เลือกวันที่"
+                      isPlain={true}
                       className="w-full h-full bg-transparent border-none text-black text-[15px] font-bold py-3 px-4 focus:outline-none cursor-pointer rounded-r-xl"
                     />
                   </div>
@@ -508,12 +509,12 @@ export default function LeaveHistoryPage() {
                         <td className="px-4 py-5 text-black font-medium">{req.type}</td>
                         <td className="px-4 py-5 text-black font-medium text-center whitespace-nowrap">{req.days}</td>
                         {viewMode === "personal" && <td className="px-4 py-5 text-black font-medium">{req.reason}</td>}
-                        
+
                         {viewMode === "department" ? (
                           <td className="px-4 py-5 text-center whitespace-nowrap">
                             <div className="flex flex-col items-center gap-1.5">
                               <span className={`inline-block px-5 py-1.5 rounded-full text-xs font-bold text-white shadow-sm min-w-[80px] ${req.status === 'Approved' ? 'bg-[#00E676]' :
-                                  req.status === 'Rejected' ? 'bg-[#FF0000]' : 'bg-[#FFA000]'
+                                req.status === 'Rejected' ? 'bg-[#FF0000]' : 'bg-[#FFA000]'
                                 }`}>
                                 {req.status === 'Approved' ? 'อนุมัติ' : req.status === 'Rejected' ? 'ปฏิเสธ' : 'รออนุมัติ'}
                               </span>
@@ -521,7 +522,7 @@ export default function LeaveHistoryPage() {
                                 onClick={() => setSelectedRequest(req)}
                                 className="text-gray-600 hover:text-blue-600 font-medium text-[12px] flex items-center gap-1 transition-colors"
                               >
-                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" /><circle cx="12" cy="12" r="3" /></svg>
                                 ดูรายละเอียด
                               </button>
                             </div>
@@ -530,7 +531,7 @@ export default function LeaveHistoryPage() {
                           <>
                             <td className="px-4 py-5 text-center whitespace-nowrap">
                               <span className={`inline-block px-5 py-1.5 rounded-full text-xs font-bold text-white shadow-sm min-w-[80px] ${req.status === 'Approved' ? 'bg-[#00E676]' :
-                                  req.status === 'Rejected' ? 'bg-[#FF0000]' : 'bg-[#FFA000]'
+                                req.status === 'Rejected' ? 'bg-[#FF0000]' : 'bg-[#FFA000]'
                                 }`}>
                                 {req.status === 'Approved' ? 'อนุมัติ' : req.status === 'Rejected' ? 'ปฏิเสธ' : 'รออนุมัติ'}
                               </span>
@@ -601,7 +602,7 @@ export default function LeaveHistoryPage() {
                   <div className="space-y-3">
                     <p className="flex gap-2"><span className="font-bold min-w-[80px]">ประเภทการลา:</span> {selectedRequest.type}</p>
                     <p className="flex gap-2">
-                      <span className="font-bold min-w-[80px]">ช่วงเวลา:</span> 
+                      <span className="font-bold min-w-[80px]">ช่วงเวลา:</span>
                       {(() => {
                         const raw = selectedRequest.raw || {};
                         const mode = raw.startFormat || raw.leaveMode;
@@ -638,7 +639,7 @@ export default function LeaveHistoryPage() {
                       </span>
                       <span className="font-bold min-w-[80px]">เอกสารแนบ:</span>
                       {selectedRequest.raw?.attachmentUrl || selectedRequest.raw?.attachment ? (
-                        <button 
+                        <button
                           onClick={() => {
                             const urlOrBase64 = selectedRequest.raw.attachmentUrl || selectedRequest.raw.attachment;
                             if (urlOrBase64.startsWith("data:")) {
@@ -680,11 +681,11 @@ export default function LeaveHistoryPage() {
               <div className="mt-4 border-t border-gray-100 pt-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-[13px] text-gray-500">
                   <p className="flex gap-2">
-                    <span className="font-bold min-w-[120px]">วันที่ยื่นคำลา:</span> 
+                    <span className="font-bold min-w-[120px]">วันที่ยื่นคำลา:</span>
                     {selectedRequest.raw?.createdAt ? new Date(selectedRequest.raw.createdAt).toLocaleString('th-TH') : '-'}
                   </p>
                   <p className="flex gap-2">
-                    <span className="font-bold min-w-[120px]">อัปเดตล่าสุด:</span> 
+                    <span className="font-bold min-w-[120px]">อัปเดตล่าสุด:</span>
                     {selectedRequest.raw?.updatedAt ? new Date(selectedRequest.raw.updatedAt).toLocaleString('th-TH') : '-'}
                   </p>
                 </div>
@@ -699,7 +700,7 @@ export default function LeaveHistoryPage() {
                   <div className="w-[120px] flex flex-col justify-center border-r border-gray-200 pr-4">
                     <span className="text-[12px] font-bold text-black mb-2">สถานะ:</span>
                     <span className={`inline-flex justify-center items-center px-4 py-1.5 rounded-full text-[13px] font-bold text-white shadow-sm ${selectedRequest.status === 'Approved' ? 'bg-[#00E676]' :
-                        selectedRequest.status === 'Rejected' ? 'bg-[#FF0000]' : 'bg-[#FFA000]'
+                      selectedRequest.status === 'Rejected' ? 'bg-[#FF0000]' : 'bg-[#FFA000]'
                       }`}>
                       {selectedRequest.status === 'Approved' ? 'อนุมัติ' : selectedRequest.status === 'Rejected' ? 'ปฏิเสธ' : 'รอพิจารณา'}
                     </span>
@@ -711,7 +712,7 @@ export default function LeaveHistoryPage() {
                       readOnly
                       value={selectedRequest.raw?.approverReason || (selectedRequest.status === 'Pending' ? 'รอการพิจารณา' : 'ไม่มีหมายเหตุเพิ่มเติม')}
                       className={`w-full border rounded-xl p-2.5 text-[14px] outline-none cursor-default ${selectedRequest.status === 'Rejected' ? 'border-red-200 text-red-600 bg-red-50' :
-                          selectedRequest.status === 'Approved' ? 'border-[#D1F2DF] text-green-600 bg-[#F4FDF8]' : 'border-gray-300 text-gray-500 bg-white'
+                        selectedRequest.status === 'Approved' ? 'border-[#D1F2DF] text-green-600 bg-[#F4FDF8]' : 'border-gray-300 text-gray-500 bg-white'
                         }`}
                     />
                   </div>
@@ -788,9 +789,9 @@ export default function LeaveHistoryPage() {
                     >
                       <option value="" disabled>-- กรุณาเลือกประเภทการลา --</option>
                       {balances.map((b: any) => (
-                        <option 
-                          key={b.leaveType.id} 
-                          value={b.leaveType.id} 
+                        <option
+                          key={b.leaveType.id}
+                          value={b.leaveType.id}
                           disabled={b.remainingDays <= 0 && editForm.type !== String(b.leaveType.id)}
                           className={(b.remainingDays <= 0 && editForm.type !== String(b.leaveType.id)) ? "text-gray-400 bg-gray-50 font-medium" : "text-gray-800"}
                         >
@@ -823,7 +824,7 @@ export default function LeaveHistoryPage() {
                     <>
                       <div className="md:col-span-2 md:w-[calc(50%-1.5rem)]">
                         <label className="block text-[13px] font-bold text-gray-800 mb-2">วันที่ลา</label>
-                        <ThaiDatePicker 
+                        <ThaiDatePicker
                           selected={editForm.leaveDate ? new Date(editForm.leaveDate) : null}
                           onChange={(date: Date | null) => {
                             if (date) {
@@ -834,13 +835,14 @@ export default function LeaveHistoryPage() {
                             }
                           }}
                           placeholderText="วว/ดด/ปปปป"
+                          isPlain={true}
                           className="w-full border border-gray-300 rounded-md px-3 py-2.5 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 bg-white shadow-sm transition-all text-gray-700"
                         />
                       </div>
                       <div className="md:col-span-2">
-                        <LeaveTimePicker 
-                          startTime={editForm.startTime} 
-                          endTime={editForm.endTime} 
+                        <LeaveTimePicker
+                          startTime={editForm.startTime}
+                          endTime={editForm.endTime}
                           onChangeStartTime={(time) => setEditForm({ ...editForm, startTime: time })}
                           onChangeEndTime={(time) => setEditForm({ ...editForm, endTime: time })}
                         />
@@ -850,7 +852,7 @@ export default function LeaveHistoryPage() {
                     <>
                       <div className="md:col-span-1">
                         <label className="block text-[13px] font-bold text-gray-800 mb-2">วันที่เริ่มต้น</label>
-                        <ThaiDatePicker 
+                        <ThaiDatePicker
                           selected={editForm.startDate ? new Date(editForm.startDate) : null}
                           onChange={(date: Date | null) => {
                             if (date) {
@@ -861,6 +863,7 @@ export default function LeaveHistoryPage() {
                             }
                           }}
                           placeholderText="วว/ดด/ปปปป"
+                          isPlain={true}
                           className="w-full border border-gray-300 rounded-md px-3 py-2.5 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 bg-white shadow-sm transition-all text-gray-700"
                         />
                         {editForm.leaveMode === 'half_day' && (
@@ -878,7 +881,7 @@ export default function LeaveHistoryPage() {
                       </div>
                       <div className="md:col-span-1">
                         <label className="block text-[13px] font-bold text-gray-800 mb-2">วันที่สิ้นสุด</label>
-                        <ThaiDatePicker 
+                        <ThaiDatePicker
                           selected={editForm.endDate ? new Date(editForm.endDate) : null}
                           onChange={(date: Date | null) => {
                             if (date) {
@@ -889,6 +892,7 @@ export default function LeaveHistoryPage() {
                             }
                           }}
                           placeholderText="วว/ดด/ปปปป"
+                          isPlain={true}
                           className="w-full border border-gray-300 rounded-md px-3 py-2.5 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 bg-white shadow-sm transition-all text-gray-700"
                           disabled={editForm.leaveMode === 'half_day'}
                         />
@@ -917,12 +921,12 @@ export default function LeaveHistoryPage() {
                     {editForm.attachmentName ? (
                       <div className="text-center z-10">
                         <p className="text-[14px] text-emerald-600 font-bold">✓ {editForm.attachmentName}</p>
-                        <button 
-                          type="button" 
+                        <button
+                          type="button"
                           onClick={(e) => {
                             e.stopPropagation();
                             setEditForm(prev => ({ ...prev, attachment: null, attachmentName: null }));
-                          }} 
+                          }}
                           className="text-red-500 text-xs font-semibold mt-2 underline hover:text-red-700"
                         >
                           ลบไฟล์
@@ -935,11 +939,11 @@ export default function LeaveHistoryPage() {
                       </>
                     )}
                     {/* Invisible file input */}
-                    <input 
-                      type="file" 
+                    <input
+                      type="file"
                       accept="image/png, application/pdf"
                       onChange={handleFileChange}
-                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" 
+                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                     />
                   </div>
                 </div>

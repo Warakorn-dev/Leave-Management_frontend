@@ -108,7 +108,7 @@ export default function LoginPage() {
       } else if (err.message?.includes('CAPTCHA') || err.message?.includes('รหัส')) {
         setError(err.message);
       } else {
-        setError("ไม่สามารถเข้าสู่ระบบได้ โปรดลองอีกครั้ง");
+        setError("บัญชีของคุณโดนระงับการใช้งาน ไม่สามารถเข้าสู่ระบบได้!!");
       }
       generateCaptcha();
     } finally {
@@ -144,8 +144,8 @@ export default function LoginPage() {
       <button
         onClick={toggleTheme}
         className={`absolute top-6 right-6 z-50 p-3 rounded-full shadow-lg backdrop-blur-md transition-all ${isDark
-            ? 'bg-white/10 text-yellow-400 hover:bg-white/20'
-            : 'bg-white text-gray-800 hover:bg-gray-50 border border-gray-200'
+          ? 'bg-white/10 text-yellow-400 hover:bg-white/20'
+          : 'bg-white text-gray-800 hover:bg-gray-50 border border-gray-200'
           }`}
         title={isDark ? "Switch to Gray Theme" : "Switch to Dark Theme"}
       >
@@ -207,8 +207,8 @@ export default function LoginPage() {
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               className={`h-[42px] text-sm px-4 w-full focus-visible:ring-2 focus-visible:ring-blue-500 rounded-md transition-colors ${isDark
-                  ? 'bg-white border-0 text-black placeholder:text-gray-400'
-                  : 'bg-white border border-gray-400 text-gray-900 placeholder:text-gray-500 shadow-sm'
+                ? 'bg-white border-0 text-black placeholder:text-gray-400'
+                : 'bg-white border border-gray-400 text-gray-900 placeholder:text-gray-500 shadow-sm'
                 }`}
               required
             />
@@ -223,8 +223,8 @@ export default function LoginPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 className={`h-[42px] text-sm px-4 pr-10 w-full focus-visible:ring-2 focus-visible:ring-blue-500 rounded-md transition-colors ${isDark
-                    ? 'bg-white border-0 text-black placeholder:text-gray-400'
-                    : 'bg-white border border-gray-400 text-gray-900 placeholder:text-gray-500 shadow-sm'
+                  ? 'bg-white border-0 text-black placeholder:text-gray-400'
+                  : 'bg-white border border-gray-400 text-gray-900 placeholder:text-gray-500 shadow-sm'
                   }`}
                 required
               />
@@ -263,8 +263,8 @@ export default function LoginPage() {
                 value={userCaptcha}
                 onChange={(e) => setUserCaptcha(e.target.value)}
                 className={`h-[42px] text-sm px-4 flex-1 focus-visible:ring-2 focus-visible:ring-blue-500 rounded-md transition-colors ${isDark
-                    ? 'bg-white border-0 text-black placeholder:text-gray-400'
-                    : 'bg-white border border-gray-400 text-gray-900 placeholder:text-gray-500 shadow-sm'
+                  ? 'bg-white border-0 text-black placeholder:text-gray-400'
+                  : 'bg-white border border-gray-400 text-gray-900 placeholder:text-gray-500 shadow-sm'
                   }`}
                 required
               />
