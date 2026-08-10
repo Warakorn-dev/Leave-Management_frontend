@@ -2,6 +2,8 @@
 
 import React, { useState, useEffect } from 'react';
 import axiosInstance from '@/api/axios';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 import {
     FileSpreadsheet,
     CheckCircle2,
@@ -74,107 +76,40 @@ export default function LeaveSummaryView() {
                 const apiLeaveTypes = response.data.data.leaveTypes || [];
                 const apiSummary = response.data.data.summary || [];
 
-                // --- MOCK DATA FALLBACK ---
-                if (apiLeaveTypes.length === 0 || apiSummary.length === 0) {
-                    const mockLeaveTypes = [
-                        { id: '1', name: 'ลาป่วย' },
-                        { id: '2', name: 'ลากิจ' },
-                        { id: '3', name: 'ลาพักผ่อนประจำปี' },
-                        { id: '4', name: 'ลาเพื่อคลอดบุตร' },
-                        { id: '5', name: 'ลาเพื่อช่วยเหลือภริยาคลอดบุตร' },
-                        { id: '6', name: 'ลาเพื่อทำหมัน' },
-                        { id: '7', name: 'ลาเพื่อรับราชการทหาร' }
-                    ];
+                const customOrder: Record<string, number> = {
+                    'ลาป่วย': 1,
+                    'ลากิจ': 2,
+                    'ลาพักผ่อนประจำปี (พักร้อน)': 3,
+                    'ลาพักผ่อนประจำปี': 3,
+                    'ลาเพื่อคลอดบุตร': 4,
+                    'ลาเพื่อช่วยเหลือภริยาคลอดบุตร': 5,
+                    'ลาเพื่อทำหมัน': 6,
+                    'ลาเพื่อรับราชการทหาร': 7
+                };
 
-                    const mockSummary = [
-                        {
-                            id: 'EMP1',
-                            employeeCode: 'EMP-001',
-                            firstName: 'สมศักดิ์',
-                            lastName: 'พนักงานดีเด่น',
-                            department: 'Software Development',
-                            leaveData: { 'ลาป่วย': 2, 'ลาพักผ่อนประจำปี': 3, 'ลากิจ': 0, 'ลาเพื่อคลอดบุตร': 0, 'ลาเพื่อช่วยเหลือภริยาคลอดบุตร': 0, 'ลาเพื่อทำหมัน': 0, 'ลาเพื่อรับราชการทหาร': 0 },
-                            remainingData: { 'ลาป่วย': 3, 'ลากิจ': 5, 'ลาพักผ่อนประจำปี': 2, 'ลาเพื่อคลอดบุตร': 5, 'ลาเพื่อช่วยเหลือภริยาคลอดบุตร': 5, 'ลาเพื่อทำหมัน': 5, 'ลาเพื่อรับราชการทหาร': 5 },
-                            totalUsedDays: 5,
-                            totalRemainingDays: 15,
-                            leaveDates: ['10 ส.ค. 2026', '15-17 ส.ค. 2026']
-                        },
-                        {
-                            id: 'EMP2',
-                            employeeCode: 'EMP-002',
-                            firstName: 'สมชาย',
-                            lastName: 'ยอดบริหาร',
-                            department: 'Project Management',
-                            leaveData: { 'ลากิจ': 1, 'ลาป่วย': 0, 'ลาพักผ่อนประจำปี': 0, 'ลาเพื่อคลอดบุตร': 0, 'ลาเพื่อช่วยเหลือภริยาคลอดบุตร': 0, 'ลาเพื่อทำหมัน': 0, 'ลาเพื่อรับราชการทหาร': 0 },
-                            remainingData: { 'ลาป่วย': 5, 'ลากิจ': 4, 'ลาพักผ่อนประจำปี': 5, 'ลาเพื่อคลอดบุตร': 5, 'ลาเพื่อช่วยเหลือภริยาคลอดบุตร': 5, 'ลาเพื่อทำหมัน': 5, 'ลาเพื่อรับราชการทหาร': 5 },
-                            totalUsedDays: 1,
-                            totalRemainingDays: 24,
-                            leaveDates: ['05 ก.ค. 2026']
-                        },
-                        {
-                            id: 'EMP3',
-                            employeeCode: 'EMP-003',
-                            firstName: 'วิไล',
-                            lastName: 'ใจดี',
-                            department: 'Human Resource',
-                            leaveData: { 'ลาป่วย': 0, 'ลากิจ': 0, 'ลาพักผ่อนประจำปี': 0, 'ลาเพื่อคลอดบุตร': 0, 'ลาเพื่อช่วยเหลือภริยาคลอดบุตร': 0, 'ลาเพื่อทำหมัน': 0, 'ลาเพื่อรับราชการทหาร': 0 },
-                            remainingData: { 'ลาป่วย': 5, 'ลากิจ': 5, 'ลาพักผ่อนประจำปี': 5, 'ลาเพื่อคลอดบุตร': 5, 'ลาเพื่อช่วยเหลือภริยาคลอดบุตร': 5, 'ลาเพื่อทำหมัน': 5, 'ลาเพื่อรับราชการทหาร': 5 },
-                            totalUsedDays: 0,
-                            totalRemainingDays: 12,
-                            leaveDates: []
-                        }
-                    ] as LeaveSummaryRecord[];
-                    setLeaveTypes(mockLeaveTypes);
-                    setSummaryData(mockSummary);
-                } else {
-                    const customOrder: Record<string, number> = {
-                        'ลาป่วย': 1,
-                        'ลากิจ': 2,
-                        'ลาพักผ่อนประจำปี (พักร้อน)': 3,
-                        'ลาพักผ่อนประจำปี': 3,
-                        'ลาเพื่อคลอดบุตร': 4,
-                        'ลาเพื่อช่วยเหลือภริยาคลอดบุตร': 5,
-                        'ลาเพื่อทำหมัน': 6,
-                        'ลาเพื่อรับราชการทหาร': 7
-                    };
+                const sortedApiLeaveTypes = apiLeaveTypes.map((lt: any) => ({
+                    ...lt,
+                    name: lt.name === 'ลาพักผ่อนประจำปี (พักร้อน)' ? 'ลาพักผ่อนประจำปี' : lt.name
+                })).sort((a: any, b: any) => {
+                    const orderA = customOrder[a.name] || 99;
+                    const orderB = customOrder[b.name] || 99;
+                    return orderA - orderB;
+                });
 
-                    const sortedApiLeaveTypes = apiLeaveTypes.map((lt: any) => ({
-                        ...lt,
-                        name: lt.name === 'ลาพักผ่อนประจำปี (พักร้อน)' ? 'ลาพักผ่อนประจำปี' : lt.name
-                    })).sort((a: any, b: any) => {
-                        const orderA = customOrder[a.name] || 99;
-                        const orderB = customOrder[b.name] || 99;
-                        return orderA - orderB;
-                    });
+                setLeaveTypes(sortedApiLeaveTypes);
 
-                    setLeaveTypes(sortedApiLeaveTypes);
+                const mappedSummary = apiSummary.map((row: any) => {
+                    if (row.leaveData && row.leaveData['ลาพักผ่อนประจำปี (พักร้อน)'] !== undefined) {
+                        row.leaveData['ลาพักผ่อนประจำปี'] = row.leaveData['ลาพักผ่อนประจำปี (พักร้อน)'];
+                    }
+                    if (row.remainingData && row.remainingData['ลาพักผ่อนประจำปี (พักร้อน)'] !== undefined) {
+                        row.remainingData['ลาพักผ่อนประจำปี'] = row.remainingData['ลาพักผ่อนประจำปี (พักร้อน)'];
+                    }
 
-                    // Map summary data keys if name was changed
-                    const mappedSummary = apiSummary.map((row: any) => {
-                        if (row.leaveData && row.leaveData['ลาพักผ่อนประจำปี (พักร้อน)'] !== undefined) {
-                            row.leaveData['ลาพักผ่อนประจำปี'] = row.leaveData['ลาพักผ่อนประจำปี (พักร้อน)'];
-                        }
-                        if (row.remainingData && row.remainingData['ลาพักผ่อนประจำปี (พักร้อน)'] !== undefined) {
-                            row.remainingData['ลาพักผ่อนประจำปี'] = row.remainingData['ลาพักผ่อนประจำปี (พักร้อน)'];
-                        }
+                    return row;
+                });
 
-                        // --- INJECT MOCK REMAINING DATA FOR TESTING ---
-                        row.remainingData = {
-                            'ลาป่วย': 5 - (row.leaveData?.['ลาป่วย'] || 0),
-                            'ลากิจ': 5 - (row.leaveData?.['ลากิจ'] || 0),
-                            'ลาพักผ่อนประจำปี': 5 - (row.leaveData?.['ลาพักผ่อนประจำปี'] || 0),
-                            'ลาเพื่อคลอดบุตร': 5 - (row.leaveData?.['ลาเพื่อคลอดบุตร'] || 0),
-                            'ลาเพื่อช่วยเหลือภริยาคลอดบุตร': 5 - (row.leaveData?.['ลาเพื่อช่วยเหลือภริยาคลอดบุตร'] || 0),
-                            'ลาเพื่อทำหมัน': 5 - (row.leaveData?.['ลาเพื่อทำหมัน'] || 0),
-                            'ลาเพื่อรับราชการทหาร': 5 - (row.leaveData?.['ลาเพื่อรับราชการทหาร'] || 0)
-                        };
-                        // ----------------------------------------------
-
-                        return row;
-                    });
-
-                    setSummaryData(mappedSummary);
-                }
+                setSummaryData(mappedSummary);
             }
         } catch (error) {
             console.error("Failed to fetch leave summary:", error);
@@ -234,6 +169,24 @@ export default function LeaveSummaryView() {
     const endIndex = Math.min(startIndex + itemsPerPage, totalItems);
     const paginatedData = summaryData.slice(startIndex, endIndex);
 
+    // Helper to fetch Sarabun Thai font as Base64 for jsPDF
+    const loadThaiFontBase64 = async (): Promise<string | null> => {
+        try {
+            const response = await fetch('/fonts/Sarabun-Regular.ttf');
+            if (!response.ok) return null;
+            const buffer = await response.arrayBuffer();
+            let binary = '';
+            const bytes = new Uint8Array(buffer);
+            for (let i = 0; i < bytes.byteLength; i++) {
+                binary += String.fromCharCode(bytes[i]);
+            }
+            return btoa(binary);
+        } catch (error) {
+            console.error('Failed to load Sarabun Thai font:', error);
+            return null;
+        }
+    };
+
     // Download Handlers
     const handleDownloadExcel = () => {
         const leaveHeaders = displayedLeaveTypes.map(lt => lt.name).join(",");
@@ -257,30 +210,78 @@ export default function LeaveSummaryView() {
         setIsDownloadModalOpen(false);
     };
 
-    const handleDownloadPDF = () => {
-        let textContent = "==== รายงานสรุปการลางาน (Simulated PDF) ====\n\n";
-        textContent += `วันที่พิมพ์: ${new Date().toLocaleDateString('th-TH')}\n`;
-        textContent += `ช่วงเวลา: ${getPeriodString()}\n\n`;
+    const handleDownloadPDF = async () => {
+        if (summaryData.length === 0) {
+            alert('ไม่มีข้อมูลสำหรับส่งออก (No data to export)');
+            return;
+        }
 
-        summaryData.forEach(row => {
-            textContent += `พนักงาน: ${row.employeeCode} - ${row.firstName} ${row.lastName} (${row.department})\n`;
-            displayedLeaveTypes.forEach(lt => {
+        const doc = new jsPDF('landscape');
+        
+        // Load & Register Thai Font in jsPDF
+        const fontBase64 = await loadThaiFontBase64();
+        if (fontBase64) {
+            doc.addFileToVFS('Sarabun-Regular.ttf', fontBase64);
+            doc.addFont('Sarabun-Regular.ttf', 'Sarabun', 'normal');
+            doc.setFont('Sarabun');
+        }
+
+        doc.setFontSize(18);
+        doc.text('รายงานสรุปผลการลางาน (Leave Summary Report)', 14, 15);
+        doc.setFontSize(10);
+        doc.text(`วันที่พิมพ์: ${new Date().toLocaleDateString('th-TH')}`, 14, 22);
+        doc.text(`ช่วงเวลา: ${getPeriodString()}`, 14, 27);
+
+        // Prepare table headers
+        const headers = [
+            ['รหัสพนักงาน', 'ชื่อ', 'นามสกุล', 'แผนก', ...displayedLeaveTypes.map(lt => lt.name), 'รวม', 'คงเหลือรวม']
+        ];
+
+        // Prepare table data
+        const data = summaryData.map(row => {
+            const leaveValues = displayedLeaveTypes.map(lt => {
                 const days = row.leaveData[lt.name] || 0;
-                if (days > 0) textContent += `- ${lt.name}: ${days} วัน\n`;
+                return days > 0 ? `${days} วัน` : '-';
             });
-            textContent += `-> รวมการลาทั้งหมด: ${row.totalUsedDays} วัน (คงเหลือรวม: ${row.totalRemainingDays} วัน)\n`;
-            textContent += "--------------------------------------------------\n";
+            return [
+                row.employeeCode,
+                row.firstName,
+                row.lastName,
+                row.department,
+                ...leaveValues,
+                `${row.totalUsedDays} วัน`,
+                `${row.totalRemainingDays} วัน`
+            ];
         });
 
-        const blob = new Blob([textContent], { type: "text/plain;charset=utf-8;" });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement("a");
-        link.href = url;
-        link.download = "leave_summary_report.txt";
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
+        autoTable(doc, {
+            head: headers,
+            body: data,
+            startY: 32,
+            theme: 'striped',
+            styles: { 
+                font: fontBase64 ? 'Sarabun' : undefined, 
+                fontSize: 7,
+                valign: 'middle',
+                cellPadding: 2,
+                overflow: 'linebreak'
+            },
+            headStyles: { 
+                fillColor: [79, 70, 229], // Indigo-600
+                font: fontBase64 ? 'Sarabun' : undefined,
+                fontStyle: 'normal',
+                textColor: 255,
+                halign: 'center'
+            },
+            columnStyles: {
+                0: { cellWidth: 22 }, // รหัสพนักงาน
+                1: { cellWidth: 22 }, // ชื่อ
+                2: { cellWidth: 22 }, // นามสกุล
+                3: { cellWidth: 25 }, // แผนก
+            }
+        });
 
+        doc.save(`leave_summary_report_${new Date().toISOString().split('T')[0]}.pdf`);
         setIsDownloadModalOpen(false);
     };
 
@@ -590,7 +591,7 @@ export default function LeaveSummaryView() {
                                 </div>
                                 <div>
                                     <div className="font-semibold text-slate-800 group-hover:text-red-700">ดาวน์โหลด PDF</div>
-                                    <div className="text-xs text-slate-500">รูปแบบเอกสาร (จำลองด้วย .txt)</div>
+                                    <div className="text-xs text-slate-500">รูปแบบเอกสารรายงานฉบับสมบูรณ์ (.pdf)</div>
                                 </div>
                             </button>
 
