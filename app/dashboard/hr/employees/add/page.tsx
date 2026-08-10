@@ -427,6 +427,9 @@ export default function AddEmployeePage() {
                   } as any);
                 }}
                 placeholderText="วว/ดด/ปปปป"
+                isPlain={true}
+                minYear={1990}
+                maxYear={new Date().getFullYear()}
                 className="w-full bg-[#f8fafc] border border-[#e2e8f0] px-5 py-3.5 rounded-xl text-[15px] text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-100 transition-all"
               />
             </div>
@@ -552,6 +555,7 @@ export default function AddEmployeePage() {
                   } as any);
                 }}
                 placeholderText="วว/ดด/ปปปป"
+                isPlain={true}
                 className="w-full bg-[#f8fafc] border border-[#e2e8f0] px-5 py-3.5 rounded-xl text-[15px] text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-100 transition-all cursor-pointer"
               />
             </div>
