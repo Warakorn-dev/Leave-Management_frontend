@@ -30,5 +30,26 @@
     ".next/dev/types/**/*.ts",
     "**/*.mts"
   ],
+<<<<<<< HEAD
   "exclude": ["node_modules", "src_bak", "test_bak"]
+=======
+  "exclude": [
+    "node_modules",
+    "add-leaders.ts",
+    "check*.ts",
+    "fix*.ts",
+    "insert*.ts",
+    "list*.ts",
+    "migrate*.ts",
+    "rename.ts",
+    "script.ts",
+    "seed*.ts",
+    "temp*.ts",
+    "test*.ts",
+    "test",
+    "update*.ts",
+    "prisma",
+    "_backend_src_backup"
+  ]
+>>>>>>> NTH
 }
