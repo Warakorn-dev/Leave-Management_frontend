@@ -306,12 +306,12 @@ export default function LeaveHistoryPage() {
                 <table className="w-full text-sm text-left">
                   <thead className="bg-[#CDE4EB] text-gray-800 text-[15px]">
                     <tr>
-                      <th className="px-6 py-4 font-bold whitespace-nowrap">วันที่ลา</th>
-                      <th className="px-6 py-4 font-bold whitespace-nowrap">ประเภทการลา</th>
-                      <th className="px-6 py-4 font-bold text-center whitespace-nowrap">จำนวนวันลา</th>
-                      <th className="px-6 py-4 font-bold whitespace-nowrap">เหตุผล</th>
-                      <th className="px-6 py-4 font-bold text-center whitespace-nowrap">สถานะ</th>
-                      <th className="px-6 py-4 font-bold text-center whitespace-nowrap">จัดการ</th>
+                      <th className="px-6 py-4 font-bold whitespace-nowrap w-[20%]">วันที่ลา</th>
+                      <th className="px-6 py-4 font-bold whitespace-nowrap w-[20%]">ประเภทการลา</th>
+                      <th className="px-6 py-4 font-bold text-center whitespace-nowrap w-[15%]">จำนวนวันลา</th>
+                      <th className="px-6 py-4 font-bold whitespace-nowrap w-[25%]">เหตุผล</th>
+                      <th className="px-6 py-4 font-bold text-center whitespace-nowrap w-[10%]">สถานะ</th>
+                      <th className="px-6 py-4 font-bold text-center whitespace-nowrap w-[10%]">จัดการ</th>
                     </tr>
                   </thead>
                   <tbody>

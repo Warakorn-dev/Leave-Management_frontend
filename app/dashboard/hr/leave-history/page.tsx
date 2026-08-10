@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 import { useLeave } from "@/hooks/useLeave";
 import { useLeaveBalance } from "@/hooks/useLeaveBalance";
+import { useLeaveType } from "@/hooks/useLeaveType";
 import { Calendar as CalendarIcon, X, User, Users, Download, Edit3, Trash2, Upload, Check, Clock, Search } from "lucide-react";
 import Swal from "sweetalert2";
 import { ThaiDatePicker, ThaiMonthPicker } from "@/components/ThaiCalendarPicker";
@@ -20,7 +21,6 @@ export default function LeaveHistoryPage() {
   const [viewMode, setViewMode] = useState<"department" | "personal">("department");
   const [filterLeaveType, setFilterLeaveType] = useState<string>("");
   const [searchId, setSearchId] = useState<string>("");
-  const [searchName, setSearchName] = useState<string>("");
 
   const router = useRouter();
   const [showConfirmEdit, setShowConfirmEdit] = useState(false);
@@ -47,6 +47,8 @@ export default function LeaveHistoryPage() {
   const { data: allLeaves = [], refetch: refetchLeaves } = useLeavesQuery();
   const { mutateAsync: deleteLeave } = useDeleteLeaveMutation();
   const { mutateAsync: updateLeave } = useUpdateLeaveMutation();
+  const { useLeaveTypesQuery } = useLeaveType();
+  const { data: leaveTypes = [] } = useLeaveTypesQuery();
 
 
 
@@ -107,18 +109,24 @@ export default function LeaveHistoryPage() {
         if (typeName !== filterLeaveType) return false;
       }
 
-      // Search ID (Emp ID or Leave ID)
+      // Search Query
       if (searchId && searchId.trim() !== "") {
-        const empCode = r.employee?.employeeCode || (r.employee?.id ? `EMP-${String(r.employee.id).substring(0, 5).toUpperCase()}` : `EMP-000`);
-        const leaveId = String(r.id);
         const term = searchId.trim().toLowerCase();
-        if (!empCode.toLowerCase().includes(term) && !leaveId.includes(term)) return false;
-      }
-
-      // Search Name
-      if (searchName && searchName.trim() !== "") {
-        const fullName = r.user?.firstName ? `${r.user.firstName} ${r.user.lastName}`.toLowerCase() : (r.userId || 'unknown').toLowerCase();
-        if (!fullName.includes(searchName.trim().toLowerCase())) return false;
+        const leaveId = String(r.id);
+        
+        if (viewMode === "department") {
+          const empCode = r.employee?.employeeCode || (r.employee?.id ? `EMP-${String(r.employee.id).substring(0, 5).toUpperCase()}` : `EMP-000`);
+          const fullName = r.user?.firstName ? `${r.user.firstName} ${r.user.lastName}`.toLowerCase() : (r.userId || 'unknown').toLowerCase();
+          
+          if (!leaveId.includes(term) && !empCode.toLowerCase().includes(term) && !fullName.includes(term)) {
+            return false;
+          }
+        } else {
+          // personal mode
+          if (!leaveId.includes(term)) {
+            return false;
+          }
+        }
       }
 
       return true;
@@ -130,6 +138,8 @@ export default function LeaveHistoryPage() {
         id: r.id,
         empId: r.employee?.employeeCode || (r.employee?.id ? `EMP-${String(r.employee.id).substring(0, 5).toUpperCase()}` : `EMP-000`),
         name: r.user?.firstName ? `${r.user.firstName} ${r.user.lastName}` : (r.userId || 'Unknown'),
+        firstName: r.user?.firstName || (r.userId || 'Unknown'),
+        lastName: r.user?.lastName || '-',
         department: r.user?.department?.name || r.department || 'ไม่ระบุ',
         positionName: r.user?.position?.name || r.position || 'ไม่ระบุ',
         dateStr: r.startDate.split('T')[0] === r.endDate.split('T')[0] ? formatDate(r.startDate) : `${formatDate(r.startDate)} - ${formatDate(r.endDate)}`,
@@ -145,7 +155,7 @@ export default function LeaveHistoryPage() {
         }
       };
     }));
-  }, [router, filterType, selectedMonthRaw, selectedDate, viewMode, allLeaves, filterLeaveType, searchId, searchName]);
+  }, [router, filterType, selectedMonthRaw, selectedDate, viewMode, allLeaves, filterLeaveType, searchId]);
 
   const handleDelete = async () => {
     const isApprovedCancel = selectedRequest?.status?.includes('Approved');
@@ -423,40 +433,29 @@ export default function LeaveHistoryPage() {
           </div>
 
           {/* Search & Filter Bar */}
-          <div className="mb-8 grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="relative">
+          <div className="mb-8 flex flex-col md:flex-row items-center justify-between gap-4">
+            <div className="relative w-full md:w-[400px]">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                 <Search className="h-4 w-4 text-gray-400" />
               </div>
               <input
                 type="text"
-                placeholder="ค้นหารหัสใบลา / รหัสพนักงาน"
+                placeholder={viewMode === "department" ? "ค้นหารหัสใบลา, รหัสพนักงาน, ชื่อ, นามสกุล" : "ค้นหารหัสใบลา"}
                 value={searchId}
                 onChange={(e) => setSearchId(e.target.value)}
                 className="w-full pl-10 pr-4 py-2.5 bg-white border border-gray-200 rounded-xl text-[14px] text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-400 shadow-sm transition-all"
               />
             </div>
-            <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <User className="h-4 w-4 text-gray-400" />
-              </div>
-              <input
-                type="text"
-                placeholder="ค้นหาชื่อ-นามสกุล"
-                value={searchName}
-                onChange={(e) => setSearchName(e.target.value)}
-                className="w-full pl-10 pr-4 py-2.5 bg-white border border-gray-200 rounded-xl text-[14px] text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-400 shadow-sm transition-all"
-              />
-            </div>
-            <div className="relative">
+            
+            <div className="relative w-full md:w-[250px] ml-auto">
               <select
                 value={filterLeaveType}
                 onChange={(e) => setFilterLeaveType(e.target.value)}
                 className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-[14px] text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-400 shadow-sm transition-all appearance-none"
               >
                 <option value="">ทุกประเภทการลา</option>
-                {Array.from(new Set(allLeaves.map((r: any) => r.leaveType?.name || r.type))).filter(Boolean).map((type: any) => (
-                  <option key={type} value={type}>{type}</option>
+                {leaveTypes.map((type: any) => (
+                  <option key={type.id} value={type.name}>{type.name}</option>
                 ))}
               </select>
               <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
@@ -482,14 +481,15 @@ export default function LeaveHistoryPage() {
                     <tr>
                       {viewMode === "department" && (
                         <>
-                          <th className="px-4 py-4 font-bold whitespace-nowrap w-[12%]">รหัสพนักงาน</th>
-                          <th className="px-4 py-4 font-bold whitespace-nowrap w-[15%]">ชื่อพนักงาน</th>
-                          <th className="px-4 py-4 font-bold w-[20%]">แผนก</th>
+                          <th className="px-4 py-4 font-bold whitespace-nowrap w-[10%]">รหัสพนักงาน</th>
+                          <th className="px-4 py-4 font-bold whitespace-nowrap w-[15%]">ชื่อ</th>
+                          <th className="px-4 py-4 font-bold whitespace-nowrap w-[15%]">นามสกุล</th>
+                          <th className="px-4 py-4 font-bold w-[15%]">แผนก</th>
                         </>
                       )}
-                      <th className={`px-4 py-4 font-bold whitespace-nowrap ${viewMode === "department" ? "w-[18%]" : "w-[20%]"}`}>วันที่ลา</th>
-                      <th className={`px-4 py-4 font-bold ${viewMode === "department" ? "w-[15%]" : "w-[25%]"}`}>ประเภทการลา</th>
-                      <th className={`px-4 py-4 font-bold text-center whitespace-nowrap ${viewMode === "department" ? "w-[10%]" : "w-[10%]"}`}>จำนวนวันลา</th>
+                      <th className={`px-4 py-4 font-bold whitespace-nowrap ${viewMode === "department" ? "w-[15%]" : "w-[20%]"}`}>วันที่ลา</th>
+                      <th className={`px-4 py-4 font-bold ${viewMode === "department" ? "w-[10%]" : "w-[20%]"}`}>ประเภทการลา</th>
+                      <th className={`px-4 py-4 font-bold text-center whitespace-nowrap ${viewMode === "department" ? "w-[10%]" : "w-[15%]"}`}>จำนวนวันลา</th>
                       {viewMode === "personal" && <th className="px-4 py-4 font-bold w-[25%]">เหตุผล</th>}
                       <th className={`px-4 py-4 font-bold text-center whitespace-nowrap ${viewMode === "department" ? "w-[10%]" : "w-[10%]"}`}>สถานะ</th>
                       {viewMode === "personal" && <th className="px-4 py-4 font-bold text-center whitespace-nowrap w-[10%]">จัดการ</th>}
@@ -501,7 +501,8 @@ export default function LeaveHistoryPage() {
                         {viewMode === "department" && (
                           <>
                             <td className="px-4 py-5 text-gray-500 font-medium whitespace-nowrap">{req.empId}</td>
-                            <td className="px-4 py-5 text-black font-medium whitespace-nowrap">{req.name}</td>
+                            <td className="px-4 py-5 text-black font-medium whitespace-nowrap">{req.firstName}</td>
+                            <td className="px-4 py-5 text-black font-medium whitespace-nowrap">{req.lastName}</td>
                             <td className="px-4 py-5 text-black font-medium">{req.department}</td>
                           </>
                         )}

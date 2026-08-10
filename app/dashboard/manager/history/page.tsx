@@ -317,16 +317,16 @@ export default function LeaveHistoryPage() {
                     <tr>
                       {viewMode === "department" && (
                         <>
-                          <th className="px-6 py-4 font-bold whitespace-nowrap">รหัสพนักงาน</th>
-                          <th className="px-6 py-4 font-bold whitespace-nowrap">ชื่อพนักงาน</th>
+                          <th className="px-6 py-4 font-bold whitespace-nowrap w-[15%]">รหัสพนักงาน</th>
+                          <th className="px-6 py-4 font-bold whitespace-nowrap w-[20%]">ชื่อพนักงาน</th>
                         </>
                       )}
-                      <th className="px-6 py-4 font-bold whitespace-nowrap">วันที่ลา</th>
-                      <th className="px-6 py-4 font-bold whitespace-nowrap">ประเภทการลา</th>
-                      <th className="px-6 py-4 font-bold text-center whitespace-nowrap">จำนวนวันลา</th>
-                      {viewMode === "personal" && <th className="px-6 py-4 font-bold whitespace-nowrap">เหตุผล</th>}
-                      <th className="px-6 py-4 font-bold text-center whitespace-nowrap">สถานะ</th>
-                      {viewMode === "personal" && <th className="px-6 py-4 font-bold text-center whitespace-nowrap">จัดการ</th>}
+                      <th className={`px-6 py-4 font-bold whitespace-nowrap ${viewMode === "department" ? "w-[20%]" : "w-[20%]"}`}>วันที่ลา</th>
+                      <th className={`px-6 py-4 font-bold whitespace-nowrap ${viewMode === "department" ? "w-[15%]" : "w-[20%]"}`}>ประเภทการลา</th>
+                      <th className={`px-6 py-4 font-bold text-center whitespace-nowrap ${viewMode === "department" ? "w-[15%]" : "w-[15%]"}`}>จำนวนวันลา</th>
+                      {viewMode === "personal" && <th className="px-6 py-4 font-bold whitespace-nowrap w-[25%]">เหตุผล</th>}
+                      <th className={`px-6 py-4 font-bold text-center whitespace-nowrap ${viewMode === "department" ? "w-[15%]" : "w-[10%]"}`}>สถานะ</th>
+                      {viewMode === "personal" && <th className="px-6 py-4 font-bold text-center whitespace-nowrap w-[10%]">จัดการ</th>}
                     </tr>
                   </thead>
                   <tbody>
