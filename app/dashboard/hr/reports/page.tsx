@@ -6,10 +6,10 @@ import { useLeaveType } from '@/hooks/useLeaveType';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { SkeletonTable } from '@/components/ui/skeleton';
-import { 
-  FileSpreadsheet, 
-  FileDown, 
-  Search, 
+import {
+  FileSpreadsheet,
+  FileDown,
+  Search,
   Filter,
   RefreshCw
 } from 'lucide-react';
@@ -38,7 +38,7 @@ export default function HRReports() {
       const end = new Date(endStr);
       const thaiDate = start.toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: 'numeric' });
       const endDateThai = end.toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: 'numeric' });
-      
+
       const mode = leave.startFormat || leave.leaveMode;
       const isFull = mode === 'full' || mode === 'full_day';
 
@@ -99,7 +99,7 @@ export default function HRReports() {
 
   // Filter logic
   const filteredLeaves = leaves.filter((l) => {
-    const matchesSearch = 
+    const matchesSearch =
       (l.employeeName || l.userId || '').toLowerCase().includes(search.toLowerCase()) ||
       (l.employeeId || '').toLowerCase().includes(search.toLowerCase()) ||
       (l.departmentName || l.department || '').toLowerCase().includes(search.toLowerCase());
@@ -142,7 +142,7 @@ export default function HRReports() {
     const worksheet = XLSX.utils.json_to_sheet(formattedData);
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, 'Leave Report');
-    
+
     worksheet['!cols'] = [
       { wch: 5 }, { wch: 15 }, { wch: 25 }, { wch: 20 }, { wch: 25 },
       { wch: 25 }, { wch: 12 }, { wch: 35 }, { wch: 20 }, { wch: 15 }, { wch: 15 }
@@ -160,7 +160,7 @@ export default function HRReports() {
     }
 
     const doc = new jsPDF('landscape');
-    
+
     // Load & Register Thai Font in jsPDF
     const fontBase64 = await loadThaiFontBase64();
     if (fontBase64) {
@@ -194,14 +194,14 @@ export default function HRReports() {
       body: data,
       startY: 32,
       theme: 'striped',
-      headStyles: { 
+      headStyles: {
         fillColor: [11, 15, 78],
         font: fontBase64 ? 'Sarabun' : undefined,
         fontStyle: 'normal'
       },
-      styles: { 
-        font: fontBase64 ? 'Sarabun' : undefined, 
-        fontSize: 9 
+      styles: {
+        font: fontBase64 ? 'Sarabun' : undefined,
+        fontSize: 9
       },
       columnStyles: {
         0: { cellWidth: 10 },
@@ -220,7 +220,7 @@ export default function HRReports() {
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto pb-10">
-      
+
       {/* Title Header & Action Buttons */}
       <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
@@ -231,7 +231,7 @@ export default function HRReports() {
             วิเคราะห์ สรุปผลยอดสถิติการลางานพนักงาน คัดกรองช่วงวัน และส่งออกข้อมูลเป็นไฟล์ Excel หรือ PDF
           </p>
         </div>
-        
+
         {/* Export Buttons */}
         <div className="flex flex-wrap items-center gap-3 shrink-0">
           <button
@@ -258,7 +258,7 @@ export default function HRReports() {
             <Filter className="w-4 h-4 text-blue-600" />
             <span>ตัวกรองรายงานขั้นสูง (Advanced Report Filter)</span>
           </CardTitle>
-          <button 
+          <button
             onClick={() => {
               setSearch('');
               setStatusFilter('all');
@@ -276,7 +276,7 @@ export default function HRReports() {
 
         <CardContent className="p-6">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-            
+
             {/* Search Input */}
             <div>
               <label className="block text-[12px] font-bold text-slate-600 uppercase mb-1.5">ค้นหาพนักงาน</label>
@@ -364,7 +364,7 @@ export default function HRReports() {
             <table className="w-full text-center border-collapse text-sm">
               <thead className="bg-[#add8e6] text-slate-800 font-bold border-b border-slate-200">
                 <tr>
-                  <th className="py-4 px-5 font-bold whitespace-nowrap text-center">รหัส</th>
+                  <th className="py-4 px-5 font-bold whitespace-nowrap text-center">รหัสพนักงาน</th>
                   <th className="py-4 px-5 font-bold whitespace-nowrap text-left">ชื่อ-นามสกุลพนักงาน</th>
                   <th className="py-4 px-5 font-bold whitespace-nowrap text-center">ประเภทการลา</th>
                   <th className="py-4 px-5 font-bold whitespace-nowrap text-center">วันที่เริ่ม - สิ้นสุด</th>
@@ -405,16 +405,16 @@ export default function HRReports() {
                       </td>
                       <td className="py-4 px-5 whitespace-nowrap text-center">
                         <div className="flex justify-center">
-                          <Badge 
+                          <Badge
                             variant={
                               (l.status || '').toLowerCase().includes('approved') ? 'success' :
-                              (l.status || '').toLowerCase() === 'pending' ? 'warning' :
-                              (l.status || '').toLowerCase().includes('rejected') ? 'danger' : 'neutral'
+                                (l.status || '').toLowerCase() === 'pending' ? 'warning' :
+                                  (l.status || '').toLowerCase().includes('rejected') ? 'danger' : 'neutral'
                             }
                           >
                             {(l.status || '').toLowerCase().includes('approved') ? 'อนุมัติแล้ว' :
-                             (l.status || '').toLowerCase() === 'pending' ? 'รออนุมัติ' :
-                             (l.status || '').toLowerCase().includes('rejected') ? 'ปฏิเสธ' : l.status}
+                              (l.status || '').toLowerCase() === 'pending' ? 'รออนุมัติ' :
+                                (l.status || '').toLowerCase().includes('rejected') ? 'ปฏิเสธ' : l.status}
                           </Badge>
                         </div>
                       </td>

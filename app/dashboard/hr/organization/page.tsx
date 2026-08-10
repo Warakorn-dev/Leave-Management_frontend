@@ -68,6 +68,47 @@ export default function OrganizationManagementPage() {
   const { mutateAsync: updatePosition } = useUpdatePositionMutation();
   const { mutateAsync: deletePosition } = useDeletePositionMutation();
 
+  // Auto-generate Department Code
+  React.useEffect(() => {
+    if (isAddDeptModalOpen) {
+      const maxCode = departments.reduce((max, d) => {
+        const num = parseInt(d.code || '0', 10);
+        return !isNaN(num) && num > max ? num : max;
+      }, 0);
+      const nextCode = String(maxCode + 1).padStart(5, '0');
+      setNewDept(prev => ({ ...prev, code: nextCode }));
+    } else {
+      setNewDept({ code: '', name: '', description: '' });
+    }
+  }, [isAddDeptModalOpen, departments]);
+
+  // Auto-generate Position Code based on selected Department
+  React.useEffect(() => {
+    if (isAddPosModalOpen && newPos.departmentId) {
+      const dept = departments.find(d => String(d.id) === String(newPos.departmentId));
+      if (dept) {
+        const deptNum = parseInt(dept.code || '0', 10);
+        const deptPrefix = String(deptNum).padStart(2, '0').slice(-2);
+
+        const deptPositions = positions.filter(p => String(p.departmentId) === String(newPos.departmentId) || (p.department && String(p.department.id) === String(newPos.departmentId)));
+        
+        let maxPosNum = 0;
+        deptPositions.forEach(p => {
+          if (p.code && p.code.length >= 3) {
+            const posNumStr = p.code.slice(-3);
+            const posNum = parseInt(posNumStr, 10);
+            if (!isNaN(posNum) && posNum > maxPosNum) {
+              maxPosNum = posNum;
+            }
+          }
+        });
+
+        const nextPosNum = String(maxPosNum + 1).padStart(3, '0');
+        setNewPos(prev => ({ ...prev, code: `${deptPrefix}${nextPosNum}` }));
+      }
+    }
+  }, [newPos.departmentId, isAddPosModalOpen, departments, positions]);
+
   const handleCreateDepartment = async () => {
     if (!newDept.name) return;
     try {
@@ -140,6 +181,7 @@ export default function OrganizationManagementPage() {
       setItemToDelete(null);
     } catch (e) { console.error(e); }
   };
+
 
   // Derived state for filtering
   const filteredDepartments = useMemo(() => {
@@ -233,6 +275,7 @@ export default function OrganizationManagementPage() {
             เพิ่ม ลบ หรือแก้ไขข้อมูลแผนกและตำแหน่งงานภายในองค์กร
           </p>
         </div>
+
       </div>
 
       {/* Tabs */}
@@ -349,8 +392,12 @@ export default function OrganizationManagementPage() {
                           </button>
                         </div>
                       </div>
+                      <div className="mb-2">
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-semibold bg-indigo-50 text-indigo-600 dark:bg-indigo-900/30 dark:text-indigo-400 border border-indigo-100 dark:border-indigo-800">
+                          รหัส: {dept.code || '-'}
+                        </span>
+                      </div>
                       <h4 className="text-lg font-bold text-slate-800 dark:text-slate-100 mb-1">
-                        <span className="text-indigo-600 dark:text-indigo-400 mr-2 text-sm font-medium">[{dept.code || 'ไม่มีรหัส'}]</span>
                         {dept.name}
                       </h4>
 
@@ -380,6 +427,7 @@ export default function OrganizationManagementPage() {
               <table className="w-full text-left text-sm whitespace-nowrap">
                 <thead className="bg-slate-50/50 dark:bg-slate-800/50 border-b border-slate-100 dark:border-slate-800 text-slate-500 dark:text-slate-400 font-medium">
                   <tr>
+                    <th className="px-6 py-4">รหัส (Code)</th>
                     <th className="px-6 py-4">ชื่อตำแหน่ง (Position)</th>
                     <th className="px-6 py-4">แผนกต้นสังกัด (Department)</th>
                     <th className="px-6 py-4 text-right">จัดการ</th>
@@ -388,7 +436,7 @@ export default function OrganizationManagementPage() {
                 <tbody className="divide-y divide-slate-100 dark:divide-slate-800/50">
                   {filteredPositions.length === 0 ? (
                     <tr>
-                      <td colSpan={3} className="px-6 py-10 text-center text-slate-500">
+                      <td colSpan={4} className="px-6 py-10 text-center text-slate-500">
                         ไม่พบข้อมูลตำแหน่ง
                       </td>
                     </tr>
@@ -402,17 +450,17 @@ export default function OrganizationManagementPage() {
                       return (
                         <tr key={pos.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors group">
                           <td className="px-6 py-4">
+                            <span className="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-bold bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 font-mono tracking-wider">
+                              {pos.code || '-'}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4">
                             <div className="flex items-center gap-3">
                               <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${style.bgClass} ${style.colorClass}`}>
                                 <PosIcon className="w-5 h-5" />
                               </div>
-                              <div>
-                                <div className="font-medium text-slate-700 dark:text-slate-200">
-                                  {pos.name || pos.title || 'Unknown Position'}
-                                </div>
-                                <div className="text-xs text-slate-500">
-                                  {pos.code ? `รหัส: ${pos.code}` : 'ไม่มีรหัส'}
-                                </div>
+                              <div className="font-medium text-slate-700 dark:text-slate-200">
+                                {pos.name || pos.title || 'Unknown Position'}
                               </div>
                             </div>
                           </td>
@@ -556,14 +604,13 @@ export default function OrganizationManagementPage() {
 
             <div className="p-6 space-y-4">
               <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">รหัสแผนก (Code)</label>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">รหัสแผนก (Code) <span className="text-emerald-500 text-xs">(สร้างอัตโนมัติ)</span></label>
                 <input
                   type="text"
                   maxLength={5}
                   value={newDept.code}
-                  onChange={(e) => setNewDept({ ...newDept, code: e.target.value.replace(/\D/g, '') })}
-                  className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all dark:text-white"
-                  placeholder="เช่น 12345 (เว้นว่างไว้ระบบจะสุ่มให้)"
+                  readOnly
+                  className="w-full px-4 py-2.5 bg-slate-100 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl text-sm outline-none transition-all dark:text-white text-slate-500 cursor-not-allowed font-mono tracking-wider"
                 />
               </div>
               <div>
@@ -646,15 +693,15 @@ export default function OrganizationManagementPage() {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">รหัสตำแหน่ง (Code)</label>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">รหัสตำแหน่ง (Code) <span className="text-emerald-500 text-xs">(สร้างอัตโนมัติ)</span></label>
                 <input
                   type="text"
                   maxLength={5}
                   value={newPos.code}
-                  onChange={(e) => setNewPos({ ...newPos, code: e.target.value.replace(/\D/g, '') })}
-                  className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all dark:text-white"
-                  placeholder="เช่น 12345 (เว้นว่างไว้ระบบจะสุ่มให้)"
+                  readOnly
+                  className="w-full px-4 py-2.5 bg-slate-100 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl text-sm outline-none transition-all dark:text-white text-slate-500 cursor-not-allowed font-mono tracking-wider"
                 />
+                <p className="text-xs text-slate-400 mt-1">รหัสจะถูกสร้างจากรหัสแผนก 2 หลักหน้า + ลำดับตำแหน่ง 3 หลักหลัง</p>
               </div>
             </div>
 
