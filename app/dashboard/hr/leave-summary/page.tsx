@@ -205,10 +205,10 @@ export default function LeaveSummaryView() {
                 const days = row.leaveData[lt.name] || 0;
                 if (days > 0) textContent += `- ${lt.name}: ${days} วัน\n`;
             });
-            
+
             const rowTotalUsed = displayedLeaveTypes.reduce((sum, lt) => sum + (row.leaveData[lt.name] || 0), 0);
             const rowTotalRemaining = displayedLeaveTypes.reduce((sum, lt) => sum + ((lt.defaultDays || 0) - (row.leaveData[lt.name] || 0)), 0);
-            
+
             textContent += `-> รวมการลาทั้งหมด: ${rowTotalUsed} วัน (คงเหลือรวม: ${rowTotalRemaining} วัน)\n`;
             textContent += "--------------------------------------------------\n";
         });
@@ -237,7 +237,7 @@ export default function LeaveSummaryView() {
                             <FileSpreadsheet size={28} strokeWidth={1.5} />
                         </div>
                         <div className="flex-1">
-                            <h1 className="text-2xl font-bold text-slate-900 mb-2">สรุปการลานะครับพี่ๆ (Leave Summary)</h1>
+                            <h1 className="text-2xl font-bold text-slate-900 mb-2">สรุปการลานะครับพี่ๆจจจจ (Leave Summary)</h1>
                             <p className="text-slate-500 text-sm max-w-xl leading-relaxed">
                                 ดูภาพรวมสถิติการลางานของพนักงานในองค์กรแบบรวมกลุ่ม สามารถดูจำนวนวันที่ลาไปของแต่ละประเภทในแต่ละช่วงเวลาได้
                             </p>
@@ -483,8 +483,8 @@ export default function LeaveSummaryView() {
                                         key={pageNum}
                                         onClick={() => setCurrentPage(pageNum)}
                                         className={`px-3 py-1 rounded-lg transition-colors ${currentPage === pageNum
-                                                ? "bg-indigo-600 text-white shadow-sm"
-                                                : "border border-slate-200 hover:bg-white"
+                                            ? "bg-indigo-600 text-white shadow-sm"
+                                            : "border border-slate-200 hover:bg-white"
                                             }`}
                                     >
                                         {pageNum}
