@@ -11,7 +11,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import Swal from 'sweetalert2';
 import { Plus, Search, Edit2, Trash2, ChevronLeft, ChevronRight, FileText } from 'lucide-react';
-import { LeaveType } from '@/types';
+import { LeaveType } from '@/lib/types';
 
 const leaveTypeSchema = z.object({
   name: z.string().min(2, 'ชื่อประเภทการลาต้องมีอย่างน้อย 2 ตัวอักษร (Name must be 2+ chars)'),

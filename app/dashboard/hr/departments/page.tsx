@@ -11,7 +11,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import Swal from 'sweetalert2';
 import { Plus, Search, Edit2, Trash2, ChevronLeft, ChevronRight, Building } from 'lucide-react';
-import { Department } from '@/types';
+import { Department } from '@/lib/types';
 
 const departmentSchema = z.object({
   code: z.string().min(2, 'รหัสแผนกต้องมีอย่างน้อย 2 ตัวอักษร (Code must be 2+ chars)').toUpperCase(),

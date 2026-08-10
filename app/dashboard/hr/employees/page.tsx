@@ -17,7 +17,7 @@ import {
   Power
 } from 'lucide-react';
 import Swal from 'sweetalert2';
-import { Employee } from '@/types';
+import { Employee } from '@/lib/types';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import Link from 'next/link';
 import DatePicker from 'react-datepicker';

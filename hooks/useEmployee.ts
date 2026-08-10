@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Employee } from '@/types';
+import { Employee } from '@/lib/types';
 import { employeeApi, authApi, hrApi } from '@/api';
 
 export const useEmployeesQuery = () => {
