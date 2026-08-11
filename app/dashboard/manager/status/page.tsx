@@ -1,9 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { getLeaveRequests, LeaveRequest, calculateLeaveDays } from "@/lib/store";
 import { useLeave } from "@/hooks/useLeave";
-import { userApi } from "@/api";
+import { getLeaveStatusBadgeColor, getLeaveStatusText } from "@/lib/utils";
 
 const getLeaveDetails = (req: any) => {
   if (req.startFormat === 'hourly' || req.leaveMode === 'hourly') {
@@ -16,7 +15,6 @@ const getLeaveDetails = (req: any) => {
       endT = new Date(req.endDate).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
     }
     
-    // Format hours: 2.5 decimal -> 2.30 (2 hours 30 mins)
     const rawHours = req.leaveHours ? req.leaveHours : Number(((req.totalDays ?? 0) * 8).toFixed(2));
     const h = Math.floor(rawHours);
     const m = Math.round((rawHours - h) * 60);
@@ -33,50 +31,33 @@ const getLeaveDetails = (req: any) => {
   return `(${days} วัน)`;
 };
 
-export default function ManagerStatusPage() {
-  const { useLeavesQuery } = useLeave();
-  const { data: allLeaves = [] } = useLeavesQuery();
+export default function LeaveStatusPage() {
   const [requests, setRequests] = useState<any[]>([]);
-  const [username, setUsername] = useState("Manager");
+  const [username, setUsername] = useState("xxxxx xxxxxx");
+
+  const { useLeavesQuery } = useLeave();
+  const { data: allLeaves = [], isLoading } = useLeavesQuery();
 
   useEffect(() => {
-    const fetchUserProfile = async () => {
-      try {
-        const res = await userApi.getProfile();
-        const data = res.data;
-        if (data) {
-          setUsername((data.firstName || "") + " " + (data.lastName || ""));
-        }
-      } catch (error) {
-        console.error("Failed to fetch user data", error);
-      }
-    };
-    
-    fetchUserProfile();
+    const storedUsername = sessionStorage.getItem("username") || sessionStorage.getItem("username");
+    if (storedUsername && storedUsername !== "User") {
+      setUsername(sessionStorage.getItem("fullName") || storedUsername);
+    }
   }, []);
 
   useEffect(() => {
-    const storedUserId = sessionStorage.getItem("userId");
-    
-    const myLeaves = allLeaves.filter((r: any) => String(r.userId) === storedUserId);
+    const myId = sessionStorage.getItem("userId");
+    const myLeaves = allLeaves.filter((l: any) => String(l.userId) === myId);
     const sorted = [...myLeaves].sort((a: any, b: any) => new Date(b.createdAt || b.startDate).getTime() - new Date(a.createdAt || a.startDate).getTime());
-    
-    setRequests(
-      sorted.map((r: any) => ({
-        ...r,
-        type: r.leaveType?.name || r.type,
-        startDate: r.startDate,
-        endDate: r.endDate
-      }))
-    );
+    setRequests(sorted);
   }, [allLeaves]);
 
   return (
-    <div className="min-h-[calc(100vh-4rem)] bg-[#E2E4E9] font-sans text-slate-800 flex flex-col">
+    <div className="min-h-[calc(100vh-4rem)] bg-[#F8F9FA] font-sans text-slate-800 flex flex-col">
       {/* Top Banner */}
       <div className="bg-white flex items-center justify-between px-8 py-5 shadow-sm z-10">
         <div>
-          <h1 className="text-xl font-bold text-black tracking-tight">ตรวจสอบสถานะการลา ({username})</h1>
+          <h1 className="text-xl font-bold text-black tracking-tight">ตรวจสอบสถานะการลา (Manager)</h1>
         </div>
       </div>
 
@@ -84,83 +65,101 @@ export default function ManagerStatusPage() {
       <div className="flex-1 p-6 md:p-8">
         <div className="max-w-[1000px] mx-auto animate-in fade-in slide-in-from-bottom-4 duration-500">
 
-          {requests.length === 0 ? (
+          {isLoading ? (
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center">
+              <p className="text-gray-500 font-medium">กำลังโหลดข้อมูล...</p>
+            </div>
+          ) : requests.length === 0 ? (
             <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center">
               <p className="text-gray-500 font-medium">คุณยังไม่มีประวัติการยื่นคำขอลา</p>
             </div>
           ) : (
             <div className="space-y-6">
-              {requests.map((req) => (
-                <div key={req.id} className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8">
+              {requests.map((req) => {
+                const status = req.status || 'PENDING_EXECUTIVE';
+                const ceoStage = status === 'APPROVED' ? 'approved' : status === 'REJECTED' ? 'rejected' : 'pending';
+                const isCancelled = status === 'CANCELLED';
+                const approverComment = req.approverReason || req.approvals?.[req.approvals.length - 1]?.comment;
 
-                  {/* Header Box */}
-                  <div className="bg-[#F4F5F7] rounded-xl p-5 mb-10">
-                    <h3 className="text-[17px] font-bold text-black">{req.type}</h3>
-                    {req.requestCode && (
-                      <div className="text-[14px] text-blue-500 font-bold mt-0.5">{req.requestCode}</div>
-                    )}
-                    {req.startFormat === 'hourly' || req.leaveMode === 'hourly' ? (
-                      <p className="text-[13px] text-gray-500 mt-1 font-medium">
-                        {new Date(req.startDate).toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: 'numeric' })} <span className="ml-1 text-blue-600 font-semibold">{getLeaveDetails(req)}</span>
-                      </p>
-                    ) : (
-                      <p className="text-[13px] text-gray-500 mt-1 font-medium">
-                        {new Date(req.startDate).toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: 'numeric' })} ถึง {new Date(req.endDate).toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: 'numeric' })} <span className="ml-1 text-blue-600 font-semibold">{getLeaveDetails(req)}</span>
-                      </p>
-                    )}
-                  </div>
+                return (
+                  <div key={req.id} className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8">
 
-                  {/* Timeline */}
-                  <div className="relative pl-7 md:pl-10">
-                    {/* Vertical Line */}
-                    <div className="absolute left-[15px] md:left-[27px] top-2 bottom-4 w-[2px] bg-gray-200 z-0"></div>
-
-                    {/* Step 1: Submitted */}
-                    <div className="relative mb-10">
-                      <div className="absolute -left-[31px] md:-left-[43px] w-4 h-4 bg-[#00E676] rounded-full ring-[6px] ring-white z-10 top-0.5"></div>
-                      <h4 className="font-bold text-black text-sm">ส่งคำขอสำเร็จ</h4>
-                      <p className="text-[11px] font-medium text-gray-500 mt-0.5">
-                        {new Date(req.createdAt).toLocaleString('th-TH', {
-                          day: 'numeric', month: 'short', year: 'numeric',
-                          hour: '2-digit', minute: '2-digit'
-                        })} น.
-                      </p>
-                      <div className="bg-[#F4F5F7] text-gray-600 text-xs font-medium p-3 rounded-lg mt-3 w-full max-w-3xl">
-                        คุณได้ยื่นคำขอลาเพื่อส่งให้ CEO พิจารณาเรียบร้อยแล้ว
+                    {/* Header Box */}
+                    <div className="bg-[#F4F5F7] rounded-xl p-5 mb-10 flex justify-between items-start">
+                      <div>
+                        <h3 className="text-[17px] font-bold text-black">{req.leaveType?.name || req.type}</h3>
+                        {req.requestCode && (
+                          <div className="text-[14px] text-blue-500 font-bold mt-0.5">{req.requestCode}</div>
+                        )}
+                        {req.startFormat === 'hourly' || req.leaveMode === 'hourly' ? (
+                          <p className="text-[13px] text-gray-500 mt-1 font-medium">
+                            {new Date(req.startDate).toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: 'numeric' })} <span className="ml-1 text-blue-600 font-semibold">{getLeaveDetails(req)}</span>
+                          </p>
+                        ) : (
+                          <p className="text-[13px] text-gray-500 mt-1 font-medium">
+                            {new Date(req.startDate).toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: 'numeric' })} ถึง {new Date(req.endDate).toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: 'numeric' })} <span className="ml-1 text-blue-600 font-semibold">{getLeaveDetails(req)}</span>
+                          </p>
+                        )}
+                      </div>
+                      <div className={`px-4 py-1.5 rounded-full text-xs font-bold text-white shadow-sm ${getLeaveStatusBadgeColor(status)}`}>
+                        {getLeaveStatusText(status)}
                       </div>
                     </div>
 
-                    {/* Step 2: CEO Approval */}
-                    <div className="relative mb-10">
-                      <div className={`absolute -left-[31px] md:-left-[43px] w-4 h-4 rounded-full ring-[6px] ring-white z-10 top-0.5 ${req.status?.includes('Approved') ? 'bg-[#00E676]' :
-                          req.status?.includes('Rejected') ? 'bg-[#FF0000]' : 'bg-[#29B6F6]'
-                        }`}></div>
-                      <h4 className={`font-bold text-sm ${req.status === 'Pending' || req.status === 'Waiting CEO' ? 'text-black' :
-                          req.status?.includes('Rejected') ? 'text-red-600' : 'text-gray-800'
-                        }`}>
-                        {req.status?.includes('Approved') ? 'CEO อนุมัติแล้ว' :
-                          req.status?.includes('Rejected') ? 'CEO ปฏิเสธคำขอ' : 'รอพิจารณาจาก CEO'}
-                      </h4>
-                      {req.approverReason && req.status !== 'Pending' && req.status !== 'Waiting CEO' && (
-                        <div className={`text-xs font-medium p-3 rounded-lg mt-3 w-full max-w-3xl ${req.status?.includes('Approved') ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'
-                          }`}>
-                          หมายเหตุ: {req.approverReason}
+                    {/* Timeline */}
+                    <div className="relative pl-7 md:pl-10">
+                      {/* Vertical Line */}
+                      <div className="absolute left-[15px] md:left-[27px] top-2 bottom-4 w-[2px] bg-gray-200 z-0"></div>
+
+                      {/* Step 1: Submitted */}
+                      <div className="relative mb-10">
+                        <div className="absolute -left-[31px] md:-left-[43px] w-4 h-4 bg-[#00E676] rounded-full ring-[6px] ring-white z-10 top-0.5"></div>
+                        <h4 className="font-bold text-black text-sm">ส่งคำขอสำเร็จ</h4>
+                        <p className="text-[11px] font-medium text-gray-500 mt-0.5">
+                          {new Date(req.createdAt).toLocaleString('th-TH', {
+                            day: 'numeric', month: 'short', year: 'numeric',
+                            hour: '2-digit', minute: '2-digit'
+                          })} น.
+                        </p>
+                        <div className="bg-[#F4F5F7] text-gray-600 text-xs font-medium p-3 rounded-lg mt-3 w-full max-w-3xl">
+                          คุณได้ยื่นคำขอลาเพื่อส่งให้ผู้บริหารพิจารณาเรียบร้อยแล้ว
                         </div>
-                      )}
-                    </div>
+                      </div>
 
-                    {/* Step 3: Completed */}
-                    <div className="relative">
-                      <div className={`absolute -left-[31px] md:-left-[43px] w-4 h-4 rounded-full ring-[6px] ring-white z-10 top-0.5 ${(req.status?.includes('Approved') || req.status?.includes('Rejected')) ? 'bg-[#00E676]' : 'bg-[#E0E0E0]'
+                      {/* Step 2: CEO Approval */}
+                      <div className="relative mb-10">
+                        <div className={`absolute -left-[31px] md:-left-[43px] w-4 h-4 rounded-full ring-[6px] ring-white z-10 top-0.5 ${
+                          ceoStage === 'approved' ? 'bg-[#00E676]' :
+                          ceoStage === 'rejected' ? 'bg-[#FF0000]' : 'bg-[#29B6F6]'
                         }`}></div>
-                      <h4 className={`font-bold text-sm ${(req.status?.includes('Approved') || req.status?.includes('Rejected')) ? 'text-black' : 'text-[#D1D5DB]'}`}>
-                        เสร็จสิ้น (Completed)
-                      </h4>
-                    </div>
+                        <h4 className={`font-bold text-sm ${
+                          ceoStage === 'approved' ? 'text-green-700' :
+                          ceoStage === 'rejected' ? 'text-red-600' : 'text-blue-600'
+                        }`}>
+                          {ceoStage === 'approved' ? 'ผู้บริหารอนุมัติแล้ว' :
+                           ceoStage === 'rejected' ? 'ผู้บริหารปฏิเสธคำขอ' : 'รอพิจารณาจากผู้บริหาร'}
+                        </h4>
+                        {ceoStage === 'rejected' && approverComment && (
+                          <div className="text-xs font-medium p-3 rounded-lg mt-3 w-full max-w-3xl bg-red-50 text-red-700">
+                            หมายเหตุ: {approverComment}
+                          </div>
+                        )}
+                      </div>
 
+                      {/* Step 3: Completed */}
+                      <div className="relative">
+                        <div className={`absolute -left-[31px] md:-left-[43px] w-4 h-4 rounded-full ring-[6px] ring-white z-10 top-0.5 ${
+                          (ceoStage === 'approved' || ceoStage === 'rejected' || isCancelled) ? 'bg-[#00E676]' : 'bg-[#E0E0E0]'
+                        }`}></div>
+                        <h4 className={`font-bold text-sm ${(ceoStage === 'approved' || ceoStage === 'rejected' || isCancelled) ? 'text-black' : 'text-[#D1D5DB]'}`}>
+                          เสร็จสิ้น (Completed)
+                        </h4>
+                      </div>
+
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>
@@ -168,5 +167,3 @@ export default function ManagerStatusPage() {
     </div>
   );
 }
-
-

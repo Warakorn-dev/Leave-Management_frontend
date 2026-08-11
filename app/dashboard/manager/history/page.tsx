@@ -8,6 +8,8 @@ import { useLeaveBalance } from "@/hooks/useLeaveBalance";
 import Swal from "sweetalert2";
 import { DatePicker } from "@/components/DateAndTime";
 import { LeaveTimePicker } from "@/components/LeaveTimePicker";
+import { uploadApi } from "@/api";
+import { getLeaveStatusBadgeColor, getLeaveStatusText } from "@/lib/utils";
 
 const formatDate = (dateString: string) => {
   if (!dateString) return "-";
@@ -348,10 +350,8 @@ export default function LeaveHistoryPage() {
                         {viewMode === "department" ? (
                           <td className="px-6 py-5 text-center whitespace-nowrap">
                             <div className="flex flex-col items-center gap-1.5">
-                              <span className={`inline-block px-5 py-1.5 rounded-full text-xs font-bold text-white shadow-sm min-w-[80px] ${req.status?.includes('Approved') ? 'bg-[#00E676]' :
-                                  req.status?.includes('Rejected') ? 'bg-[#FF0000]' : 'bg-[#FFA000]'
-                                }`}>
-                                {req.status?.includes('Approved') ? 'อนุมัติ' : req.status?.includes('Rejected') ? 'ปฏิเสธ' : 'รออนุมัติ'}
+                              <span className={`inline-block px-5 py-1.5 rounded-full text-xs font-bold text-white shadow-sm min-w-[80px] text-center ${getLeaveStatusBadgeColor(req.status)}`}>
+                                {getLeaveStatusText(req.status)}
                               </span>
                               <button
                                 onClick={() => setSelectedRequest(req)}
@@ -365,10 +365,8 @@ export default function LeaveHistoryPage() {
                         ) : (
                           <>
                             <td className="px-6 py-5 text-center whitespace-nowrap">
-                              <span className={`inline-block px-5 py-1.5 rounded-full text-xs font-bold text-white shadow-sm min-w-[80px] ${req.status?.includes('Approved') ? 'bg-[#00E676]' :
-                                  req.status?.includes('Rejected') ? 'bg-[#FF0000]' : 'bg-[#FFA000]'
-                                }`}>
-                                {req.status?.includes('Approved') ? 'อนุมัติ' : req.status?.includes('Rejected') ? 'ปฏิเสธ' : 'รออนุมัติ'}
+                              <span className={`inline-block px-5 py-1.5 rounded-full text-[13px] font-bold text-white shadow-sm min-w-[120px] text-center ${getLeaveStatusBadgeColor(req.status)}`}>
+                                {getLeaveStatusText(req.status)}
                               </span>
                             </td>
                             <td className="px-6 py-5 text-center whitespace-nowrap">
@@ -530,10 +528,8 @@ export default function LeaveHistoryPage() {
                 <div className="flex flex-col md:flex-row items-stretch gap-4 bg-[#F8F9FA] border border-gray-200 rounded-xl p-4">
                   <div className="w-[120px] flex flex-col justify-center border-r border-gray-200 pr-4">
                     <span className="text-[12px] font-bold text-black mb-2">สถานะ:</span>
-                    <span className={`inline-flex justify-center items-center px-4 py-1.5 rounded-full text-[13px] font-bold text-white shadow-sm ${selectedRequest.status?.includes('Approved') ? 'bg-[#00E676]' :
-                        selectedRequest.status?.includes('Rejected') ? 'bg-[#FF0000]' : 'bg-[#FFA000]'
-                      }`}>
-                      {selectedRequest.status?.includes('Approved') ? 'อนุมัติ' : selectedRequest.status?.includes('Rejected') ? 'ปฏิเสธ' : 'รออนุมัติ'}
+                    <span className={`inline-flex justify-center items-center px-4 py-1.5 rounded-full text-[13px] font-bold text-white shadow-sm ${getLeaveStatusBadgeColor(selectedRequest.status)}`}>
+                      {getLeaveStatusText(selectedRequest.status)}
                     </span>
                   </div>
                   <div className="flex-1 flex flex-col justify-center">
@@ -542,8 +538,8 @@ export default function LeaveHistoryPage() {
                       type="text"
                       readOnly
                       value={selectedRequest.raw?.approverReason || (selectedRequest.status === 'Pending' || selectedRequest.status === 'Waiting CEO' ? 'ไม่มีหมายเหตุเพิ่มเติม' : 'ไม่มีหมายเหตุเพิ่มเติม')}
-                      className={`w-full border rounded-xl p-2.5 text-[14px] outline-none cursor-default ${selectedRequest.status?.includes('Rejected') ? 'border-red-200 text-red-600 bg-red-50' :
-                          selectedRequest.status?.includes('Approved') ? 'border-[#D1F2DF] text-green-600 bg-[#F4FDF8]' : 'border-gray-300 text-gray-500 bg-white'
+                      className={`w-full border rounded-xl p-2.5 text-[14px] outline-none cursor-default ${selectedRequest.status === 'REJECTED' ? 'border-red-200 text-red-600 bg-red-50' :
+                          selectedRequest.status === 'APPROVED' ? 'border-[#D1F2DF] text-green-600 bg-[#F4FDF8]' : 'border-gray-300 text-gray-500 bg-white'
                         }`}
                     />
                   </div>
@@ -558,7 +554,7 @@ export default function LeaveHistoryPage() {
                 วันที่ยื่นคำขอ : {selectedRequest.raw?.createdAt ? new Date(selectedRequest.raw.createdAt).toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) + ' น.' : '-'}
               </span>
 
-              {(!selectedRequest.status.includes('Approved') && !selectedRequest.status.includes('Rejected')) && (viewMode === "personal" || selectedRequest.name === username) && (
+              {(!selectedRequest.status.includes('APPROVED') && !selectedRequest.status.includes('REJECTED')) && (viewMode === "personal" || selectedRequest.name === username) && (
                 <div className="flex items-center gap-5">
                   <button onClick={handleDelete} className="text-gray-400 hover:text-red-500 font-bold text-[14px] flex items-center gap-1.5 transition-colors">
                     <Trash2 className="w-4 h-4" strokeWidth={2.5} />
@@ -658,11 +654,12 @@ export default function LeaveHistoryPage() {
                       <div className="md:col-span-2 md:w-[calc(50%-1.5rem)]">
                         <label className="block text-[13px] font-bold text-gray-800 mb-2">วันที่ลา</label>
                         <DatePicker 
-                          selected={editForm.leaveDate ? new Date(editForm.leaveDate) : null}
-                          onChange={(date: Date | null) => {
-                            if (date) {
-                              const d = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
-                              setEditForm({ ...editForm, leaveDate: d.toISOString().split('T')[0] });
+                          value={editForm.leaveDate || null}
+                          onChange={(val: any) => {
+                            if (val && typeof val === 'object' && typeof val.format === 'function') {
+                              setEditForm({ ...editForm, leaveDate: val.format('YYYY-MM-DD') });
+                            } else if (typeof val === 'string') {
+                              setEditForm({ ...editForm, leaveDate: val.substring(0, 10) });
                             } else {
                               setEditForm({ ...editForm, leaveDate: '' });
                             }
@@ -684,11 +681,12 @@ export default function LeaveHistoryPage() {
                       <div className="md:col-span-1">
                         <label className="block text-[13px] font-bold text-gray-800 mb-2">วันที่เริ่มต้น</label>
                         <DatePicker 
-                          selected={editForm.startDate ? new Date(editForm.startDate) : null}
-                          onChange={(date: Date | null) => {
-                            if (date) {
-                              const d = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
-                              setEditForm({ ...editForm, startDate: d.toISOString().split('T')[0] });
+                          value={editForm.startDate || null}
+                          onChange={(val: any) => {
+                            if (val && typeof val === 'object' && typeof val.format === 'function') {
+                              setEditForm({ ...editForm, startDate: val.format('YYYY-MM-DD') });
+                            } else if (typeof val === 'string') {
+                              setEditForm({ ...editForm, startDate: val.substring(0, 10) });
                             } else {
                               setEditForm({ ...editForm, startDate: '' });
                             }
@@ -711,11 +709,12 @@ export default function LeaveHistoryPage() {
                       <div className="md:col-span-1">
                         <label className="block text-[13px] font-bold text-gray-800 mb-2">วันที่สิ้นสุด</label>
                         <DatePicker 
-                          selected={editForm.endDate ? new Date(editForm.endDate) : null}
-                          onChange={(date: Date | null) => {
-                            if (date) {
-                              const d = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
-                              setEditForm({ ...editForm, endDate: d.toISOString().split('T')[0] });
+                          value={editForm.endDate || null}
+                          onChange={(val: any) => {
+                            if (val && typeof val === 'object' && typeof val.format === 'function') {
+                              setEditForm({ ...editForm, endDate: val.format('YYYY-MM-DD') });
+                            } else if (typeof val === 'string') {
+                              setEditForm({ ...editForm, endDate: val.substring(0, 10) });
                             } else {
                               setEditForm({ ...editForm, endDate: '' });
                             }

@@ -164,7 +164,6 @@ function CustomDay(props: PickerDayProps<dayjs.Dayjs> & { holidays?: any[] }) {
 }
 
 export interface DatePickerProps {
-  [x: string]: any;
   value?: any;
   selected?: any;
   onChange?: (date: any) => void;
@@ -177,6 +176,7 @@ export interface DatePickerProps {
   disabled?: boolean;
   minDate?: any;
   maxDate?: any;
+  [key: string]: any;
 }
 
 export default function DatePicker({

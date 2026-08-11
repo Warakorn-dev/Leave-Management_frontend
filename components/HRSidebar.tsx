@@ -83,6 +83,7 @@ export function HRSidebar({ onNavigate }: { onNavigate?: () => void }) {
     { name: "สร้างคำขอลา", href: "/dashboard/hr/leave-request", icon: FileEdit },
     { name: "สถานะการลา", href: "/dashboard/hr/leave-status", icon: Activity },
     { name: "ประวัติการลา", href: "/dashboard/hr/leave-history", icon: BookOpen },
+    { name: "ตรวจสอบคำขอลา", href: "/dashboard/hr/approval", icon: ListTodo },
     { name: "ปฏิทินวันลา", href: "/dashboard/hr/calendar", icon: Calendar },
     { name: "จัดการข้อมูลพนักงาน", href: "/dashboard/hr/employees", icon: UserCog },
     { name: "จัดการตำแหน่ง", href: "/dashboard/hr/organization", icon: Building },

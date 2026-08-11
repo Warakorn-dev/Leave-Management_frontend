@@ -16,6 +16,7 @@ import { format, parseISO } from 'date-fns';
 import { th } from 'date-fns/locale';
 import { leaveApi, employeeApi, ceoApi } from '@/api';
 import { DatePicker } from '@/components/DateAndTime';
+import { getLeaveStatusBadgeColor, getLeaveStatusText } from '@/lib/utils';
 
 export default function CEOReport() {
   const { useDepartmentsQuery } = useDepartment();
@@ -506,18 +507,9 @@ export default function CEOReport() {
                           <td className="py-4 px-6">{durationText}</td>
                           <td className="py-4 px-6">
                             <div className="flex justify-center">
-                              {(leave.status || '').toLowerCase().includes('approved') && (
-                                <span className="bg-[#16a34a] text-white px-4 py-1.5 rounded-full text-[13px] font-bold whitespace-nowrap">อนุมัติ</span>
-                              )}
-                              {(leave.status || '').toLowerCase().includes('rejected') && (
-                                <span className="bg-[#ef4444] text-white px-4 py-1.5 rounded-full text-[13px] font-bold whitespace-nowrap">ปฏิเสธ</span>
-                              )}
-                              {(leave.status || '').toLowerCase() === 'pending' && (
-                                <span className="bg-[#f59e0b] text-white px-4 py-1.5 rounded-full text-[13px] font-bold whitespace-nowrap">รออนุมัติ</span>
-                              )}
-                              {(leave.status || '').toLowerCase() === 'waiting ceo' && (
-                                <span className="bg-[#6366f1] text-white px-4 py-1.5 rounded-full text-[13px] font-bold whitespace-nowrap">รอ CEO อนุมัติ</span>
-                              )}
+                              <span className={`px-4 py-1.5 rounded-full text-[13px] font-bold whitespace-nowrap text-white ${getLeaveStatusBadgeColor(leave.status)}`}>
+                                {getLeaveStatusText(leave.status)}
+                              </span>
                             </div>
                           </td>
                           <td className="py-4 px-6">

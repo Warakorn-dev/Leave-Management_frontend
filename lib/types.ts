@@ -74,7 +74,7 @@ export interface Leave {
   leaveHours?: number;
   durationDays?: number;
   totalDays?: number;
-  status: 'Pending' | 'Approved' | 'Rejected' | 'pending' | 'approved' | 'rejected' | 'Waiting CEO' | 'waiting ceo';
+  status: 'PENDING_VERIFY' | 'PENDING_SUPERVISOR' | 'PENDING_EXECUTIVE' | 'APPROVED' | 'REJECTED' | 'CANCELLED' | 'Pending' | 'Approved' | 'Rejected' | 'pending' | 'approved' | 'rejected' | 'Waiting CEO' | 'waiting ceo';
   reason: string;
   attachmentUrl?: string;
   attachmentName?: string;

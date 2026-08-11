@@ -326,11 +326,12 @@ export default function RequestLeavePage() {
                   <div className="md:col-span-2 md:w-[calc(50%-1.5rem)]">
                     <label className="text-[13px] font-semibold text-gray-800 block mb-2">วันที่ลา</label>
                     <DatePicker 
-                      selected={leaveDate ? new Date(leaveDate) : null}
-                      onChange={(date: Date | null) => {
-                        if (date) {
-                          const d = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
-                          setLeaveDate(d.toISOString().split('T')[0]);
+                      value={leaveDate || null}
+                      onChange={(val: any) => {
+                        if (val && typeof val === 'object' && typeof val.format === 'function') {
+                          setLeaveDate(val.format('YYYY-MM-DD'));
+                        } else if (typeof val === 'string') {
+                          setLeaveDate(val.substring(0, 10));
                         } else {
                           setLeaveDate('');
                         }
@@ -353,11 +354,12 @@ export default function RequestLeavePage() {
                   <div>
                     <label className="text-[13px] font-semibold text-gray-800 block mb-2">วันที่เริ่มต้น</label>
                     <DatePicker 
-                      selected={startDate ? new Date(startDate) : null}
-                      onChange={(date: Date | null) => {
-                        if (date) {
-                          const d = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
-                          setStartDate(d.toISOString().split('T')[0]);
+                      value={startDate || null}
+                      onChange={(val: any) => {
+                        if (val && typeof val === 'object' && typeof val.format === 'function') {
+                          setStartDate(val.format('YYYY-MM-DD'));
+                        } else if (typeof val === 'string') {
+                          setStartDate(val.substring(0, 10));
                         } else {
                           setStartDate('');
                         }
@@ -381,12 +383,13 @@ export default function RequestLeavePage() {
                   <div>
                     <label className="text-[13px] font-semibold text-gray-800 block mb-2">วันที่สิ้นสุด</label>
                     <DatePicker 
-                      selected={endDate ? new Date(endDate) : null}
-                      minDate={startDate ? new Date(startDate) : undefined}
-                      onChange={(date: Date | null) => {
-                        if (date) {
-                          const d = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
-                          setEndDate(d.toISOString().split('T')[0]);
+                      value={endDate || null}
+                      minDate={startDate ? startDate : undefined}
+                      onChange={(val: any) => {
+                        if (val && typeof val === 'object' && typeof val.format === 'function') {
+                          setEndDate(val.format('YYYY-MM-DD'));
+                        } else if (typeof val === 'string') {
+                          setEndDate(val.substring(0, 10));
                         } else {
                           setEndDate('');
                         }

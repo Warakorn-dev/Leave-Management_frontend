@@ -150,8 +150,8 @@ export default function AddEmployeePage() {
       return;
     }
 
-    if (!formData.employeeId || !formData.title || !formData.firstName || !formData.lastName || !formData.username || !formData.password || !formData.email) {
-      Swal.fire('ข้อมูลไม่ครบถ้วน', 'กรุณากรอกข้อมูลที่จำเป็นให้ครบ', 'error');
+    if (!formData.employeeId || !formData.title || !formData.firstName || !formData.lastName || !formData.username || !formData.password || !formData.email || !formData.departmentId || !formData.positionId) {
+      Swal.fire('ข้อมูลไม่ครบถ้วน', 'กรุณากรอกข้อมูลที่จำเป็นให้ครบ (รวมถึงแผนกและตำแหน่ง)', 'error');
       return;
     }
 
@@ -196,9 +196,15 @@ export default function AddEmployeePage() {
           router.push('/dashboard/hr/employees');
         });
       },
-      onError: (err) => {
+      onError: (err: any) => {
         setIsLoading(false);
-        Swal.fire('เกิดข้อผิดพลาด', err.message || 'ไม่สามารถเพิ่มพนักงานได้', 'error');
+        let errorMsg = err.response?.data?.message;
+        if (Array.isArray(errorMsg)) {
+          errorMsg = errorMsg[0]; // take the first validation error
+        } else if (!errorMsg) {
+          errorMsg = err.response?.data?.error || err.message || 'ไม่สามารถเพิ่มพนักงานได้';
+        }
+        Swal.fire('เกิดข้อผิดพลาด', errorMsg, 'error');
       }
     });
   };

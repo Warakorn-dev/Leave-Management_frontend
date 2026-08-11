@@ -92,16 +92,8 @@ export default function CEOApproval() {
 
   // Summaries
   const pendingCEOLeaves = useMemo(() => {
-    return leaves.filter(l => {
-      if (l.status === 'Waiting CEO') return true;
-      if (l.status === 'Pending') {
-        const employee = employees.find(e => e.id === l.employeeId || e.username === l.userId || (e.firstName + ' ' + e.lastName) === l.userId);
-        const role = employee?.user?.role?.name?.toLowerCase() || employee?.role?.toLowerCase();
-        return role === 'manager' || role === 'hr';
-      }
-      return false;
-    });
-  }, [leaves, employees]);
+    return leaves.filter(l => l.status === 'PENDING_EXECUTIVE');
+  }, [leaves]);
 
   const displayedLeaves = useMemo(() => {
     let filtered = pendingCEOLeaves;
@@ -129,7 +121,7 @@ export default function CEOApproval() {
     .join(', ') || 'ไม่มี';
 
   const latestApprovedText = useMemo(() => {
-    const approvedLeaves = leaves.filter(l => (l.status || '').toLowerCase() === 'approved');
+    const approvedLeaves = leaves.filter(l => (l.status || '') === 'APPROVED');
     if (approvedLeaves.length === 0) return 'ยังไม่มีการอนุมัติ';
 
     const latest = [...approvedLeaves].sort((a, b) => {

@@ -2,10 +2,9 @@
 
 import { useState, useEffect } from "react";
 import { useLeave } from "@/hooks/useLeave";
-import { Calendar as CalendarIcon, X, User, Download, Check, Clock } from "lucide-react";
+import { Calendar as CalendarIcon, X, User, Check, Clock } from "lucide-react";
 
-// Mock data has been moved to the backend to avoid duplicate key errors.
-export default function ManagerApprovePage() {
+export default function HrApprovePage() {
   const [requests, setRequests] = useState<any[]>([]);
   const [selectedMonthRaw, setSelectedMonthRaw] = useState(() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`; });
   const [isPickerOpen, setIsPickerOpen] = useState(false);
@@ -31,13 +30,6 @@ export default function ManagerApprovePage() {
     return `${months[parseInt(month) - 1]} ${parseInt(year) + 543}`;
   };
 
-  const formatDate = (dateString: string) => {
-    const d = new Date(dateString);
-    if (isNaN(d.getTime())) return dateString;
-    const months = ["ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."];
-    return `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`;
-  };
-
   const formatShortDate = (dateString: string) => {
     const d = new Date(dateString);
     if (isNaN(d.getTime())) return dateString;
@@ -56,23 +48,12 @@ export default function ManagerApprovePage() {
     return `${formatShortDate(start)} - ${formatShortDate(end)}`;
   };
 
-  const { useLeavesQuery, useApproveLeaveMutation, useRejectLeaveMutation } = useLeave();
-  const { data: allLeaves = [], refetch: refetchLeaves } = useLeavesQuery();
-  const { mutateAsync: approveLeave } = useApproveLeaveMutation();
-  const { mutateAsync: rejectLeave } = useRejectLeaveMutation();
+  const { useHrPendingVerifyQuery, useVerifyLeaveMutation } = useLeave();
+  const { data: allLeaves = [], refetch: refetchLeaves } = useHrPendingVerifyQuery();
+  const { mutateAsync: verifyLeave } = useVerifyLeaveMutation();
 
   useEffect(() => {
-    const storedDept = sessionStorage.getItem("department") || "";
-    
-    // For manager: approve leaves in their department (where they are not CEO, not Manager themselves unless specified)
-    const realPending = allLeaves.filter((r: any) => 
-      r.status === 'PENDING_SUPERVISOR' && 
-      r.user?.role !== 'CEO' && 
-      r.user?.role !== 'Manager' &&
-      (r.user?.department?.name === storedDept || r.department === storedDept)
-    );
-
-    const filtered = realPending.filter((r: any) => r.startDate.startsWith(selectedMonthRaw));
+    const filtered = allLeaves.filter((r: any) => r.startDate.startsWith(selectedMonthRaw));
     const sorted = [...filtered].sort((a: any, b: any) => new Date(b.createdAt || b.startDate).getTime() - new Date(a.createdAt || a.startDate).getTime());
     
     setRequests(sorted.map((r: any) => {
@@ -116,8 +97,7 @@ export default function ManagerApprovePage() {
 
   const executeApprove = async () => {
     if (!confirmData) return;
-    const storedUsername = sessionStorage.getItem("fullName") || sessionStorage.getItem("username") || "Manager";
-    await approveLeave({ id: confirmData.id, approverName: storedUsername, approverReason: confirmData.reason });
+    await verifyLeave({ id: confirmData.id, action: 'Approve', comment: confirmData.reason });
     refetchLeaves();
     if (selectedRequest && selectedRequest.id === confirmData.id) setSelectedRequest(null);
     setShowConfirmModal(false);
@@ -136,8 +116,7 @@ export default function ManagerApprovePage() {
       alert("การปฏิเสธคำขอลาจำเป็นต้องระบุเหตุผล");
       return;
     }
-    const storedUsername = sessionStorage.getItem("fullName") || sessionStorage.getItem("username") || "Manager";
-    await rejectLeave({ id: rejectData.id, approverName: storedUsername, approverReason: rejectReasonInput.trim() });
+    await verifyLeave({ id: rejectData.id, action: 'Reject', comment: rejectReasonInput.trim() });
     refetchLeaves();
     if (selectedRequest && selectedRequest.id === rejectData.id) setSelectedRequest(null);
     setShowRejectModal(false);
@@ -164,8 +143,8 @@ export default function ManagerApprovePage() {
         
         {/* Header Title */}
         <div className="mb-6">
-          <h1 className="text-2xl font-bold text-gray-800 mb-2 tracking-tight">รายการคำขอรออนุมัติ (Manager View)</h1>
-          <p className="text-sm text-gray-400 font-medium">พิจารณาอนุมัติหรือปฏิเสธคำขอลาของพนักงานในแผนกของคุณ</p>
+          <h1 className="text-2xl font-bold text-gray-800 mb-2 tracking-tight">รายการคำขอรอตรวจสอบ (HR View)</h1>
+          <p className="text-sm text-gray-400 font-medium">พิจารณาตรวจสอบเบื้องต้น หรือปฏิเสธคำขอลาของพนักงาน</p>
         </div>
 
         {/* Month Picker Button */}
@@ -229,8 +208,8 @@ export default function ManagerApprovePage() {
             <tbody>
               {requests.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="py-12 text-center text-gray-500 font-medium">
-                    ไม่มีรายการคำขออนุมัติในเดือน {formatMonthYear(selectedMonthRaw)}
+                  <td colSpan={6} className="py-12 text-center text-gray-500 font-medium">
+                    ไม่มีรายการคำขอรอตรวจสอบในเดือน {formatMonthYear(selectedMonthRaw)}
                   </td>
                 </tr>
               ) : (
@@ -267,7 +246,7 @@ export default function ManagerApprovePage() {
                           onClick={() => handleApproveClick(req.id)}
                           className="bg-[#00C853] hover:bg-[#00B04A] text-white text-[11px] font-bold py-1.5 px-3 rounded shadow-sm transition-colors"
                         >
-                          อนุมัติ
+                          ผ่านการตรวจสอบ
                         </button>
                         <button 
                           onClick={() => handleRejectClick(req.id)}
@@ -313,8 +292,8 @@ export default function ManagerApprovePage() {
                 <div className="flex-1">
                   <h3 className="font-bold text-[15px] text-black mb-3">ข้อมูลพนักงาน (Employee Info)</h3>
                   <div className="text-[14px] text-gray-800 space-y-2">
-                    <p className="flex items-center gap-2"><span className="font-bold min-w-[90px]">ชื่อ:</span> {selectedRequest.userId}</p>
-                    <p className="flex items-center gap-2"><span className="font-bold min-w-[90px]">แผนก|ตำแหน่ง:</span> {selectedRequest.department || "ไม่ระบุ"} | {selectedRequest.position || "ไม่ระบุ"}</p>
+                    <p className="flex items-center gap-2"><span className="font-bold min-w-[90px]">ชื่อ:</span> {selectedRequest.userId || selectedRequest.raw?.userId}</p>
+                    <p className="flex items-center gap-2"><span className="font-bold min-w-[90px]">แผนก|ตำแหน่ง:</span> {selectedRequest.department || "-"} | {selectedRequest.position || selectedRequest.raw?.positionName || "-"}</p>
                   </div>
                 </div>
               </div>
@@ -329,61 +308,52 @@ export default function ManagerApprovePage() {
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-[14px] text-gray-800 pl-[44px]">
                   <div className="space-y-3">
+                    <p className="flex gap-2 items-center"><span className="font-bold min-w-[80px]">รหัสการลา:</span> <span className="text-blue-500 font-semibold">{selectedRequest.requestCode || '-'}</span></p>
                     <p className="flex gap-2"><span className="font-bold min-w-[80px]">ประเภทการลา:</span> {selectedRequest.type}</p>
-                    <p className="flex gap-2">
-                      <span className="font-bold min-w-[80px]">ช่วงเวลา:</span> 
-                      {(() => {
-                        const mode = selectedRequest.startFormat || selectedRequest.leaveMode;
-                        const start = selectedRequest.startDate;
-                        const end = selectedRequest.endDate;
-                        let timeAddon = '';
-                        if (mode === 'hourly' || (selectedRequest.leaveHours && selectedRequest.leaveHours < 8 && mode !== 'full' && mode !== 'full_day' && mode !== 'half_day' && mode !== 'morning' && mode !== 'afternoon')) {
-                          let startT = selectedRequest.startTime;
-                          if (!startT && start && start.includes('T')) {
-                            startT = new Date(start).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
-                          }
-                          let endT = selectedRequest.endTime;
-                          if (!endT && end && end.includes('T')) {
-                            endT = new Date(end).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
-                          }
-                          if (startT && endT && startT !== endT) {
-                            timeAddon = ` (${startT} - ${endT} น.)`;
-                          }
-                        }
-                        return `${selectedRequest.dateRange}${timeAddon}`;
-                      })()}
-                    </p>
+                    <p className="flex gap-2"><span className="font-bold min-w-[80px]">ช่วงเวลา:</span> {selectedRequest.dateRange}</p>
                   </div>
                   <div className="space-y-3">
                     <p className="flex items-center gap-2">
-                      <span className="w-[26px] h-[26px] bg-green-100 text-green-600 flex items-center justify-center rounded-full shrink-0">
-                        <Clock className="w-[14px] h-[14px]" strokeWidth={2.5} />
-                      </span>
-                      <span className="font-bold min-w-[80px]">รูปแบบการลา:</span> {selectedRequest.startFormat === 'hourly' ? `รายชั่วโมง (${selectedRequest.leaveHours || 1} ชม.)` : selectedRequest.startFormat === 'morning' ? 'ครึ่งวันเช้า' : selectedRequest.startFormat === 'afternoon' ? 'ครึ่งวันบ่าย' : 'เต็มวัน'}
-                    </p>
-                    <p className="flex items-center gap-2">
-                      <span className="w-[26px] h-[26px] bg-yellow-100 text-yellow-600 flex items-center justify-center rounded-full shrink-0">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48" /></svg>
-                      </span>
-                      <span className="font-bold min-w-[80px]">เอกสารแนบ:</span>
-                      {selectedRequest.attachments && selectedRequest.attachments.length > 0 ? (
-                        <button 
-                          onClick={() => {
-                            const att = selectedRequest.attachments[0];
-                            const isData = att.filePath.startsWith('data:');
-                            const fileSrc = isData ? att.filePath : (att.filePath.startsWith('http') ? att.filePath : `http://localhost:8000${att.filePath.startsWith('/') ? '' : '/'}${att.filePath}`);
-                            const isImage = att.fileType.includes('image') || (!isData && att.filePath.match(/\.(jpeg|jpg|gif|png)$/i));
-                            setPreviewAttachment({ url: fileSrc, isImage });
-                          }}
-                          className="text-blue-600 font-bold hover:underline ml-2"
-                        >
-                          ดูเอกสารแนบ
-                        </button>
-                      ) : "-"}
+                      <Clock className="w-[14px] h-[14px] text-gray-400" />
+                      <span className="font-bold min-w-[60px]">จำนวน:</span> <span className="font-semibold text-blue-600">{selectedRequest.formattedDays}</span>
                     </p>
                   </div>
                 </div>
               </div>
+
+              {/* Attachments */}
+              {selectedRequest.attachments && selectedRequest.attachments.length > 0 && (
+                <div>
+                  <h3 className="font-bold text-black text-[14px] mb-2">เอกสารแนบ</h3>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                    {selectedRequest.attachments.map((att: any, i: number) => {
+                      const isData = att.filePath?.startsWith('data:');
+                      const fileSrc = isData ? att.filePath : (att.filePath?.startsWith('http') ? att.filePath : `http://localhost:8000${att.filePath?.startsWith('/') ? '' : '/'}${att.filePath}`);
+                      const isImage = att.fileType?.includes('image') || (att.filePath && !isData && att.filePath.match(/\.(jpeg|jpg|gif|png)$/i));
+                      
+                      return (
+                        <div key={i} className="border border-gray-200 rounded-xl overflow-hidden shadow-sm relative group cursor-pointer hover:border-blue-400 transition-colors"
+                          onClick={() => {
+                            setPreviewAttachment({ url: fileSrc, isImage });
+                          }}
+                        >
+                          {isImage ? (
+                            <img src={fileSrc} alt="Attachment" className="w-full h-24 object-cover" />
+                          ) : (
+                            <div className="w-full h-24 flex flex-col items-center justify-center bg-gray-50 text-blue-500">
+                              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10.4 12.6a2 2 0 1 1 3 3L8 21l-4 1 1-4Z"/><path d="m18 22 4-4"/><path d="m14 18 4-4"/><path d="M4 14V4a2 2 0 0 1 2-2h8l6 6v3"/></svg>
+                              <span className="text-xs font-bold mt-2">ไฟล์เอกสาร</span>
+                            </div>
+                          )}
+                          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                            <span className="text-white text-xs font-bold px-2 py-1 bg-black/50 rounded-md">คลิกเพื่อดูไฟล์</span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
 
               {/* Reason */}
               <div>
@@ -391,146 +361,104 @@ export default function ManagerApprovePage() {
                 <input
                   type="text"
                   readOnly
-                  value={selectedRequest.reason}
+                  value={selectedRequest.reason || '-'}
                   className="w-full border border-gray-300 rounded-xl p-3 text-[14px] text-gray-500 bg-white outline-none cursor-default"
                 />
               </div>
 
-              {/* Timestamps */}
-              <div className="mt-4 border-t border-gray-100 pt-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-[13px] text-gray-500">
-                  <p className="flex gap-2">
-                    <span className="font-bold min-w-[120px]">วันที่ยื่นคำลา:</span> 
-                    {selectedRequest.createdAt ? new Date(selectedRequest.createdAt).toLocaleString('th-TH') : '-'}
-                  </p>
-                  <p className="flex gap-2">
-                    <span className="font-bold min-w-[120px]">อัปเดตล่าสุด:</span> 
-                    {selectedRequest.updatedAt ? new Date(selectedRequest.updatedAt).toLocaleString('th-TH') : '-'}
-                  </p>
-                </div>
-              </div>
+            </div>
 
-              {/* Approver Reason Section */}
-              <div className="mt-4">
-                <h3 className="font-bold text-[#00A859] flex items-center gap-2 text-[15px] mb-2">
-                  <span className="font-extrabold text-gray-400 tracking-tighter">NID</span> การอนุมัติ (Approval)
-                </h3>
-                <div className="flex flex-col md:flex-row items-stretch bg-white border border-gray-200 rounded-xl overflow-hidden">
-                  
-                  {/* Column 1 */}
-                  <div className="flex-1 flex flex-col items-center justify-center border-r border-gray-200 p-4">
-                    <span className="text-[13px] font-bold text-black">ผู้อนุมัติ</span>
-                  </div>
-
-                  {/* Column 2 */}
-                  <div className="flex-1 flex flex-col items-center justify-center border-r border-gray-200 p-4">
-                    <span className="text-[13px] font-bold text-black mb-2">ผู้อนุมัติ</span>
-                    <span className="bg-[#FFA000] text-white text-[11px] font-bold py-1 px-3 rounded">รอผู้อนุมัติ</span>
-                  </div>
-
-                  {/* Column 3 */}
-                  <div className="flex-[2] flex flex-row items-center gap-4 p-4">
-                    <span className="text-[13px] font-bold text-black whitespace-nowrap">หมายเหตุ</span>
-                    <input
-                      type="text"
-                      placeholder="กรุณาระบุหมายเหตุ (บังคับหากปฏิเสธ)"
-                      value={approverReason}
-                      onChange={(e) => setApproverReason(e.target.value)}
-                      className="flex-1 border border-gray-300 rounded-lg p-2.5 text-[13px] outline-none text-black focus:border-[#00E676] focus:ring-1 focus:ring-[#00E676] transition-all"
-                    />
-                  </div>
-
+            {/* Approver Footer Form */}
+            <div className="bg-[#FAFAFA] border-t border-gray-200 px-6 py-5 shrink-0">
+              <h3 className="font-bold text-black text-[14px] mb-3">ตรวจสอบเอกสารและข้อมูลการลา</h3>
+              <div className="flex flex-col sm:flex-row gap-3">
+                <input
+                  type="text"
+                  placeholder="หมายเหตุเพิ่มเติม (ถ้ามี)..."
+                  value={approverReason}
+                  onChange={(e) => setApproverReason(e.target.value)}
+                  className="flex-1 border border-gray-300 rounded-xl p-3 text-[14px] outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-black"
+                />
+                <div className="flex gap-2">
+                  <button onClick={onModalApprove} className="flex-1 sm:flex-none bg-[#00C853] hover:bg-[#00B04A] text-white px-5 py-3 rounded-xl font-bold text-[14px] shadow-sm transition-colors flex items-center justify-center gap-1.5">
+                    <Check className="w-[18px] h-[18px]" strokeWidth={3} />
+                    ผ่านการตรวจสอบ
+                  </button>
+                  <button onClick={onModalReject} className="flex-1 sm:flex-none bg-[#FF0000] hover:bg-[#E50000] text-white px-5 py-3 rounded-xl font-bold text-[14px] shadow-sm transition-colors flex items-center justify-center gap-1.5">
+                    <X className="w-[18px] h-[18px]" strokeWidth={3} />
+                    ปฏิเสธคำขอ
+                  </button>
                 </div>
               </div>
             </div>
 
-            {/* Footer */}
-            <div className="px-6 py-4 border-t border-gray-100 bg-white flex justify-between items-center">
-               <span className="text-[12px] text-gray-400">วันที่ยื่นคำขอ : {selectedRequest.createdAt ? formatDate(selectedRequest.createdAt) : "15 ก.ค. 2569"}</span>
-               <div className="flex items-center gap-3">
-                  <button 
-                    onClick={onModalApprove} 
-                    className="bg-[#00E676] hover:bg-[#00C853] text-white text-[13px] font-bold py-2 px-6 rounded-lg shadow-sm transition-colors"
-                  >
-                    อนุมัติ
-                  </button>
-                  <button 
-                    onClick={onModalReject} 
-                    className="bg-[#FF0000] hover:bg-[#E50000] text-white text-[13px] font-bold py-2 px-6 rounded-lg shadow-sm transition-colors"
-                  >
-                    ปฏิเสธ
-                  </button>
-               </div>
-            </div>
-
           </div>
         </div>
       )}
 
-      {showConfirmModal && (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-white rounded-[20px] w-full max-w-[360px] shadow-2xl flex flex-col items-center p-8 animate-in zoom-in-95 duration-200 border-2 border-[#2196F3]">
-            <div className="w-[80px] h-[80px] bg-[#4CAF50] rounded-full flex items-center justify-center mb-5 shadow-sm">
-              <Check className="w-10 h-10 text-white" strokeWidth={4} />
+      {/* Confirm Approve Modal (Small) */}
+      {showConfirmModal && confirmData && (
+        <div className="fixed inset-0 z-[130] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white rounded-2xl w-full max-w-[400px] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
+            <div className="bg-[#00C853] px-6 py-4 flex items-center justify-between">
+              <h3 className="text-white font-bold text-lg">ยืนยันการตรวจสอบ</h3>
+              <button onClick={() => { setShowConfirmModal(false); setConfirmData(null); }} className="text-white/80 hover:text-white">
+                <X className="w-5 h-5" strokeWidth={3} />
+              </button>
             </div>
-            <h2 className="text-[20px] font-bold text-black mb-3 text-center">ยืนยันอนุมัติการลา</h2>
-            <p className="text-[13px] text-gray-500 text-center mb-8 leading-relaxed px-4">
-              คำอนุมัติคำลาของคุณจะถูกส่งไปยังระบบ<br/>
-              สามารถเช็คสถานะได้จากหน้าอนุมัติคำลา
-            </p>
-            <div className="flex items-center gap-3 w-full justify-center">
-              <button 
-                onClick={() => setShowConfirmModal(false)}
-                className="bg-[#F44336] hover:bg-[#D32F2F] text-white font-bold py-2 px-6 rounded transition-colors shadow-sm text-[14px]"
-              >
-                ยกเลิก
-              </button>
-              <button 
-                onClick={executeApprove}
-                className="bg-[#4CAF50] hover:bg-[#388E3C] text-white font-bold py-2 px-6 rounded transition-colors shadow-sm text-[14px]"
-              >
-                ยืนยัน
-              </button>
+            <div className="p-6">
+              <p className="text-gray-700 text-sm font-medium mb-1">คุณต้องการให้คำขอลานี้ผ่านการตรวจสอบเบื้องต้น ใช่หรือไม่?</p>
+              <p className="text-[13px] text-gray-500 mb-6">รหัสคำขอ: {requests.find(r => r.id === confirmData.id)?.requestCode}</p>
+              <div className="flex justify-end gap-3">
+                <button onClick={() => { setShowConfirmModal(false); setConfirmData(null); }} className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-sm font-bold transition-colors">
+                  ยกเลิก
+                </button>
+                <button onClick={executeApprove} className="px-4 py-2 bg-[#00C853] hover:bg-[#00B04A] text-white rounded-lg text-sm font-bold transition-colors">
+                  ยืนยันการทำรายการ
+                </button>
+              </div>
             </div>
           </div>
         </div>
       )}
 
-      {showRejectModal && (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-white rounded-[20px] w-full max-w-[360px] shadow-2xl flex flex-col items-center p-8 animate-in zoom-in-95 duration-200 border-2 border-[#F44336]">
-            <div className="w-[80px] h-[80px] bg-[#F44336] rounded-full flex items-center justify-center mb-5 shadow-sm">
-              <X className="w-10 h-10 text-white" strokeWidth={4} />
-            </div>
-            <h2 className="text-[20px] font-bold text-black mb-3 text-center">ยืนยันปฏิเสธการลา</h2>
-            <p className="text-[13px] text-gray-500 text-center mb-4 leading-relaxed px-4">
-              กรุณาระบุเหตุผลในการปฏิเสธคำขอลานี้ (จำเป็น)
-            </p>
-            <div className="w-full mb-6">
-              <textarea
-                value={rejectReasonInput}
-                onChange={(e) => setRejectReasonInput(e.target.value)}
-                placeholder="ระบุเหตุผลที่นี่..."
-                className="w-full border border-gray-300 rounded-lg p-3 text-[14px] outline-none text-black focus:border-[#F44336] focus:ring-1 focus:ring-[#F44336] transition-all min-h-[80px] resize-none"
-              />
-            </div>
-            <div className="flex items-center gap-3 w-full justify-center">
-              <button 
-                onClick={() => setShowRejectModal(false)}
-                className="bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold py-2 px-6 rounded transition-colors shadow-sm text-[14px]"
-              >
-                ยกเลิก
+      {/* Confirm Reject Modal (Small) */}
+      {showRejectModal && rejectData && (
+        <div className="fixed inset-0 z-[130] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white rounded-2xl w-full max-w-[400px] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
+            <div className="bg-[#FF0000] px-6 py-4 flex items-center justify-between">
+              <h3 className="text-white font-bold text-lg">ยืนยันการปฏิเสธคำขอ</h3>
+              <button onClick={() => { setShowRejectModal(false); setRejectData(null); setRejectReasonInput(""); }} className="text-white/80 hover:text-white">
+                <X className="w-5 h-5" strokeWidth={3} />
               </button>
-              <button 
-                onClick={executeReject}
-                className="bg-[#F44336] hover:bg-[#D32F2F] text-white font-bold py-2 px-6 rounded transition-colors shadow-sm text-[14px]"
-              >
-                ยืนยัน
-              </button>
+            </div>
+            <div className="p-6">
+              <p className="text-gray-700 text-sm font-medium mb-1">คุณต้องการปฏิเสธคำขอลานี้ ใช่หรือไม่?</p>
+              <p className="text-[13px] text-gray-500 mb-4">รหัสคำขอ: {requests.find(r => r.id === rejectData.id)?.requestCode}</p>
+              <div className="mb-6">
+                <label className="block text-xs font-bold text-gray-700 mb-1">เหตุผลที่ปฏิเสธ <span className="text-red-500">*</span></label>
+                <input 
+                  type="text"
+                  value={rejectReasonInput}
+                  onChange={(e) => setRejectReasonInput(e.target.value)}
+                  className="w-full border border-gray-300 rounded-lg p-2 text-sm outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 text-black"
+                  placeholder="ระบุเหตุผล..."
+                  autoFocus
+                />
+              </div>
+              <div className="flex justify-end gap-3">
+                <button onClick={() => { setShowRejectModal(false); setRejectData(null); setRejectReasonInput(""); }} className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-sm font-bold transition-colors">
+                  ยกเลิก
+                </button>
+                <button onClick={executeReject} className="px-4 py-2 bg-[#FF0000] hover:bg-[#E50000] text-white rounded-lg text-sm font-bold transition-colors">
+                  ยืนยันปฏิเสธ
+                </button>
+              </div>
             </div>
           </div>
         </div>
       )}
+
       {/* Preview Attachment Modal */}
       {previewAttachment && (
         <div className="fixed inset-0 z-[140] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200" onClick={() => setPreviewAttachment(null)}>
@@ -558,4 +486,3 @@ export default function ManagerApprovePage() {
     </div>
   );
 }
-
