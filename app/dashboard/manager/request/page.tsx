@@ -435,6 +435,27 @@ export default function ManagerRequestPage() {
           </div>
         </div>
       )}
+
+      {/* Error Modal */}
+      {showErrorModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-[400px] w-full p-8 text-center animate-in zoom-in-95 duration-200 mx-4 border-t-4 border-red-500">
+            <div className="w-16 h-16 bg-red-100 rounded-full mx-auto flex items-center justify-center mb-4">
+              <X className="w-8 h-8 text-red-600" strokeWidth={3} />
+            </div>
+            <h2 className="text-xl font-bold text-gray-900 mb-2">ข้อผิดพลาด</h2>
+            <p className="text-gray-600 text-[15px] mb-6 leading-relaxed">
+              {errorMsg}
+            </p>
+            <button 
+              onClick={() => setShowErrorModal(false)}
+              className="bg-gray-100 hover:bg-gray-200 text-gray-800 font-bold py-2.5 px-8 rounded-xl transition-colors text-sm w-full"
+            >
+              ตกลง
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

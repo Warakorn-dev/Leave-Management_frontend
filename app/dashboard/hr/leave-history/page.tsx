@@ -142,6 +142,7 @@ export default function LeaveHistoryPage() {
         lastName: r.user?.lastName || '-',
         department: r.user?.department?.name || r.department || 'ไม่ระบุ',
         positionName: r.user?.position?.name || r.position || 'ไม่ระบุ',
+        requestCode: r.requestCode,
         dateStr: r.startDate.split('T')[0] === r.endDate.split('T')[0] ? formatDate(r.startDate) : `${formatDate(r.startDate)} - ${formatDate(r.endDate)}`,
         type: r.leaveType?.name || r.type,
         days: r.startFormat === 'hourly' ? `${r.leaveHours || Number(((r.totalDays ?? 0) * 8).toFixed(1))} ชั่วโมง` : (r.totalDays === 0.5 ? (r.startFormat === 'morning' ? 'ครึ่งวันเช้า' : r.startFormat === 'afternoon' ? 'ครึ่งวันบ่าย' : '0.5 วัน') : `${r.totalDays ?? r.daysCount ?? 0} วัน`),
@@ -479,18 +480,19 @@ export default function LeaveHistoryPage() {
                 <table className="w-full text-sm text-left">
                   <thead className="bg-[#CDE4EB] text-gray-800 text-[15px]">
                     <tr>
+                      <th className={`px-4 py-4 font-bold whitespace-nowrap ${viewMode === "department" ? "w-[12%]" : "w-[15%]"}`}>รหัสการลา</th>
                       {viewMode === "department" && (
                         <>
                           <th className="px-4 py-4 font-bold whitespace-nowrap w-[10%]">รหัสพนักงาน</th>
                           <th className="px-4 py-4 font-bold whitespace-nowrap w-[15%]">ชื่อ</th>
                           <th className="px-4 py-4 font-bold whitespace-nowrap w-[15%]">นามสกุล</th>
-                          <th className="px-4 py-4 font-bold w-[15%]">แผนก</th>
+                          <th className="px-4 py-4 font-bold w-[13%]">แผนก</th>
                         </>
                       )}
                       <th className={`px-4 py-4 font-bold whitespace-nowrap ${viewMode === "department" ? "w-[15%]" : "w-[20%]"}`}>วันที่ลา</th>
                       <th className={`px-4 py-4 font-bold ${viewMode === "department" ? "w-[10%]" : "w-[20%]"}`}>ประเภทการลา</th>
                       <th className={`px-4 py-4 font-bold text-center whitespace-nowrap ${viewMode === "department" ? "w-[10%]" : "w-[15%]"}`}>จำนวนวันลา</th>
-                      {viewMode === "personal" && <th className="px-4 py-4 font-bold w-[25%]">เหตุผล</th>}
+                      {viewMode === "personal" && <th className="px-4 py-4 font-bold w-[20%]">เหตุผล</th>}
                       <th className={`px-4 py-4 font-bold text-center whitespace-nowrap ${viewMode === "department" ? "w-[10%]" : "w-[10%]"}`}>สถานะ</th>
                       {viewMode === "personal" && <th className="px-4 py-4 font-bold text-center whitespace-nowrap w-[10%]">จัดการ</th>}
                     </tr>
@@ -498,6 +500,7 @@ export default function LeaveHistoryPage() {
                   <tbody>
                     {requests.map((req, idx) => (
                       <tr key={req.id || idx} className="border-b border-gray-100 last:border-0 hover:bg-gray-50 transition-colors">
+                        <td className="px-4 py-5 text-blue-500 font-semibold whitespace-nowrap">{req.requestCode || '-'}</td>
                         {viewMode === "department" && (
                           <>
                             <td className="px-4 py-5 text-gray-500 font-medium whitespace-nowrap">{req.empId}</td>
@@ -601,6 +604,7 @@ export default function LeaveHistoryPage() {
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-[14px] text-gray-800 pl-[44px]">
                   <div className="space-y-3">
+                    <p className="flex gap-2 items-center"><span className="font-bold min-w-[80px]">รหัสการลา:</span> <span className="text-blue-500 font-semibold">{selectedRequest.requestCode || '-'}</span></p>
                     <p className="flex gap-2"><span className="font-bold min-w-[80px]">ประเภทการลา:</span> {selectedRequest.type}</p>
                     <p className="flex gap-2">
                       <span className="font-bold min-w-[80px]">ช่วงเวลา:</span>

@@ -56,6 +56,7 @@ export interface Employee {
 
 export interface Leave {
   id: string;
+  requestCode?: string;
   employeeId?: string;
   employeeCode?: string;
   employeeName: string;

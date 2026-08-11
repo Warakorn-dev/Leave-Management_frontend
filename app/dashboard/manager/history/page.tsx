@@ -99,6 +99,7 @@ export default function LeaveHistoryPage() {
       name: r.user?.firstName ? `${r.user.firstName} ${r.user.lastName}` : (r.userId || 'Unknown'),
       dateStr: r.startDate.split('T')[0] === r.endDate.split('T')[0] ? formatDate(r.startDate) : `${formatDate(r.startDate)} - ${formatDate(r.endDate)}`,
       type: r.leaveType?.name || r.type,
+      requestCode: r.requestCode,
       days: `${r.totalDays || 1} วัน`,
       reason: r.reason || '-',
       status: r.status,
@@ -315,16 +316,17 @@ export default function LeaveHistoryPage() {
                 <table className="w-full text-sm text-left">
                   <thead className="bg-[#CDE4EB] text-gray-800 text-[15px]">
                     <tr>
+                      <th className={`px-6 py-4 font-bold whitespace-nowrap ${viewMode === "department" ? "w-[12%]" : "w-[15%]"}`}>รหัสการลา</th>
                       {viewMode === "department" && (
                         <>
-                          <th className="px-6 py-4 font-bold whitespace-nowrap w-[15%]">รหัสพนักงาน</th>
-                          <th className="px-6 py-4 font-bold whitespace-nowrap w-[20%]">ชื่อพนักงาน</th>
+                          <th className="px-6 py-4 font-bold whitespace-nowrap w-[12%]">รหัสพนักงาน</th>
+                          <th className="px-6 py-4 font-bold whitespace-nowrap w-[18%]">ชื่อพนักงาน</th>
                         </>
                       )}
-                      <th className={`px-6 py-4 font-bold whitespace-nowrap ${viewMode === "department" ? "w-[20%]" : "w-[20%]"}`}>วันที่ลา</th>
-                      <th className={`px-6 py-4 font-bold whitespace-nowrap ${viewMode === "department" ? "w-[15%]" : "w-[20%]"}`}>ประเภทการลา</th>
-                      <th className={`px-6 py-4 font-bold text-center whitespace-nowrap ${viewMode === "department" ? "w-[15%]" : "w-[15%]"}`}>จำนวนวันลา</th>
-                      {viewMode === "personal" && <th className="px-6 py-4 font-bold whitespace-nowrap w-[25%]">เหตุผล</th>}
+                      <th className={`px-6 py-4 font-bold whitespace-nowrap ${viewMode === "department" ? "w-[16%]" : "w-[15%]"}`}>วันที่ลา</th>
+                      <th className={`px-6 py-4 font-bold whitespace-nowrap ${viewMode === "department" ? "w-[15%]" : "w-[15%]"}`}>ประเภทการลา</th>
+                      <th className={`px-6 py-4 font-bold text-center whitespace-nowrap ${viewMode === "department" ? "w-[12%]" : "w-[15%]"}`}>จำนวนวันลา</th>
+                      {viewMode === "personal" && <th className="px-6 py-4 font-bold whitespace-nowrap w-[20%]">เหตุผล</th>}
                       <th className={`px-6 py-4 font-bold text-center whitespace-nowrap ${viewMode === "department" ? "w-[15%]" : "w-[10%]"}`}>สถานะ</th>
                       {viewMode === "personal" && <th className="px-6 py-4 font-bold text-center whitespace-nowrap w-[10%]">จัดการ</th>}
                     </tr>
@@ -332,6 +334,7 @@ export default function LeaveHistoryPage() {
                   <tbody>
                     {requests.map((req, idx) => (
                       <tr key={req.id || idx} className="border-b border-gray-100 last:border-0 hover:bg-gray-50 transition-colors">
+                        <td className="px-6 py-5 text-blue-500 font-semibold whitespace-nowrap">{req.requestCode || '-'}</td>
                         {viewMode === "department" && (
                           <>
                             <td className="px-6 py-5 text-gray-500 font-medium whitespace-nowrap">{req.empId}</td>
@@ -433,6 +436,7 @@ export default function LeaveHistoryPage() {
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-[14px] text-gray-800 pl-[44px]">
                   <div className="space-y-3">
+                    <p className="flex gap-2 items-center"><span className="font-bold min-w-[80px]">รหัสการลา:</span> <span className="text-blue-500 font-semibold">{selectedRequest.requestCode || '-'}</span></p>
                     <p className="flex gap-2"><span className="font-bold min-w-[80px]">ประเภทการลา:</span> {selectedRequest.type}</p>
                     <p className="flex gap-2">
                       <span className="font-bold min-w-[80px]">ช่วงเวลา:</span> 
