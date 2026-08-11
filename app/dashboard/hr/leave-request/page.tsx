@@ -5,7 +5,7 @@ import { useLeave } from "@/hooks/useLeave";
 import { useLeaveBalance } from "@/hooks/useLeaveBalance";
 import { useRouter } from "next/navigation";
 import { Mail, Bell, Settings, Search, Check, X, Building, User, Upload } from "lucide-react";
-import { ThaiDatePicker } from "@/components/ThaiCalendarPicker";
+import { DatePicker } from "@/components/DateAndTime";
 import { calculateLeaveDays } from "@/lib/store";
 import { LeaveTimePicker } from "@/components/LeaveTimePicker";
 import { userApi, uploadApi } from "@/api";
@@ -301,7 +301,7 @@ export default function RequestLeavePage() {
                 <>
                   <div className="md:col-span-2 md:w-[calc(50%-1.5rem)]">
                     <label className="text-[13px] font-semibold text-gray-800 block mb-2">วันที่ลา</label>
-                    <ThaiDatePicker 
+                    <DatePicker 
                       selected={leaveDate ? new Date(leaveDate) : null}
                       onChange={(date: Date | null) => {
                         if (date) {
@@ -312,7 +312,6 @@ export default function RequestLeavePage() {
                         }
                       }}
                       placeholderText="วว/ดด/ปปปป"
-                      className="w-full border border-gray-300 rounded-md px-3 py-2.5 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 bg-white shadow-sm transition-all text-gray-700"
                     />
                   </div>
                   <div className="md:col-span-2">
@@ -328,7 +327,7 @@ export default function RequestLeavePage() {
                 <>
                   <div>
                     <label className="text-[13px] font-semibold text-gray-800 block mb-2">วันที่เริ่มต้น</label>
-                    <ThaiDatePicker 
+                    <DatePicker 
                       selected={startDate ? new Date(startDate) : null}
                       onChange={(date: Date | null) => {
                         if (date) {
@@ -339,7 +338,6 @@ export default function RequestLeavePage() {
                         }
                       }}
                       placeholderText="วว/ดด/ปปปป"
-                      className="w-full border border-gray-300 rounded-md px-3 py-2.5 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 bg-white shadow-sm transition-all text-gray-700"
                     />
                     {leaveMode === 'half_day' && (
                       <div className="flex items-center gap-4 mt-3">
@@ -356,7 +354,7 @@ export default function RequestLeavePage() {
                   </div>
                   <div>
                     <label className="text-[13px] font-semibold text-gray-800 block mb-2">วันที่สิ้นสุด</label>
-                    <ThaiDatePicker 
+                    <DatePicker 
                       selected={endDate ? new Date(endDate) : null}
                       minDate={startDate ? new Date(startDate) : undefined}
                       onChange={(date: Date | null) => {
@@ -368,7 +366,6 @@ export default function RequestLeavePage() {
                         }
                       }}
                       placeholderText="วว/ดด/ปปปป"
-                      className="w-full border border-gray-300 rounded-md px-3 py-2.5 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 bg-white shadow-sm transition-all text-gray-700"
                     />
                   </div>
                 </>

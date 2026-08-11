@@ -298,6 +298,7 @@ export default function CEODashboard() {
               <table className="w-full text-left text-[14px]">
                 <thead className="bg-[#e0e7ff] text-[#4f46e5]">
                   <tr>
+                    <th className="py-3 px-4 font-bold whitespace-nowrap">รหัสคำขอลา</th>
                     <th className="py-3 px-4 font-bold whitespace-nowrap">พนักงาน</th>
                     <th className="py-3 px-4 font-bold whitespace-nowrap">แผนก</th>
                     <th className="py-3 px-4 font-bold whitespace-nowrap">ประเภทการลา</th>
@@ -321,6 +322,7 @@ export default function CEODashboard() {
 
                       return (
                         <tr key={leave.id} className="hover:bg-slate-50 transition-colors">
+                          <td className="py-3 px-4 text-sm font-semibold text-blue-600 whitespace-nowrap">{leave.requestCode || '-'}</td>
                           <td className="py-3 px-4 font-medium text-slate-700">{empName.split(' ')[0]}</td>
                           <td className="py-3 px-4 text-xs font-semibold text-slate-500">{shortDept}</td>
                           <td className="py-3 px-4 truncate max-w-[100px] text-slate-700">{leaveType.split(' ')[0]}</td>

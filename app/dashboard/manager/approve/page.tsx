@@ -217,7 +217,8 @@ export default function ManagerApprovePage() {
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-[#F2F2F2] text-gray-500 text-[13px]">
-                <th className="py-4 px-6 font-bold whitespace-nowrap rounded-l-md">ชื่อพนักงาน</th>
+                <th className="py-4 px-6 font-bold whitespace-nowrap rounded-l-md">รหัสคำขอลา</th>
+                <th className="py-4 px-6 font-bold whitespace-nowrap">ชื่อพนักงาน</th>
                 <th className="py-4 px-6 font-bold whitespace-nowrap">ประเภทวันลา</th>
                 <th className="py-4 px-6 font-bold whitespace-nowrap">วันเวลาที่ขอลา</th>
                 <th className="py-4 px-6 font-bold whitespace-nowrap">เอกสารแนบ</th>
@@ -234,6 +235,7 @@ export default function ManagerApprovePage() {
               ) : (
                 requests.map((req, idx) => (
                   <tr key={req.id} className="border-b border-gray-100 last:border-0 hover:bg-gray-50/50 transition-colors">
+                    <td className="py-6 px-6 text-[14px] text-blue-600 font-bold whitespace-nowrap">{req.requestCode || '-'}</td>
                     <td className="py-4 px-6">
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold shrink-0">

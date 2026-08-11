@@ -10,7 +10,7 @@ import { UserPlus, ArrowLeft, ChevronDown, Eye, EyeOff } from 'lucide-react';
 import Swal from 'sweetalert2';
 import Link from 'next/link';
 import { Employee } from '@/lib/types';
-import { ThaiDatePicker } from '@/components/ThaiCalendarPicker';
+import { DatePicker } from '@/components/DateAndTime';
 
 export default function AddEmployeePage() {
   const { user } = useAuth();
@@ -419,7 +419,7 @@ export default function AddEmployeePage() {
 
             <div className="space-y-3">
               <label className="block text-[#475569] font-medium text-[17px]">วันเกิด (Date of Birth)</label>
-              <ThaiDatePicker 
+              <DatePicker 
                 selected={formData.dateOfBirth ? new Date(formData.dateOfBirth) : null}
                 onChange={(date: Date | null) => {
                   handleChange({
@@ -427,10 +427,8 @@ export default function AddEmployeePage() {
                   } as any);
                 }}
                 placeholderText="วว/ดด/ปปปป"
-                isPlain={true}
                 minYear={1990}
                 maxYear={new Date().getFullYear()}
-                className="w-full bg-[#f8fafc] border border-[#e2e8f0] px-5 py-3.5 rounded-xl text-[15px] text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-100 transition-all"
               />
             </div>
 
@@ -547,7 +545,7 @@ export default function AddEmployeePage() {
 
             <div className="space-y-3 md:col-span-2 md:w-1/2 md:pr-4">
               <label className="block text-[#475569] font-medium text-[17px]">วันที่เริ่มทำงาน (Start Date)</label>
-              <ThaiDatePicker 
+              <DatePicker 
                 selected={formData.joinDate ? new Date(formData.joinDate) : null}
                 onChange={(date: Date | null) => {
                   handleChange({
@@ -555,8 +553,6 @@ export default function AddEmployeePage() {
                   } as any);
                 }}
                 placeholderText="วว/ดด/ปปปป"
-                isPlain={true}
-                className="w-full bg-[#f8fafc] border border-[#e2e8f0] px-5 py-3.5 rounded-xl text-[15px] text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-100 transition-all cursor-pointer"
               />
             </div>
           </div>

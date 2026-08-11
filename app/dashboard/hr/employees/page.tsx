@@ -20,8 +20,7 @@ import Swal from 'sweetalert2';
 import { Employee } from '@/lib/types';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import Link from 'next/link';
-import DatePicker from 'react-datepicker';
-import 'react-datepicker/dist/react-datepicker.css';
+import { DatePicker } from '@/components/DateAndTime';
 import { hrApi } from '@/api';
 
 export default function EmployeeManagementPage() {
@@ -532,15 +531,7 @@ export default function EmployeeManagementPage() {
                   onChange={(date: Date | null) => {
                     setEditingEmployee({...editingEmployee, dateOfBirth: date ? date.toLocaleDateString('en-CA') : ''});
                   }}
-                  dateFormat="yyyy-MM-dd"
                   placeholderText="เลือกวันเกิด"
-                  className="w-full bg-[#f8fafc] border border-[#e2e8f0] px-5 py-3.5 rounded-xl text-[15px] focus:outline-hidden focus:ring-2 focus:ring-blue-100 transition-all text-slate-800"
-                  wrapperClassName="w-full"
-                  showMonthDropdown
-                  showYearDropdown
-                  dropdownMode="select"
-                  scrollableYearDropdown
-                  yearDropdownItemNumber={100}
                 />
               </div>
 
@@ -668,14 +659,7 @@ export default function EmployeeManagementPage() {
                 <DatePicker 
                   selected={editingEmployee.joinDate ? new Date(editingEmployee.joinDate) : null}
                   onChange={(date: Date | null) => setEditingEmployee({...editingEmployee, joinDate: date ? date.toLocaleDateString('en-CA') : ''})}
-                  dateFormat="yyyy-MM-dd"
                   placeholderText="YYYY-MM-DD"
-                  showMonthDropdown
-                  showYearDropdown
-                  dropdownMode="select"
-                  yearDropdownItemNumber={30}
-                  scrollableYearDropdown
-                  className="w-full bg-[#f8fafc] border border-[#e2e8f0] px-5 py-3.5 rounded-xl text-[15px] focus:outline-hidden focus:ring-2 focus:ring-blue-100 transition-all text-slate-800"
                 />
               </div>
 

@@ -10,7 +10,7 @@ import {
     Loader2,
     Search
 } from 'lucide-react';
-import { ThaiDatePicker } from '@/components/ThaiCalendarPicker';
+import { DatePicker } from '@/components/DateAndTime';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import * as XLSX from 'xlsx';
@@ -375,7 +375,7 @@ export default function LeaveSummaryView() {
                         {/* Start Date */}
                         <div>
                             <label className="block text-[12px] font-bold text-slate-600 uppercase mb-1.5">ตั้งแต่วันที่</label>
-                            <ThaiDatePicker
+                            <DatePicker
                                 selected={fromDate}
                                 onChange={(date: Date | null) => {
                                     let newDate = date;
@@ -387,15 +387,13 @@ export default function LeaveSummaryView() {
                                 }}
                                 maxDate={new Date()}
                                 placeholderText="วว-ดด-ปปปป"
-                                isPlain={true}
-                                className="block w-full rounded-xl border border-slate-300 bg-white text-slate-800 py-2.5 pl-3 pr-9 text-xs focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all cursor-pointer"
                             />
                         </div>
 
                         {/* End Date */}
                         <div>
                             <label className="block text-[12px] font-bold text-slate-600 uppercase mb-1.5">ถึงวันที่</label>
-                            <ThaiDatePicker
+                            <DatePicker
                                 selected={toDate}
                                 onChange={(date: Date | null) => {
                                     let newDate = date;
@@ -408,8 +406,6 @@ export default function LeaveSummaryView() {
                                 minDate={fromDate || undefined}
                                 maxDate={new Date()}
                                 placeholderText="วว-ดด-ปปปป"
-                                isPlain={true}
-                                className="block w-full rounded-xl border border-slate-300 bg-white text-slate-800 py-2.5 pl-3 pr-9 text-xs focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all cursor-pointer"
                             />
                         </div>
 

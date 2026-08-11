@@ -6,7 +6,7 @@ import { Calendar as CalendarIcon, X, User, Users, Download, Edit3, Trash2, Uplo
 import { useLeave } from "@/hooks/useLeave";
 import { useLeaveBalance } from "@/hooks/useLeaveBalance";
 import Swal from "sweetalert2";
-import { ThaiDatePicker, ThaiMonthPicker } from "@/components/ThaiCalendarPicker";
+import { DatePicker } from "@/components/DateAndTime";
 import { LeaveTimePicker } from "@/components/LeaveTimePicker";
 
 const formatDate = (dateString: string) => {
@@ -266,18 +266,17 @@ export default function LeaveHistoryPage() {
 
               <div className="relative inline-block w-[180px]">
                 {filterType === "monthly" ? (
-                  <ThaiMonthPicker 
+                  <DatePicker 
                     value={selectedMonthRaw} 
-                    onChange={(newMonth) => setSelectedMonthRaw(newMonth)} 
-                    className="w-full h-full bg-transparent border-none text-black text-[15px] font-bold py-3 px-4 focus:outline-none cursor-pointer flex items-center justify-between rounded-r-xl"
+                    onChange={(newMonth: any) => setSelectedMonthRaw(newMonth)} 
+                    views={['year', 'month']}
+                    format="MM/BBBB"
                   />
                 ) : (
-                  <ThaiDatePicker 
+                  <DatePicker 
                     selected={selectedDate}
                     onChange={(date: Date | null) => setSelectedDate(date)}
                     placeholderText="เลือกวันที่"
-                    isPlain={true}
-                    className="w-full h-full bg-transparent border-none text-black text-[15px] font-bold py-3 px-4 focus:outline-none cursor-pointer rounded-r-xl"
                   />
                 )}
               </div>
@@ -658,7 +657,7 @@ export default function LeaveHistoryPage() {
                     <>
                       <div className="md:col-span-2 md:w-[calc(50%-1.5rem)]">
                         <label className="block text-[13px] font-bold text-gray-800 mb-2">วันที่ลา</label>
-                        <ThaiDatePicker 
+                        <DatePicker 
                           selected={editForm.leaveDate ? new Date(editForm.leaveDate) : null}
                           onChange={(date: Date | null) => {
                             if (date) {
@@ -669,8 +668,6 @@ export default function LeaveHistoryPage() {
                             }
                           }}
                           placeholderText="วว/ดด/ปปปป"
-                          isPlain={true}
-                          className="w-full border border-gray-300 rounded-md px-3 py-2.5 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 bg-white shadow-sm transition-all text-gray-700"
                         />
                       </div>
                       <div className="md:col-span-2">
@@ -686,7 +683,7 @@ export default function LeaveHistoryPage() {
                     <>
                       <div className="md:col-span-1">
                         <label className="block text-[13px] font-bold text-gray-800 mb-2">วันที่เริ่มต้น</label>
-                        <ThaiDatePicker 
+                        <DatePicker 
                           selected={editForm.startDate ? new Date(editForm.startDate) : null}
                           onChange={(date: Date | null) => {
                             if (date) {
@@ -697,8 +694,6 @@ export default function LeaveHistoryPage() {
                             }
                           }}
                           placeholderText="วว/ดด/ปปปป"
-                          isPlain={true}
-                          className="w-full border border-gray-300 rounded-md px-3 py-2.5 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 bg-white shadow-sm transition-all text-gray-700"
                         />
                         {editForm.leaveMode === 'half_day' && (
                           <div className="flex items-center gap-4 mt-3">
@@ -715,7 +710,7 @@ export default function LeaveHistoryPage() {
                       </div>
                       <div className="md:col-span-1">
                         <label className="block text-[13px] font-bold text-gray-800 mb-2">วันที่สิ้นสุด</label>
-                        <ThaiDatePicker 
+                        <DatePicker 
                           selected={editForm.endDate ? new Date(editForm.endDate) : null}
                           onChange={(date: Date | null) => {
                             if (date) {
@@ -726,7 +721,6 @@ export default function LeaveHistoryPage() {
                             }
                           }}
                           placeholderText="วว/ดด/ปปปป"
-                          className="w-full border border-gray-300 rounded-md px-3 py-2.5 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 bg-white shadow-sm transition-all text-gray-700"
                           disabled={editForm.leaveMode === 'half_day'}
                         />
                       </div>

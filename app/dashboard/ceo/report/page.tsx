@@ -15,6 +15,7 @@ import { Calendar, FileDown, Eye, X, User, Calendar as CalendarIcon, Clock } fro
 import { format, parseISO } from 'date-fns';
 import { th } from 'date-fns/locale';
 import { leaveApi, employeeApi, ceoApi } from '@/api';
+import { DatePicker } from '@/components/DateAndTime';
 
 export default function CEOReport() {
   const { useDepartmentsQuery } = useDepartment();
@@ -395,12 +396,21 @@ export default function CEOReport() {
                   <option key={d.id} value={d.name}>{d.name}</option>
                 ))}
               </select>
-              <input
-                type="date"
-                value={selectedDate}
-                onChange={(e) => { setSelectedDate(e.target.value); setCurrentPage(1); }}
-                className="px-4 py-2 border-2 border-slate-300 rounded-lg bg-white cursor-pointer hover:bg-slate-50 transition-colors text-sm font-medium text-slate-700 outline-none focus:border-[#581c87]"
-              />
+              <div className="w-[180px]">
+                <DatePicker
+                  selected={selectedDate ? new Date(selectedDate) : null}
+                  onChange={(date: Date | null) => {
+                    if (date) {
+                      const d = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
+                      setSelectedDate(d.toISOString().split('T')[0]);
+                    } else {
+                      setSelectedDate('');
+                    }
+                    setCurrentPage(1);
+                  }}
+                  placeholderText="วว/ดด/ปปปป"
+                />
+              </div>
               {(selectedDate || selectedDept) && (
                 <button
                   onClick={() => { setSelectedDate(''); setSelectedDept(''); setCurrentPage(1); }}
