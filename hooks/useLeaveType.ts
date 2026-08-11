@@ -39,7 +39,7 @@ export const useLeaveTypesQuery = () => {
 
 export const useCreateLeaveTypeMutation = () => {
   return {
-    mutateAsync: async (data: Omit<LeaveType, 'id'>) => {
+    mutateAsync: async (data: Omit<LeaveType, 'id' | 'code'>) => {
       const res = await fetch(API_URL, {
         method: 'POST',
         headers: getHeaders(),

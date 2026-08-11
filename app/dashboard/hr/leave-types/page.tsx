@@ -113,9 +113,10 @@ export default function HRLeaveTypes() {
     });
   };
 
-  const filteredLts = leaveTypes.filter(lt => 
-    lt.name.toLowerCase().includes(search.toLowerCase())
-  );
+  const filteredLts = leaveTypes.filter(lt => {
+    const query = search.toLowerCase();
+    return lt.name.toLowerCase().includes(query) || lt.code.includes(query);
+  });
 
   const totalPages = Math.ceil(filteredLts.length / itemsPerPage);
   const currentLts = filteredLts.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
@@ -181,7 +182,8 @@ export default function HRLeaveTypes() {
             <table className="w-full text-left border-collapse text-sm">
               <thead>
                 <tr className="border-b border-slate-200 text-slate-500 font-bold uppercase text-[11px] tracking-wider bg-slate-50">
-                  <th className="py-4 px-6 rounded-tl-xl hidden md:table-cell">ประเภทการลา</th>
+                  <th className="py-4 px-6 rounded-tl-xl hidden md:table-cell">รหัส</th>
+                  <th className="py-4 px-6 hidden md:table-cell">ประเภทการลา</th>
                   <th className="py-4 px-6 md:hidden rounded-tl-xl">ข้อมูลประเภทการลา</th>
                   <th className="py-4 px-6 hidden sm:table-cell">โควตาสูงสุด / ปี</th>
                   <th className="py-4 px-6 hidden md:table-cell">แจ้งล่วงหน้า (วัน)</th>
@@ -194,13 +196,16 @@ export default function HRLeaveTypes() {
                 {currentLts.map((lt) => (
                   <tr key={lt.id} className="hover:bg-slate-50/40 dark:hover:bg-slate-900/10 transition-colors">
                     {/* Desktop View Column */}
+                    <td className="py-4 px-6 font-mono font-bold text-indigo-600 hidden md:table-cell">
+                      {lt.code}
+                    </td>
                     <td className="py-4 px-6 font-bold text-slate-800 hidden md:table-cell">
                       {lt.name}
                     </td>
 
                     {/* Mobile View Column */}
                     <td className="py-4 px-6 md:hidden">
-                      <div className="font-bold text-slate-800">{lt.name}</div>
+                      <div className="font-bold text-slate-800">{lt.code} - {lt.name}</div>
                       <div className="text-xs text-slate-500 mt-1 flex flex-wrap gap-1">
                         <span className="inline-block bg-blue-50 text-blue-600 px-2 py-0.5 rounded">{lt.defaultDays} วัน</span>
                         {lt.requiresCertificate && <span className="inline-block bg-amber-50 text-amber-600 px-2 py-0.5 rounded">แนบใบรับรอง</span>}

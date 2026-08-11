@@ -23,6 +23,7 @@ export interface Position {
 
 export interface LeaveType {
   id: string;
+  code: string;
   name: string;
   defaultDays: number;
   requiresCertificate: boolean;
