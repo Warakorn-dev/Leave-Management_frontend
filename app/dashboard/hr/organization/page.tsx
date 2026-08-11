@@ -93,7 +93,7 @@ export default function OrganizationManagementPage() {
         const deptPrefix = String(deptNum).padStart(2, '0').slice(-2);
 
         const deptPositions = positions.filter(p => String(p.departmentId) === String(newPos.departmentId) || (p.department && String(p.department.id) === String(newPos.departmentId)));
-        
+
         let maxPosNum = 0;
         deptPositions.forEach(p => {
           if (p.code && p.code.length >= 3) {
@@ -163,9 +163,9 @@ export default function OrganizationManagementPage() {
       const finalRoleId = checkHasManager(editPos.departmentId, editPos.id) ? undefined : (editPos.roleId || undefined);
       await updatePosition({
         id: editPos.id,
-        data: { 
-          name: editPos.name, 
-          departmentId: editPos.departmentId, 
+        data: {
+          name: editPos.name,
+          departmentId: editPos.departmentId,
           code: editPos.code,
           roleId: finalRoleId
         }
@@ -307,8 +307,8 @@ export default function OrganizationManagementPage() {
         <button
           onClick={() => setActiveTab('departments')}
           className={`flex items-center gap-2 px-6 py-2.5 text-sm font-medium rounded-xl transition-all ${activeTab === 'departments'
-              ? 'bg-white dark:bg-slate-900 text-indigo-600 shadow-sm'
-              : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/50 dark:hover:bg-slate-800'
+            ? 'bg-white dark:bg-slate-900 text-indigo-600 shadow-sm'
+            : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/50 dark:hover:bg-slate-800'
             }`}
         >
           <Building2 className="w-4 h-4" />
@@ -317,8 +317,8 @@ export default function OrganizationManagementPage() {
         <button
           onClick={() => setActiveTab('positions')}
           className={`flex items-center gap-2 px-6 py-2.5 text-sm font-medium rounded-xl transition-all ${activeTab === 'positions'
-              ? 'bg-white dark:bg-slate-900 text-indigo-600 shadow-sm'
-              : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/50 dark:hover:bg-slate-800'
+            ? 'bg-white dark:bg-slate-900 text-indigo-600 shadow-sm'
+            : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/50 dark:hover:bg-slate-800'
             }`}
         >
           <Briefcase className="w-4 h-4" />
