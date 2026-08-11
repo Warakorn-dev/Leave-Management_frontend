@@ -12,6 +12,9 @@ import dayjs from 'dayjs';
 import 'dayjs/locale/th';
 import customParseFormat from 'dayjs/plugin/customParseFormat';
 import buddhistEra from 'dayjs/plugin/buddhistEra';
+import { PickerDay, PickerDayProps } from '@mui/x-date-pickers/PickerDay';
+import { Badge } from '@mui/material';
+import { useHolidaysQuery } from '@/hooks/useLeave';
 
 // Initialize dayjs plugins
 dayjs.extend(customParseFormat);
@@ -123,6 +126,43 @@ const layoutStyles = (theme) => ({
  * @param {boolean} [props.fullWidth=true] - Make input full width
  * @param {boolean} [props.disabled=false] - Disable input
  */
+function CustomDay(props: PickerDayProps<dayjs.Dayjs> & { holidays?: any[] }) {
+  const { day, outsideCurrentMonth, holidays = [], ...other } = props;
+
+  // Formatting day into YYYY-MM-DD for comparison (year is Gregorian here)
+  const dateStr = day.format('YYYY-MM-DD');
+
+  const isHoliday = !outsideCurrentMonth && holidays.some((h: any) => {
+    const hDateStr = h.date || h.holidayDate || h.startDate || h;
+    const formattedHDate = typeof hDateStr === 'string' ? hDateStr.substring(0, 10) : '';
+    return dateStr === formattedHDate;
+  });
+
+  return (
+    <Badge
+      key={day.toString()}
+      overlap="circular"
+      badgeContent={isHoliday ? " " : undefined}
+      sx={{
+        '& .MuiBadge-badge': {
+          backgroundColor: isHoliday ? '#ef4444' : 'transparent',
+          width: 6,
+          height: 6,
+          minWidth: 0,
+          borderRadius: '50%',
+          padding: 0,
+          bottom: 4, 
+          right: '50%',
+          transform: 'translateX(50%)',
+          boxShadow: isHoliday ? '0 0 0 1px #fff' : 'none',
+        }
+      }}
+    >
+      <PickerDay {...other} outsideCurrentMonth={outsideCurrentMonth} day={day} />
+    </Badge>
+  );
+}
+
 export interface DatePickerProps {
   [x: string]: any;
   value?: any;
@@ -168,6 +208,8 @@ export default function DatePicker({
   const parsedMinDate = minDate ? dayjs(minDate) : undefined;
   const parsedMaxDate = maxDate ? dayjs(maxDate) : undefined;
 
+  const { data: holidaysData = [] } = useHolidaysQuery();
+
   const handleDateChange = (newValue) => {
     if (onChange) {
       if (newValue && dayjs.isDayjs(newValue)) {
@@ -197,9 +239,13 @@ export default function DatePicker({
               disabled={disabled}
               minDate={parsedMinDate}
               maxDate={parsedMaxDate}
+              slots={{
+                day: CustomDay,
+              }}
               slotProps={{
                 actionBar: { actions: [] }, // Remove cancel/ok buttons for clean inline calendar
                 toolbar: { toolbarTitle: 'BASIC', hidden: false },
+                day: { holidays: holidaysData } as any,
               }}
               {...props}
             />
@@ -214,6 +260,9 @@ export default function DatePicker({
             format={format}
             minDate={parsedMinDate}
             maxDate={parsedMaxDate}
+            slots={{
+              day: CustomDay,
+            }}
             slotProps={{
               toolbar: {
                 toolbarTitle: 'BASIC',
@@ -236,6 +285,7 @@ export default function DatePicker({
                   },
                 },
               },
+              day: { holidays: holidaysData } as any,
             }}
             {...props}
           />
@@ -250,6 +300,9 @@ export default function DatePicker({
             format={format}
             minDate={parsedMinDate}
             maxDate={parsedMaxDate}
+            slots={{
+              day: CustomDay,
+            }}
             slotProps={{
               textField: {
                 size: 'small',
@@ -260,6 +313,7 @@ export default function DatePicker({
               layout: {
                 sx: layoutStyles,
               },
+              day: { holidays: holidaysData } as any,
             }}
             {...props}
           />

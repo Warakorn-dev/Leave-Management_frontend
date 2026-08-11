@@ -37,9 +37,33 @@ export default function RequestLeavePage() {
 
   const { useLeaveBalancesQuery } = useLeaveBalance();
   const { data: balances = [] } = useLeaveBalancesQuery();
-  const { useCreateLeaveMutation, useHolidaysQuery } = useLeave();
+  const { useCreateLeaveMutation, useHolidaysQuery, useLeavesQuery } = useLeave();
   const { mutateAsync: createLeave } = useCreateLeaveMutation();
   const { data: holidaysData = [] } = useHolidaysQuery();
+  const { data: myLeaves = [] } = useLeavesQuery();
+
+  const isDateDisabled = (date: any) => {
+    if (!date) return false;
+    let checkDateStr = '';
+    if (typeof date.isValid === 'function' && date.isValid()) {
+      checkDateStr = date.format('YYYY-MM-DD');
+    } else if (date instanceof Date) {
+      const d = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
+      checkDateStr = d.toISOString().split('T')[0];
+    } else {
+      return false;
+    }
+
+    return myLeaves.some((leave: any) => {
+      if (leave.status === 'Rejected' || leave.status === 'Cancelled') return false;
+      const start = new Date(leave.startDate);
+      const startStr = new Date(start.getTime() - start.getTimezoneOffset() * 60000).toISOString().split('T')[0];
+      const end = new Date(leave.endDate);
+      const endStr = new Date(end.getTime() - end.getTimezoneOffset() * 60000).toISOString().split('T')[0];
+      
+      return checkDateStr >= startStr && checkDateStr <= endStr;
+    });
+  };
 
   useEffect(() => {
     const fetchUserProfile = async () => {
@@ -311,6 +335,7 @@ export default function RequestLeavePage() {
                           setLeaveDate('');
                         }
                       }}
+                      shouldDisableDate={isDateDisabled}
                       placeholderText="วว/ดด/ปปปป"
                     />
                   </div>
@@ -337,6 +362,7 @@ export default function RequestLeavePage() {
                           setStartDate('');
                         }
                       }}
+                      shouldDisableDate={isDateDisabled}
                       placeholderText="วว/ดด/ปปปป"
                     />
                     {leaveMode === 'half_day' && (
@@ -365,6 +391,7 @@ export default function RequestLeavePage() {
                           setEndDate('');
                         }
                       }}
+                      shouldDisableDate={isDateDisabled}
                       placeholderText="วว/ดด/ปปปป"
                     />
                   </div>
