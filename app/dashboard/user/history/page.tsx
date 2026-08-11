@@ -105,6 +105,7 @@ export default function LeaveHistoryPage() {
 
       return {
         id: r.id,
+        requestCode: r.requestCode,
         dateStr,
         type: r.leaveType?.name || r.type,
         days: daysStr,
@@ -306,10 +307,11 @@ export default function LeaveHistoryPage() {
                 <table className="w-full text-sm text-left">
                   <thead className="bg-[#CDE4EB] text-gray-800 text-[15px]">
                     <tr>
-                      <th className="px-6 py-4 font-bold whitespace-nowrap w-[20%]">วันที่ลา</th>
-                      <th className="px-6 py-4 font-bold whitespace-nowrap w-[20%]">ประเภทการลา</th>
+                      <th className="px-6 py-4 font-bold whitespace-nowrap w-[15%]">รหัสการลา</th>
+                      <th className="px-6 py-4 font-bold whitespace-nowrap w-[15%]">วันที่ลา</th>
+                      <th className="px-6 py-4 font-bold whitespace-nowrap w-[15%]">ประเภทการลา</th>
                       <th className="px-6 py-4 font-bold text-center whitespace-nowrap w-[15%]">จำนวนวันลา</th>
-                      <th className="px-6 py-4 font-bold whitespace-nowrap w-[25%]">เหตุผล</th>
+                      <th className="px-6 py-4 font-bold whitespace-nowrap w-[20%]">เหตุผล</th>
                       <th className="px-6 py-4 font-bold text-center whitespace-nowrap w-[10%]">สถานะ</th>
                       <th className="px-6 py-4 font-bold text-center whitespace-nowrap w-[10%]">จัดการ</th>
                     </tr>
@@ -317,6 +319,7 @@ export default function LeaveHistoryPage() {
                   <tbody>
                     {requests.map((req, idx) => (
                       <tr key={req.id || idx} className="border-b border-gray-100 last:border-0 hover:bg-gray-50 transition-colors">
+                        <td className="px-6 py-5 text-blue-500 font-semibold whitespace-nowrap">{req.requestCode || '-'}</td>
                         <td className="px-6 py-5 text-black font-medium whitespace-nowrap">{req.dateStr}</td>
                         <td className="px-6 py-5 text-black font-medium whitespace-nowrap">{req.type}</td>
                         <td className="px-6 py-5 text-black font-medium text-center whitespace-nowrap">{req.days}</td>

@@ -103,6 +103,9 @@ export default function LeaveStatusPage() {
                     {/* Header Box */}
                     <div className="bg-[#F4F5F7] rounded-xl p-5 mb-10">
                       <h3 className="text-[17px] font-bold text-black">{req.leaveType?.name || req.type}</h3>
+                      {req.requestCode && (
+                        <p className="text-[13px] text-blue-500 mt-1 font-semibold">รหัสคำขอ: {req.requestCode}</p>
+                      )}
                       {req.startFormat === 'hourly' || req.leaveMode === 'hourly' ? (
                         <p className="text-[13px] text-gray-500 mt-1 font-medium">
                           {new Date(req.startDate).toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: 'numeric' })} <span className="ml-1 text-blue-600 font-semibold">{getLeaveDetails(req)}</span>
