@@ -717,7 +717,7 @@ export default function LeaveHistoryPage() {
           <div className="bg-white flex flex-col md:flex-row md:items-center justify-between px-8 py-5 shadow-sm sticky top-0 z-10 gap-4 border-b border-gray-200">
             <div>
               <h1 className="text-xl font-bold text-black tracking-tight">แบบฟอร์มยื่นลา (Leave Request)</h1>
-              <p className="text-[13px] text-gray-500 mt-1 font-medium">กรุณากรอกข้อมูลให้ครบถ้วนเพื่อส่งให้ CEO อนุมัติ</p>
+              <p className="text-[13px] text-gray-500 mt-1 font-medium">กรุณากรอกข้อมูลให้ครบถ้วนเพื่อเข้าสู่กระบวนการพิจารณา</p>
             </div>
             <div className="flex items-center gap-6 text-black self-end md:self-auto">
               <button
@@ -935,7 +935,7 @@ export default function LeaveHistoryPage() {
                 <h2 className="text-[26px] font-bold text-black mb-4 tracking-tight">ยืนยันการแก้ไขข้อมูล</h2>
 
                 <p className="text-[#6B7280] text-[15px] text-center mb-10 leading-relaxed">
-                  คำลาของคุณจะถูกส่งให้ CEO พิจารณา<br />
+                  คำลาของคุณจะเข้าสู่กระบวนการพิจารณาตามลำดับขั้นตอน<br />
                   สามารถเช็คสถานะได้จากหน้าเช็คสถานะของคุณ
                 </p>
 

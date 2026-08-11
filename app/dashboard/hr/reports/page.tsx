@@ -70,7 +70,7 @@ export default function HRReports() {
     const days = Number(l.durationDays ?? l.totalDays ?? 0);
     const isFull = mode === 'full' || mode === 'full_day';
 
-    if (!isFull && (mode === 'hourly' || (l.leaveHours && l.leaveHours < 8 && mode !== 'half_day' && mode !== 'morning' && mode !== 'afternoon'))) {
+    if (!isFull && (mode === 'hourly' || (days > 0 && days < 0.5))) {
       const hours = l.leaveHours || Math.round(days * 8);
       return `${hours} ชม.`;
     }

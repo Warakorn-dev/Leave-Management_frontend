@@ -227,7 +227,7 @@ export default function CEOReport() {
       const durationText = (() => {
         const days = Number(l.totalDays || l.durationDays || 0);
         const mode = l.startFormat || l.leaveMode;
-        if (mode === 'hourly' || l.leaveHours || (days > 0 && days < 0.5)) {
+        if (mode === 'hourly' || (days > 0 && days < 0.5)) {
           const hours = l.leaveHours ? Number(l.leaveHours) : Number((days * 8).toFixed(2));
           const h = Math.floor(hours);
           const m = Math.round((hours - h) * 60);
@@ -476,7 +476,7 @@ export default function CEOReport() {
                       const durationText = (() => {
                         const days = Number(leave.totalDays || leave.durationDays || 0);
                         const mode = leave.startFormat || leave.leaveMode;
-                        if (mode === 'hourly' || leave.leaveHours || (days > 0 && days < 0.5)) {
+                        if (mode === 'hourly' || (days > 0 && days < 0.5)) {
                           const hours = leave.leaveHours ? Number(leave.leaveHours) : Number((days * 8).toFixed(2));
                           const h = Math.floor(hours);
                           const m = Math.round((hours - h) * 60);
@@ -597,7 +597,7 @@ export default function CEOReport() {
           const durationText = (() => {
             const days = Number(leave.totalDays || leave.durationDays || 0);
             const mode = leave.startFormat || leave.leaveMode;
-            if (mode === 'hourly' || leave.leaveHours || (days > 0 && days < 0.5)) {
+            if (mode === 'hourly' || (days > 0 && days < 0.5)) {
               const hours = leave.leaveHours ? Number(leave.leaveHours) : Number((days * 8).toFixed(2));
               const h = Math.floor(hours);
               const m = Math.round((hours - h) * 60);

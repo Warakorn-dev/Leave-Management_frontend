@@ -21,7 +21,7 @@ export default function LeaveCalendarPage() {
   const router = useRouter();
 
   const { useLeavesQuery, useHolidaysQuery } = useLeave();
-  const { data: leavesData = [] } = useLeavesQuery();
+  const { data: leavesData = [] } = useLeavesQuery(true);
   const { data: holidaysData = [] } = useHolidaysQuery();
 
   useEffect(() => {
@@ -36,7 +36,10 @@ export default function LeaveCalendarPage() {
     setDepartment(storedDept);
     setActualUserId(sessionStorage.getItem("userId") || "");
 
-    const approvedLeaves = leavesData.filter((r: any) => r.status.includes('Approved'));
+    const approvedLeaves = leavesData.filter((r: any) => {
+      const s = (r.status || '').toUpperCase();
+      return s === 'APPROVED' || s.includes('APPROVED');
+    });
     setAllLeaves(approvedLeaves);
   }, [router, leavesData]);
 
@@ -138,10 +141,10 @@ export default function LeaveCalendarPage() {
                     ))}
                   </select>
                   <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none text-blue-600">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6" /></svg>
                   </div>
                 </div>
-                
+
                 <div className="w-[1px] h-6 bg-gray-200 mx-1"></div>
 
                 <div className="relative">
@@ -155,7 +158,7 @@ export default function LeaveCalendarPage() {
                     ))}
                   </select>
                   <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none text-blue-600">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6" /></svg>
                   </div>
                 </div>
               </div>
