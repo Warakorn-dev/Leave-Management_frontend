@@ -11,7 +11,8 @@ export const useLeavesQuery = (fetchCompanyLeaves: boolean = false) => {
     setIsLoading(true);
     try {
       const token = typeof window !== 'undefined' ? sessionStorage.getItem('accessToken') : '';
-      const role = typeof window !== 'undefined' ? sessionStorage.getItem('role') : '';
+      const rawRole = typeof window !== 'undefined' ? sessionStorage.getItem('role') : '';
+      const role = rawRole?.toUpperCase() || '';
       const actualUserId = typeof window !== 'undefined' ? sessionStorage.getItem('userId') : '';
       
       const headers = { 'Authorization': `Bearer ${token}` };
@@ -61,7 +62,7 @@ export const useLeavesQuery = (fetchCompanyLeaves: boolean = false) => {
         }
       } else {
         // Fetch department leaves
-        if (role === 'User' || role === 'Employee') {
+        if (role === 'USER' || role === 'EMPLOYEE') {
           const resDept = await fetch('/api/leave/department', { headers });
           if (resDept.ok) {
             const json = await resDept.json();
@@ -69,7 +70,7 @@ export const useLeavesQuery = (fetchCompanyLeaves: boolean = false) => {
             const otherLeaves = mappedDept.filter((l: any) => String(l.userId) !== String(actualUserId) && String(l.employeeId) !== String(actualUserId));
             allLeaves = [...allLeaves, ...otherLeaves];
           }
-        } else if (role === 'Manager') {
+        } else if (role === 'MANAGER') {
           const resDept = await fetch('/api/manager/history', { headers });
           if (resDept.ok) {
             const json = await resDept.json();
@@ -86,7 +87,7 @@ export const useLeavesQuery = (fetchCompanyLeaves: boolean = false) => {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [fetchCompanyLeaves]);
 
   useEffect(() => {
     fetchLeaves();

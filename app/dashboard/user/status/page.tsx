@@ -105,8 +105,8 @@ export default function LeaveStatusPage() {
                 const managerStage = getStageStatus(status, 'MANAGER');
                 const ceoStage = getStageStatus(status, 'CEO');
                 
-                // Show CEO stage only if it's leave code 07 (พักร้อน) and it reached manager approval, OR if it's already reached executive
-                const showCEO = req.leaveType?.code === '07' || status === 'PENDING_EXECUTIVE' || (managerStage === 'approved' && req.leaveType?.code === '07');
+                const isNormalLeave = req.leaveType?.name?.includes('ลากิจ') || req.leaveType?.name?.includes('ลาป่วย');
+                const showCEO = !isNormalLeave || status === 'PENDING_EXECUTIVE' || ceoStage === 'pending' || ceoStage === 'approved';
                 const approverComment = req.approverReason || req.approvals?.[req.approvals.length - 1]?.comment;
                 
                 const isFinalRejected = status === 'REJECTED';
@@ -217,9 +217,9 @@ export default function LeaveStatusPage() {
                             isFinalRejected && ceoStage === 'pending' ? 'text-red-600' : 
                             ceoStage === 'pending' ? 'text-blue-600' : 'text-gray-400'
                           }`}>
-                            {ceoStage === 'approved' ? 'ผู้บริหารอนุมัติแล้ว' :
-                             isFinalRejected && ceoStage === 'pending' ? 'ผู้บริหารปฏิเสธคำขอ' : 
-                             'รอผู้บริหารอนุมัติ'}
+                            {ceoStage === 'approved' ? 'CEO อนุมัติแล้ว' :
+                             isFinalRejected && ceoStage === 'pending' ? 'CEO ปฏิเสธคำขอ' : 
+                             'รอ CEO อนุมัติ'}
                           </h4>
                           {isFinalRejected && ceoStage === 'pending' && approverComment && (
                             <div className="text-xs font-medium p-3 rounded-lg mt-3 w-full max-w-3xl bg-red-50 text-red-700">

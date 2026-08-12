@@ -20,7 +20,7 @@ export default function LeaveCalendarPage() {
   const router = useRouter();
 
   const { useLeavesQuery, useHolidaysQuery } = useLeave();
-  const { data: leavesData = [] } = useLeavesQuery();
+  const { data: leavesData = [] } = useLeavesQuery(true);
   const { data: holidaysData = [] } = useHolidaysQuery();
 
   useEffect(() => {
@@ -34,7 +34,8 @@ export default function LeaveCalendarPage() {
     
     const apiLeaves = leavesData
       .filter((leave: any) => {
-        return leave.status.includes('Approved');
+        const s = (leave.status || '').toUpperCase();
+        return s === 'APPROVED' || s.includes('APPROVED');
       })
       .map((leave: any) => ({
         startDate: leave.startDate.split('T')[0],

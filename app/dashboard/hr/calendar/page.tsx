@@ -24,7 +24,7 @@ export default function LeaveCalendarPage() {
   const router = useRouter();
 
   const { useLeavesQuery, useHolidaysQuery } = useLeave();
-  const { data: leavesData = [], refetch: refetchLeaves } = useLeavesQuery();
+  const { data: leavesData = [], refetch: refetchLeaves } = useLeavesQuery(true);
   const { data: holidaysData = [], refetch: refetchHolidays } = useHolidaysQuery();
 
   useEffect(() => {
@@ -40,7 +40,8 @@ export default function LeaveCalendarPage() {
     setActualUserId(sessionStorage.getItem("userId") || "");
     
     const approvedLeaves = leavesData.filter((r: any) => {
-      return r.status.includes('Approved');
+      const s = (r.status || '').toUpperCase();
+      return s === 'APPROVED' || s.includes('APPROVED');
     });
     setAllLeaves(approvedLeaves);
   }, [router, leavesData]);

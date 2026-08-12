@@ -185,7 +185,7 @@ export default function ManagerRequestPage() {
       <div className="bg-white flex items-center justify-between px-8 py-5 shadow-sm z-10">
         <div>
           <h1 className="text-xl font-bold text-black tracking-tight">แบบฟอร์มยื่นลา (Leave Request)</h1>
-          <p className="text-xs text-gray-500 mt-1 font-medium">กรุณากรอกข้อมูลให้ครบถ้วนเพื่อส่งให้ CEO อนุมัติ</p>
+          <p className="text-xs text-gray-500 mt-1 font-medium">กรุณากรอกข้อมูลให้ครบถ้วนเพื่อเข้าสู่กระบวนการพิจารณา</p>
         </div>
       </div>
 
