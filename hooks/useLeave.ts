@@ -305,6 +305,55 @@ export const useHrPendingVerifyQuery = () => {
   return { data, isLoading, refetch: fetchLeaves };
 };
 
+export const usePendingCancellationQuery = () => {
+  const [data, setData] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  const fetchLeaves = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const token = typeof window !== 'undefined' ? sessionStorage.getItem('accessToken') : '';
+      const headers = { 'Authorization': `Bearer ${token}` };
+      const res = await fetch('/api/hr/leaves/pending-verify', { headers });
+      if (res.ok) {
+        const json = await res.json();
+        const all = (json.data ?? json);
+        const cancellations = all.filter((l: any) => l.status === 'PENDING_CANCELLATION');
+        const mappedData = cancellations.map((l: any) => ({
+          ...l,
+          userId: l.employee?.user?.id || l.employee?.userId || 'unknown',
+          totalDays: l.totalDays ?? l.durationDays ?? l.daysCount ?? 0,
+          startFormat: l.startFormat || 'full',
+          endFormat: l.endFormat || 'full',
+          leaveType: l.leaveType,
+          approverReason: l.approverReason || l.approvals?.[0]?.comment || null,
+          user: l.employee ? {
+            title: l.employee.title,
+            firstName: l.employee.firstName,
+            lastName: l.employee.lastName,
+            department: l.employee.department,
+            position: l.employee.position,
+            role: l.employee.user?.role?.name || null,
+            avatarUrl: l.employee.user?.avatarUrl || null
+          } : l.user,
+          attachments: l.attachments || []
+        }));
+        setData(mappedData);
+      }
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchLeaves();
+  }, [fetchLeaves]);
+
+  return { data, isLoading, refetch: fetchLeaves };
+};
+
 export const useLeave = () => {
   return {
     useLeavesQuery,
@@ -316,6 +365,7 @@ export const useLeave = () => {
     useRejectLeaveMutation,
     useVerifyLeaveMutation,
     useHrPendingVerifyQuery,
+    usePendingCancellationQuery,
   };
 };
 

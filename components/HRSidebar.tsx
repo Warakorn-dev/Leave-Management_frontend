@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { LogOut, PieChart, FileEdit, Activity, BookOpen, Calendar, User, UserCog, Building, Briefcase, ListTodo, FileText, Settings, Menu, ChevronLeft } from "lucide-react";
+import { LogOut, PieChart, FileEdit, Activity, BookOpen, Calendar, User, UserCog, Building, Briefcase, ListTodo, FileText, Settings, Menu, ChevronLeft, XCircle } from "lucide-react";
 
 export function HRSidebar({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = usePathname();
@@ -84,6 +84,7 @@ export function HRSidebar({ onNavigate }: { onNavigate?: () => void }) {
     { name: "สถานะการลา", href: "/dashboard/hr/leave-status", icon: Activity },
     { name: "ประวัติการลา", href: "/dashboard/hr/leave-history", icon: BookOpen },
     { name: "ตรวจสอบคำขอลา", href: "/dashboard/hr/approval", icon: ListTodo },
+    { name: "ตรวจสอบคำขอยกเลิกการลา", href: "/dashboard/hr/cancel-approval", icon: XCircle },
     { name: "ปฏิทินวันลา", href: "/dashboard/hr/calendar", icon: Calendar },
     { name: "จัดการข้อมูลพนักงาน", href: "/dashboard/hr/employees", icon: UserCog },
     { name: "จัดการตำแหน่ง", href: "/dashboard/hr/organization", icon: Building },

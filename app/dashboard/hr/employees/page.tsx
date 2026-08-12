@@ -340,7 +340,8 @@ export default function EmployeeManagementPage() {
             <thead>
               <tr className="bg-slate-100/50 text-slate-500 text-sm border-b border-slate-100">
                 <th className="py-4 px-6 font-medium whitespace-nowrap">รหัสพนักงาน</th>
-                <th className="py-4 px-6 font-medium whitespace-nowrap">ชื่อพนักงาน</th>
+                <th className="py-4 px-6 font-medium whitespace-nowrap">ชื่อ</th>
+                <th className="py-4 px-6 font-medium whitespace-nowrap">นามสกุล</th>
                 <th className="py-4 px-6 font-medium whitespace-nowrap">แผนก/ตำแหน่ง</th>
                 <th className="py-4 px-6 font-medium whitespace-nowrap">อีเมล</th>
                 <th className="py-4 px-8 font-medium whitespace-nowrap">สถานะ</th>
@@ -350,11 +351,11 @@ export default function EmployeeManagementPage() {
             <tbody className="divide-y divide-slate-100 text-slate-600 text-sm">
               {isLoading ? (
                 <tr>
-                  <td colSpan={6} className="py-8 text-center text-slate-400">กำลังโหลดข้อมูล...</td>
+                  <td colSpan={7} className="py-8 text-center text-slate-400">กำลังโหลดข้อมูล...</td>
                 </tr>
               ) : filteredEmployees.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="py-8 text-center text-slate-400">ไม่พบข้อมูลพนักงาน</td>
+                  <td colSpan={7} className="py-8 text-center text-slate-400">ไม่พบข้อมูลพนักงาน</td>
                 </tr>
               ) : (
                 filteredEmployees.map((emp) => (
@@ -363,11 +364,16 @@ export default function EmployeeManagementPage() {
                     
                     <td className="py-4 px-6">
                       <div className="flex items-center gap-3">
-                        
                         <span className="font-bold text-slate-700 whitespace-nowrap">
-                          {emp.firstName} {emp.lastName}
+                          {emp.firstName}
                         </span>
                       </div>
+                    </td>
+                    
+                    <td className="py-4 px-6">
+                      <span className="font-medium text-slate-600 whitespace-nowrap">
+                        {emp.lastName}
+                      </span>
                     </td>
                     
                     <td className="py-4 px-6">

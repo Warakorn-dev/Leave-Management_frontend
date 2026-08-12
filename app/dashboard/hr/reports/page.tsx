@@ -126,11 +126,16 @@ export default function HRReports() {
       return;
     }
 
-    const formattedData = filteredLeaves.map((l, index) => ({
+    const formattedData = filteredLeaves.map((l, index) => {
+      const empName = l.employeeName || l.userId || 'ไม่ระบุชื่อ';
+      const firstName = l.employee?.firstName || l.user?.firstName || (empName !== 'ไม่ระบุชื่อ' ? empName.split(' ')[0] : 'ไม่ระบุชื่อ');
+      const lastName = l.employee?.lastName || l.user?.lastName || (empName !== 'ไม่ระบุชื่อ' && empName.split(' ').length > 1 ? empName.split(' ').slice(1).join(' ') : '');
+      return {
       '#': index + 1,
       'รหัสคำขอลา': l.requestCode || '-',
       'รหัสพนักงาน': l.employeeCode || l.employee?.employeeCode || (l.employeeId?.startsWith('EMP-') ? l.employeeId : `EMP-${String(l.employeeId || '').substring(0, 6).toUpperCase()}`),
-      'ชื่อ-นามสกุล': l.employeeName || l.userId || 'ไม่ระบุชื่อ',
+      'ชื่อ': firstName,
+      'นามสกุล': lastName,
       'แผนกงาน': l.departmentName || l.department || '-',
       'ประเภทการลา': l.leaveTypeName || l.type || '-',
       'วันที่ยื่นลา': formatDateDisplay(l.startDate, l.endDate, l),
@@ -139,14 +144,15 @@ export default function HRReports() {
       'ผู้อนุมัติ': l.approverName || '-',
       'สถานะ': (l.status || '').toLowerCase().includes('approved') ? 'อนุมัติแล้ว' : (l.status || '').toLowerCase() === 'pending' ? 'รออนุมัติ' : 'ปฏิเสธ',
       'วันที่ยื่นคำขอ': new Date(l.createdAt || 0).toLocaleDateString('th-TH')
-    }));
+    };
+    });
 
     const worksheet = XLSX.utils.json_to_sheet(formattedData);
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, 'Leave Report');
 
     worksheet['!cols'] = [
-      { wch: 5 }, { wch: 20 }, { wch: 15 }, { wch: 25 }, { wch: 20 }, { wch: 25 },
+      { wch: 5 }, { wch: 20 }, { wch: 15 }, { wch: 20 }, { wch: 20 }, { wch: 20 }, { wch: 25 },
       { wch: 25 }, { wch: 12 }, { wch: 35 }, { wch: 20 }, { wch: 15 }, { wch: 15 }
     ];
 
@@ -178,19 +184,25 @@ export default function HRReports() {
     doc.text(`จำนวนรายการที่พบ: ${filteredLeaves.length} รายการ`, 14, 27);
 
     const headers = [
-      ['#', 'รหัสคำขอลา', 'รหัสพนักงาน', 'ชื่อ-นามสกุล', 'แผนกงาน', 'ประเภทการลา', 'ช่วงเวลา', 'จำนวนวัน', 'สถานะ']
+      ['#', 'รหัสคำขอลา', 'รหัสพนักงาน', 'ชื่อ', 'นามสกุล', 'แผนกงาน', 'ประเภทการลา', 'ช่วงเวลา', 'จำนวนวัน', 'สถานะ']
     ];
-    const data = filteredLeaves.map((l, index) => [
+    const data = filteredLeaves.map((l, index) => {
+      const empName = l.employeeName || l.userId || 'ไม่ระบุชื่อ';
+      const firstName = l.employee?.firstName || l.user?.firstName || (empName !== 'ไม่ระบุชื่อ' ? empName.split(' ')[0] : 'ไม่ระบุชื่อ');
+      const lastName = l.employee?.lastName || l.user?.lastName || (empName !== 'ไม่ระบุชื่อ' && empName.split(' ').length > 1 ? empName.split(' ').slice(1).join(' ') : '');
+      return [
       index + 1,
       l.requestCode || '-',
       l.employeeCode || l.employee?.employeeCode || (l.employeeId?.startsWith('EMP-') ? l.employeeId : `EMP-${String(l.employeeId || '').substring(0, 6).toUpperCase()}`),
-      l.employeeName || l.userId || 'ไม่ระบุชื่อ',
+      firstName,
+      lastName,
       l.departmentName || l.department || '-',
       l.leaveTypeName || l.type || '-',
       formatDateDisplay(l.startDate, l.endDate, l),
       formatDurationText(l),
       (l.status || '').toLowerCase().includes('approved') ? 'อนุมัติแล้ว' : (l.status || '').toLowerCase() === 'pending' ? 'รออนุมัติ' : 'ปฏิเสธ'
-    ]);
+    ];
+    });
 
     autoTable(doc, {
       head: headers,
@@ -382,7 +394,8 @@ export default function HRReports() {
                 <tr>
                   <th className="py-4 px-5 font-bold whitespace-nowrap text-center">รหัสคำขอลา</th>
                   <th className="py-4 px-5 font-bold whitespace-nowrap text-center">รหัสพนักงาน</th>
-                  <th className="py-4 px-5 font-bold whitespace-nowrap text-left">ชื่อ-นามสกุลพนักงาน</th>
+                  <th className="py-4 px-5 font-bold whitespace-nowrap text-left">ชื่อ</th>
+                  <th className="py-4 px-5 font-bold whitespace-nowrap text-left">นามสกุล</th>
                   <th className="py-4 px-5 font-bold whitespace-nowrap text-center">ประเภทการลา</th>
                   <th className="py-4 px-5 font-bold whitespace-nowrap text-center">วันที่เริ่ม - สิ้นสุด</th>
                   <th className="py-4 px-5 font-bold whitespace-nowrap text-center">รวมวันลา</th>
@@ -394,6 +407,8 @@ export default function HRReports() {
                 {filteredLeaves.map((l) => {
                   const empCode = l.employeeCode || l.employee?.employeeCode || (l.employeeId?.startsWith('EMP-') ? l.employeeId : `EMP-${String(l.employeeId || '').substring(0, 6).toUpperCase()}`);
                   const empName = l.employeeName || l.userId || 'ไม่ระบุชื่อ';
+                  const firstName = l.employee?.firstName || l.user?.firstName || (empName !== 'ไม่ระบุชื่อ' ? empName.split(' ')[0] : 'ไม่ระบุชื่อ');
+                  const lastName = l.employee?.lastName || l.user?.lastName || (empName !== 'ไม่ระบุชื่อ' && empName.split(' ').length > 1 ? empName.split(' ').slice(1).join(' ') : '');
                   const deptName = l.departmentName || l.department || '-';
                   const shortTypeName = (l.leaveTypeName || l.type || '').split(' ')[0];
                   const datesDisplay = formatDateDisplay(l.startDate, l.endDate, l);
@@ -408,8 +423,11 @@ export default function HRReports() {
                         {empCode}
                       </td>
                       <td className="py-4 px-5 text-left">
-                        <div className="font-bold text-slate-900">{empName}</div>
+                        <div className="font-bold text-slate-900">{firstName}</div>
                         <div className="text-xs text-slate-500">{deptName}</div>
+                      </td>
+                      <td className="py-4 px-5 text-left">
+                        <div className="font-bold text-slate-900">{lastName}</div>
                       </td>
                       <td className="py-4 px-5 font-medium text-slate-800 whitespace-nowrap text-center">
                         {shortTypeName}

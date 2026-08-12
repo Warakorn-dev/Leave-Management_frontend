@@ -53,7 +53,7 @@ export default function ManagerRequestPage() {
     }
 
     return myLeaves.some((leave: any) => {
-      if (leave.status === 'Rejected' || leave.status === 'Cancelled') return false;
+      if (['REJECTED', 'Rejected', 'CANCELLED', 'Cancelled'].includes(leave.status)) return false;
       const start = new Date(leave.startDate);
       const startStr = new Date(start.getTime() - start.getTimezoneOffset() * 60000).toISOString().split('T')[0];
       const end = new Date(leave.endDate);

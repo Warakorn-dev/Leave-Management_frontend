@@ -61,6 +61,7 @@ export interface Leave {
   employeeCode?: string;
   employeeName: string;
   employee?: any;
+  user?: any;
   departmentName?: string;
   department?: string;
   leaveType?: string;

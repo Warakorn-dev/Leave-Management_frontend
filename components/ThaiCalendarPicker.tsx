@@ -286,7 +286,7 @@ export function ThaiDatePicker({
               
               // Check if date overlaps with existing leave
               const isLeave = !isPlain && myLeaves.some((l: any) => {
-                if (l.status === 'Rejected' || l.status === 'Cancelled') return false;
+                if (['REJECTED', 'Rejected', 'CANCELLED', 'Cancelled'].includes(l.status)) return false;
                 if (!l.startDate || !l.endDate) return false;
                 const s = new Date(l.startDate);
                 s.setHours(0,0,0,0);

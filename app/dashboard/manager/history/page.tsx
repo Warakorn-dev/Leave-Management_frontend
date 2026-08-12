@@ -99,6 +99,8 @@ export default function LeaveHistoryPage() {
       id: r.id,
       empId: r.employee?.employeeCode || (r.employee?.id ? `EMP-${String(r.employee.id).substring(0, 5).toUpperCase()}` : `EMP-000`),
       name: r.user?.firstName ? `${r.user.firstName} ${r.user.lastName}` : (r.userId || 'Unknown'),
+      firstName: r.user?.firstName || r.employee?.firstName || r.userId || 'Unknown',
+      lastName: r.user?.lastName || r.employee?.lastName || '',
       dateStr: r.startDate.split('T')[0] === r.endDate.split('T')[0] ? formatDate(r.startDate) : `${formatDate(r.startDate)} - ${formatDate(r.endDate)}`,
       type: r.leaveType?.name || r.type,
       requestCode: r.requestCode,
@@ -321,7 +323,8 @@ export default function LeaveHistoryPage() {
                       {viewMode === "department" && (
                         <>
                           <th className="px-6 py-4 font-bold whitespace-nowrap w-[12%]">รหัสพนักงาน</th>
-                          <th className="px-6 py-4 font-bold whitespace-nowrap w-[18%]">ชื่อพนักงาน</th>
+                          <th className="px-6 py-4 font-bold whitespace-nowrap w-[18%]">ชื่อ</th>
+                          <th className="px-6 py-4 font-bold whitespace-nowrap w-[18%]">นามสกุล</th>
                         </>
                       )}
                       <th className={`px-6 py-4 font-bold whitespace-nowrap ${viewMode === "department" ? "w-[16%]" : "w-[15%]"}`}>วันที่ลา</th>
@@ -339,7 +342,8 @@ export default function LeaveHistoryPage() {
                         {viewMode === "department" && (
                           <>
                             <td className="px-6 py-5 text-gray-500 font-medium whitespace-nowrap">{req.empId}</td>
-                            <td className="px-6 py-5 text-black font-medium whitespace-nowrap">{req.name}</td>
+                            <td className="px-6 py-5 text-black font-medium whitespace-nowrap">{req.firstName}</td>
+                            <td className="px-6 py-5 text-black font-medium whitespace-nowrap">{req.lastName}</td>
                           </>
                         )}
                         <td className="px-6 py-5 text-black font-medium whitespace-nowrap">{req.dateStr}</td>

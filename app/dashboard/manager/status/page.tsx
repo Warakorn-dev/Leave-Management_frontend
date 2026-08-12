@@ -32,11 +32,11 @@ const getLeaveDetails = (req: any) => {
 };
 
 const getStageStatus = (currentStatus: string, stage: 'HR' | 'MANAGER' | 'CEO') => {
-  if (currentStatus === 'CANCELLED') return 'cancelled';
+  if (currentStatus === 'CANCELLED' || currentStatus === 'Cancelled') return 'cancelled';
   if (currentStatus === 'REJECTED') return 'rejected';
 
   if (stage === 'HR') {
-    if (currentStatus === 'PENDING_VERIFY') return 'pending';
+    if (currentStatus === 'PENDING_VERIFY' || currentStatus === 'PENDING_CANCELLATION') return 'pending';
     return 'approved';
   }
   
@@ -105,11 +105,12 @@ export default function LeaveStatusPage() {
                 const managerStage = getStageStatus(status, 'MANAGER');
                 const ceoStage = getStageStatus(status, 'CEO');
                 
-                const isNormalLeave = req.leaveType?.name?.includes('ลากิจ') || req.leaveType?.name?.includes('ลาป่วย');
+                const isNormalLeave = req.leaveType?.isSpecial === false;
                 const showCEO = !isNormalLeave || status === 'PENDING_EXECUTIVE' || ceoStage === 'pending' || ceoStage === 'approved';
                 const isFinalApproved = status === 'APPROVED';
                 const isFinalRejected = status === 'REJECTED';
                 const isCancelled = status === 'CANCELLED';
+                const isCancellationPending = status === 'PENDING_CANCELLATION';
                 const approverComment = req.approverReason || req.approvals?.[req.approvals.length - 1]?.comment;
 
                 return (
@@ -169,7 +170,7 @@ export default function LeaveStatusPage() {
                           isFinalRejected && hrStage === 'pending' ? 'text-red-600' : 
                           hrStage === 'pending' ? 'text-blue-600' : 'text-gray-400'
                         }`}>
-                          {hrStage === 'approved' ? 'ฝ่ายบุคคลตรวจสอบแล้ว' :
+                          {isCancellationPending ? 'รอฝ่ายบุคคลตรวจสอบคำขอยกเลิก' : hrStage === 'approved' ? 'ฝ่ายบุคคลตรวจสอบแล้ว' :
                            isFinalRejected && hrStage === 'pending' ? 'ฝ่ายบุคคลปฏิเสธคำขอ' : 
                            hrStage === 'pending' ? 'รอฝ่ายบุคคลตรวจสอบ' : 'รอฝ่ายบุคคลตรวจสอบ'}
                         </h4>

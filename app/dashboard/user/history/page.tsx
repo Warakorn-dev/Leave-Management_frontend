@@ -137,7 +137,8 @@ export default function LeaveHistoryPage() {
         refetchLeaves();
         Swal.fire({
           icon: 'success',
-          title: isApprovedCancel ? 'ยกเลิกวันลาสำเร็จ' : 'ยกเลิกคำขอสำเร็จ',
+          title: isApprovedCancel ? 'ส่งคำขอยกเลิกวันลาแล้ว' : 'ยกเลิกคำขอสำเร็จ',
+          text: isApprovedCancel ? 'คำขอถูกส่งให้ HR พิจารณา เมื่ออนุมัติแล้วระบบจะคืนสิทธิวันลาให้' : undefined,
           showConfirmButton: false,
           timer: 1500
         });
@@ -498,7 +499,7 @@ export default function LeaveHistoryPage() {
             </div>
 
             {/* Footer */}
-            {(!selectedRequest.status.includes('Approved') && selectedRequest.status !== 'Cancelled') && (
+            {(!selectedRequest.status.includes('Approved') && !['Cancelled', 'CANCELLED', 'PENDING_CANCELLATION'].includes(selectedRequest.status)) && (
               <div className="px-6 py-4 border-t border-gray-100 flex items-center justify-between bg-white mt-auto shrink-0">
                 <span className="text-[13px] font-medium text-gray-300">วันที่ยื่นคำขอ : {selectedRequest.raw?.createdAt ? new Date(selectedRequest.raw.createdAt).toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) + ' น.' : '-'}</span>
                 <div className="flex items-center gap-5">
@@ -513,7 +514,7 @@ export default function LeaveHistoryPage() {
                 </div>
               </div>
             )}
-            {(selectedRequest.status.includes('Approved') || selectedRequest.status === 'Cancelled') && (
+            {(selectedRequest.status.includes('Approved') || ['Cancelled', 'CANCELLED', 'PENDING_CANCELLATION'].includes(selectedRequest.status)) && (
               <div className="px-6 py-4 border-t border-gray-100 flex items-center justify-between bg-white mt-auto shrink-0">
                 <span className="text-[13px] font-medium text-gray-300">วันที่ยื่นคำขอ : {selectedRequest.raw?.createdAt ? new Date(selectedRequest.raw.createdAt).toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) + ' น.' : '-'}</span>
                 

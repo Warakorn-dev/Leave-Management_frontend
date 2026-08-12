@@ -55,9 +55,15 @@ export default function RequestLeavePage() {
 
     if (!Array.isArray(myLeaves)) return false;
 
+    const currentUserId = typeof window !== 'undefined' ? sessionStorage.getItem('userId') : '';
+
     return myLeaves.some((leave: any) => {
-      if (!leave || leave.status === 'Rejected' || leave.status === 'Cancelled') return false;
+      if (!leave || ['REJECTED', 'Rejected', 'CANCELLED', 'Cancelled'].includes(leave.status)) return false;
       if (!leave.startDate || !leave.endDate) return false;
+
+      // Only disable dates for the current user's own leaves, not other employees'
+      const leaveUserId = leave.userId || leave.employeeId;
+      if (currentUserId && String(leaveUserId) !== String(currentUserId)) return false;
       
       const start = new Date(leave.startDate);
       if (isNaN(start.getTime())) return false;
@@ -515,5 +521,3 @@ export default function RequestLeavePage() {
     </div>
   );
 }
-
-

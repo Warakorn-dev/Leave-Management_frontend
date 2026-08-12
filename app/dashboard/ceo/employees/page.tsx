@@ -108,7 +108,8 @@ export default function CEOEmployeesPage() {
             <thead className="bg-slate-50/50 dark:bg-slate-800/50 border-b border-slate-100 dark:border-slate-800 text-slate-500 dark:text-slate-400 font-medium">
               <tr>
                 <th className="px-6 py-4">รหัสพนักงาน</th>
-                <th className="px-6 py-4">ชื่อ - นามสกุล</th>
+                <th className="px-6 py-4">ชื่อ</th>
+                <th className="px-6 py-4">นามสกุล</th>
                 <th className="px-6 py-4">แผนก (Department)</th>
                 <th className="px-6 py-4">ตำแหน่ง (Position)</th>
                 <th className="px-6 py-4">อีเมล</th>
@@ -124,12 +125,14 @@ export default function CEOEmployeesPage() {
                       <span className="font-semibold text-slate-900 dark:text-slate-100">{emp.employeeId}</span>
                     </td>
                     <td className="px-6 py-4">
-                      <div className="flex items-center gap-3">
-
-                        <span className="font-medium text-slate-700 dark:text-slate-200">
-                          {emp.firstName} {emp.lastName}
-                        </span>
-                      </div>
+                      <span className="font-medium text-slate-700 dark:text-slate-200">
+                        {emp.firstName}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className="font-medium text-slate-700 dark:text-slate-200">
+                        {emp.lastName}
+                      </span>
                     </td>
                     <td className="px-6 py-4 text-slate-600 dark:text-slate-300">
                       {emp.departmentName || '-'}
@@ -152,7 +155,7 @@ export default function CEOEmployeesPage() {
                 ))
               ) : (
                 <tr>
-                  <td colSpan={7} className="px-6 py-12 text-center text-slate-500">
+                  <td colSpan={8} className="px-6 py-12 text-center text-slate-500">
                     ไม่พบข้อมูลพนักงาน
                   </td>
                 </tr>
