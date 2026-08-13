@@ -94,7 +94,7 @@ export default function ManagerPersonalDashboard() {
             <div className="w-8 h-8 rounded-full bg-[#E8F5E9] flex items-center justify-center mb-5">
               <Calendar className="w-4 h-4 text-[#4CAF50]" />
             </div>
-            <p className="text-[12px] font-extrabold text-gray-700 mb-2">วันลาพักผ่อนประจำปีคงเหลือ</p>
+            <p className="text-[12px] font-extrabold text-gray-700 mb-2">วันลาพักผ่อนประจำปี คงเหลือ</p>
             <div className="flex items-baseline gap-1.5">
               <span className="text-[38px] font-black text-gray-800 leading-none tracking-tighter">{data?.remainingVacation ?? 0}</span>
               <span className="text-[12px] font-bold text-gray-600">วัน</span>

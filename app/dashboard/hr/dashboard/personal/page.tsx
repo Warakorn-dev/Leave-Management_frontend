@@ -93,9 +93,9 @@ export default function HRPersonalDashboard() {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
         <div className="bg-white dark:bg-slate-900 rounded-3xl p-5 shadow-sm border border-slate-100 dark:border-slate-800 flex flex-col items-center justify-center text-center space-y-3">
           <div className="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center text-white shadow-md">
-            <CheckCircle2 className="w-5 h-5 fill-current" />
+            <CalendarDays className="w-5 h-5" />
           </div>
-          <p className="text-xs font-semibold text-slate-700 dark:text-slate-300">วันลาพักผ่อนประจำปีคงเหลือ</p>
+          <p className="text-xs font-semibold text-slate-700 dark:text-slate-300">วันลาพักผ่อนประจำปี คงเหลือ</p>
           <div className="flex items-baseline space-x-1 mt-1">
             <span className="text-3xl font-extrabold text-slate-900 dark:text-white">{remainingVacation}</span>
             <span className="text-xs font-bold text-slate-600">วัน</span>
