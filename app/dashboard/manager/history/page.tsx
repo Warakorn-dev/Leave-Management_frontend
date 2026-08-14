@@ -527,7 +527,7 @@ export default function LeaveHistoryPage() {
               {/* Approval */}
               <div className="mt-2">
                 <h3 className="font-bold text-[#00A859] flex items-center gap-2 text-[15px] mb-2">
-                  <span className="font-extrabold text-black/50 tracking-tighter">NID</span> การอนุมัติ (Approval)
+                  การอนุมัติ (Approval)
                 </h3>
                 <div className="flex flex-col md:flex-row items-stretch gap-4 bg-[#F8F9FA] border border-gray-200 rounded-xl p-4">
                   <div className="w-[120px] flex flex-col justify-center border-r border-gray-200 pr-4">

@@ -404,16 +404,7 @@ export default function OrganizationManagementPage() {
                           >
                             <Edit className="w-4 h-4" />
                           </button>
-                          <button
-                            className="p-2 text-slate-400 hover:text-red-600 bg-slate-50 hover:bg-red-50 dark:bg-slate-800 dark:hover:bg-red-900/30 rounded-lg transition-colors"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setItemToDelete({ id: dept.id, name: dept.name, type: 'department' });
-                              setIsDeleteConfirmModalOpen(true);
-                            }}
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
+
                         </div>
                       </div>
                       <div className="mb-2">
@@ -515,16 +506,7 @@ export default function OrganizationManagementPage() {
                               >
                                 <Edit className="w-4 h-4" />
                               </button>
-                              <button
-                                className="p-2 text-slate-400 hover:text-red-600 bg-slate-50 hover:bg-red-50 dark:bg-slate-800 dark:hover:bg-red-900/30 rounded-lg transition-colors"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setItemToDelete({ id: pos.id, name: pos.name || pos.title || '', type: 'position' });
-                                  setIsDeleteConfirmModalOpen(true);
-                                }}
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </button>
+
                             </div>
                           </td>
                         </tr>

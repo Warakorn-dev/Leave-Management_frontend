@@ -36,7 +36,7 @@ const getStageStatus = (currentStatus: string, stage: 'HR' | 'MANAGER' | 'CEO') 
   if (currentStatus === 'REJECTED') return 'rejected';
 
   if (stage === 'HR') {
-    if (currentStatus === 'PENDING_VERIFY' || currentStatus === 'PENDING_CANCELLATION') return 'pending';
+    if (currentStatus === 'PENDING_VERIFY' || currentStatus === 'PENDING_CANCELLATION' || currentStatus === 'REVIEWING_HR') return 'pending';
     return 'approved';
   }
   
@@ -105,8 +105,9 @@ export default function LeaveStatusPage() {
                 const managerStage = getStageStatus(status, 'MANAGER');
                 const ceoStage = getStageStatus(status, 'CEO');
                 
-                const isNormalLeave = req.leaveType?.isSpecial === false;
-                const showCEO = !isNormalLeave || status === 'PENDING_EXECUTIVE' || ceoStage === 'pending' || ceoStage === 'approved';
+                const typeName = req.leaveType?.name || req.type || '';
+                const isNormalLeave = typeName === 'ลาป่วย' || typeName.includes('ลากิจ');
+                const showCEO = !isNormalLeave;
                 const approverComment = req.approverReason || req.approvals?.[req.approvals.length - 1]?.comment;
                 
                 const isFinalRejected = status === 'REJECTED';
@@ -173,7 +174,7 @@ export default function LeaveStatusPage() {
                         }`}>
                           {isCancellationPending ? 'รอฝ่ายบุคคลตรวจสอบคำขอยกเลิก' : hrStage === 'approved' ? 'ฝ่ายบุคคลตรวจสอบแล้ว' :
                            isFinalRejected && hrStage === 'pending' ? 'ฝ่ายบุคคลปฏิเสธคำขอ' : 
-                           hrStage === 'pending' ? 'รอฝ่ายบุคคลตรวจสอบ' : 'รอฝ่ายบุคคลตรวจสอบ'}
+                           status === 'REVIEWING_HR' ? 'ฝ่ายบุคคลกำลังตรวจสอบ' : 'รอฝ่ายบุคคลตรวจสอบ'}
                         </h4>
                         {isFinalRejected && hrStage === 'pending' && approverComment && (
                           <div className="text-xs font-medium p-3 rounded-lg mt-3 w-full max-w-3xl bg-red-50 text-red-700">

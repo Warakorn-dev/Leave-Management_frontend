@@ -1,226 +1,163 @@
 'use client';
 
-import React, { useMemo } from 'react';
-import { useLeave } from '@/hooks/useLeave';
-import { useEmployee } from '@/hooks/useEmployee';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { SkeletonTable } from '@/components/ui/skeleton';
 import Swal from 'sweetalert2';
-import { Calendar as CalendarIcon, X, User, Download, Check, Clock, Eye, Hourglass, ListOrdered, Clock4, CalendarDays, CheckCircle2 } from "lucide-react";
-import { format, parseISO, formatDistanceToNow } from 'date-fns';
-import { th } from 'date-fns/locale';
-import { Leave } from '@/lib/types';
-import { leaveApi, employeeApi, ceoApi } from '@/api';
+import { CheckCircle2, Hourglass, ListOrdered, Clock4, CalendarDays, X, User, Calendar as CalendarIcon, Clock, AlertCircle } from 'lucide-react';
+import { getLeaveStatusText } from '@/lib/utils';
+
+const getToken = () =>
+  typeof window !== 'undefined' ? sessionStorage.getItem('accessToken') : '';
+
+async function fetchPendingExecutive(): Promise<any[]> {
+  const res = await fetch('/api/ceo/pending', {
+    headers: { Authorization: `Bearer ${getToken()}` },
+  });
+  if (!res.ok) throw new Error('Failed to fetch pending executive requests');
+  const json = await res.json();
+  return json.data ?? json;
+}
+
+async function ceoApprove(id: string) {
+  const res = await fetch(`/api/ceo/approve/${id}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getToken()}` },
+    body: JSON.stringify({ comment: '' }),
+  });
+  if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e.message || 'Approve failed'); }
+  return res.json();
+}
+
+async function ceoReject(id: string, comment: string) {
+  const res = await fetch(`/api/ceo/reject/${id}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getToken()}` },
+    body: JSON.stringify({ comment }),
+  });
+  if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e.message || 'Reject failed'); }
+  return res.json();
+}
+
+// ──────────────── helpers ────────────────
+
+function formatDateRange(leave: any) {
+  try {
+    const months = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
+    const start = new Date(leave.startDate);
+    const end = new Date(leave.endDate);
+    const startDay = start.getDate();
+    const startMonth = months[start.getMonth()];
+    const endDay = end.getDate();
+    const endMonth = months[end.getMonth()];
+
+    let baseStr = '';
+    if (leave.startDate.split('T')[0] === leave.endDate.split('T')[0]) {
+      baseStr = `${startDay} ${startMonth}`;
+    } else if (start.getMonth() === end.getMonth()) {
+      baseStr = `${startDay}-${endDay} ${startMonth}`;
+    } else {
+      baseStr = `${startDay} ${startMonth} - ${endDay} ${endMonth}`;
+    }
+
+    if (leave.startFormat === 'hourly') {
+      const startT = start.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
+      const endT = end.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
+      const rawHours = leave.leaveHours ?? Number(((leave.totalDays ?? 0) * 8).toFixed(2));
+      const h = Math.floor(rawHours);
+      const m = Math.round((rawHours - h) * 60);
+      const fmtHours = m === 0 ? `${h}` : `${h}.${m.toString().padStart(2, '0')}`;
+      return `${baseStr} (${startT}-${endT} น.) (${fmtHours} ชม.)`;
+    }
+    return `${baseStr} (${leave.totalDays ?? 1} วัน)`;
+  } catch {
+    return leave.startDate;
+  }
+}
+
+function mapLeave(r: any) {
+  const emp = r.employee ?? {};
+  return {
+    ...r,
+    employeeName: `${emp.firstName ?? ''} ${emp.lastName ?? ''}`.trim() || 'ไม่ระบุ',
+    empCode: emp.employeeCode || (emp.id ? `EMP-${String(emp.id).substring(0, 5).toUpperCase()}` : 'EMP-000'),
+    departmentName: emp.department?.name || '-',
+    positionName: emp.position?.name || '-',
+    leaveTypeName: r.leaveType?.name || '-',
+    dateRangeStr: formatDateRange(r),
+    approverReason: r.approvals?.[0]?.comment || null,
+  };
+}
+
+// ──────────────── component ────────────────
 
 export default function CEOApproval() {
   const { user } = useAuth();
+  const [leaves, setLeaves] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [filterMode, setFilterMode] = useState<'all' | 'thisMonth'>('thisMonth');
+  const [selectedLeave, setSelectedLeave] = useState<any | null>(null);
 
-  const [leaves, setLeaves] = React.useState<Leave[]>([]);
-  const [employees, setEmployees] = React.useState<any[]>([]);
-  const [isLoading, setIsLoading] = React.useState(true);
-  const [filterMode, setFilterMode] = React.useState<'all' | 'thisMonth'>('thisMonth');
-  const [selectedRequest, setSelectedRequest] = React.useState<{ leave: Leave; employee: any } | null>(null);
-
-  React.useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const [leavesRes, empRes] = await Promise.all([
-          leaveApi.getAllLeaves('HR'),
-          employeeApi.getAll()
-        ]);
-
-        if (leavesRes.success || leavesRes.data || leavesRes) {
-          const leavesData = (leavesRes as any).data ?? leavesRes;
-          setLeaves((leavesData as any).data ?? leavesData);
-        }
-
-        if (empRes.success || empRes.data || empRes) {
-          const empData = (empRes as any).data ?? empRes;
-          setEmployees((empData as any).data ?? empData);
-        }
-      } catch (err) {
-        console.error('Failed to fetch data', err);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    fetchData();
-  }, []);
-
-  const refetchLeaves = async () => {
+  const refetch = useCallback(async () => {
+    setIsLoading(true);
     try {
-      const res = await leaveApi.getAllLeaves('HR');
-      if (res.success || res.data || res) {
-        const data = (res as any).data ?? res;
-        setLeaves((data as any).data ?? data);
-      }
+      const data = await fetchPendingExecutive();
+      setLeaves(data.map(mapLeave));
     } catch (err) {
       console.error(err);
+    } finally {
+      setIsLoading(false);
     }
-  };
-
-  React.useEffect(() => {
-    (window as any).handleViewCEOAttachment = (urlOrBase64: string) => {
-      if (urlOrBase64.startsWith("data:")) {
-        const win = window.open();
-        if (win) {
-          if (urlOrBase64.startsWith("data:application/pdf")) {
-            win.document.write(`<iframe src="${urlOrBase64}" frameborder="0" style="border:0; top:0px; left:0px; bottom:0px; right:0px; width:100%; height:100%;" allowfullscreen></iframe>`);
-          } else {
-            win.document.write(`<img src="${urlOrBase64}" style="max-width:100%; max-height:100%; display:block; margin:auto;" />`);
-          }
-        }
-      } else {
-        const fileUrl = urlOrBase64.startsWith('/') ? urlOrBase64 : '/' + urlOrBase64.replace(/\\/g, '/');
-        window.open(fileUrl, '_blank');
-      }
-    };
-    return () => {
-      delete (window as any).handleViewCEOAttachment;
-    };
   }, []);
 
-  // Filter leaves: CEO sees leaves from managers OR leaves explicitly directed to CEO
-  const managerLeaves = useMemo(() => {
-    return leaves.filter(l => {
-      if ((l as any).approver === 'CEO') return true;
-      const employee = employees.find(e => e.id === l.employeeId || e.username === l.userId || (e.firstName + ' ' + e.lastName) === l.userId);
-      const role = employee?.user?.role?.name?.toLowerCase() || employee?.role?.toLowerCase();
-      return role === 'manager' || role === 'hr';
+  useEffect(() => { refetch(); }, [refetch]);
+
+  const displayedLeaves = React.useMemo(() => {
+    if (filterMode === 'all') return leaves;
+    const now = new Date();
+    return leaves.filter((l) => {
+      const d = new Date(l.createdAt || l.startDate);
+      return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
     });
-  }, [leaves, employees]);
+  }, [leaves, filterMode]);
 
-  // Summaries
-  const pendingCEOLeaves = useMemo(() => {
-    return leaves.filter(l => l.status === 'PENDING_EXECUTIVE');
-  }, [leaves]);
+  const latestApprovedText = React.useMemo(() => 'ยังไม่มีการอนุมัติ', []);
 
-  const displayedLeaves = useMemo(() => {
-    let filtered = pendingCEOLeaves;
-    if (filterMode === 'thisMonth') {
-      const now = new Date();
-      filtered = filtered.filter(l => {
-        const d = new Date(l.createdAt || l.startDate);
-        return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
-      });
-    }
-    return filtered;
-  }, [pendingCEOLeaves, filterMode]);
+  const leaveTypesMap = React.useMemo(() =>
+    leaves.reduce((acc, l) => { const t = l.leaveTypeName.split(' ')[0]; if (t) acc[t] = (acc[t] || 0) + 1; return acc; }, {} as Record<string, number>),
+    [leaves]);
+  const leaveTypesString = Object.entries(leaveTypesMap).map(([k, v]) => `${k}(${v})`).join(', ') || 'ไม่มี';
 
-  const pendingCount = displayedLeaves.length;
-
-  const leaveTypesMap = pendingCEOLeaves.reduce((acc, leave) => {
-    const typeName = (leave.leaveTypeName || leave.type || '').split(' ')[0]; // get short name like ลาพักร้อน
-    if (typeName) {
-      acc[typeName] = (acc[typeName] || 0) + 1;
-    }
-    return acc;
-  }, {} as Record<string, number>);
-  const leaveTypesString = Object.entries(leaveTypesMap)
-    .map(([key, val]) => `${key}(${val})`)
-    .join(', ') || 'ไม่มี';
-
-  const latestApprovedText = useMemo(() => {
-    const approvedLeaves = leaves.filter(l => (l.status || '') === 'APPROVED');
-    if (approvedLeaves.length === 0) return 'ยังไม่มีการอนุมัติ';
-
-    const latest = [...approvedLeaves].sort((a, b) => {
-      const dateA = new Date(a.updatedAt || a.createdAt || 0).getTime();
-      const dateB = new Date(b.updatedAt || b.createdAt || 0).getTime();
-      return dateB - dateA;
-    })[0];
-
-    const date = new Date(latest.updatedAt || latest.createdAt || new Date());
-    if (isNaN(date.getTime())) return 'ไม่ทราบเวลา';
-
-    return formatDistanceToNow(date, { addSuffix: true, locale: th });
-  }, [leaves]);
-
-  const formatDateRange = (leave: any) => {
-    try {
-      const startDateStr = leave.startDate;
-      const endDateStr = leave.endDate;
-      const start = parseISO(startDateStr);
-      const end = parseISO(endDateStr);
-      const startDay = format(start, 'd');
-      const startMonth = format(start, 'MMM', { locale: th });
-      const endDay = format(end, 'd');
-      const endMonth = format(end, 'MMM', { locale: th });
-
-      let baseStr = '';
-      if (startDateStr.split('T')[0] === endDateStr.split('T')[0]) {
-        baseStr = `${startDay} ${startMonth}.`;
-      } else if (startMonth === endMonth) {
-        baseStr = `${startDay}-${endDay} ${startMonth}.`;
-      } else {
-        baseStr = `${startDay} ${startMonth}. - ${endDay} ${endMonth}.`;
-      }
-
-      if (leave.startFormat === 'hourly' || leave.leaveMode === 'hourly') {
-        let startT = leave.startTime;
-        if (!startT && leave.startDate) {
-          startT = new Date(leave.startDate).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
-        }
-        let endT = leave.endTime;
-        if (!endT && leave.endDate) {
-          endT = new Date(leave.endDate).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
-        }
-
-        const rawHours = leave.leaveHours ? leave.leaveHours : Number(((leave.totalDays ?? 0) * 8).toFixed(2));
-        const h = Math.floor(rawHours);
-        const m = Math.round((rawHours - h) * 60);
-        const formattedHours = m === 0 ? `${h}` : `${h}.${m.toString().padStart(2, '0')}`;
-
-        return `${baseStr} (${startT} - ${endT} น.) (${formattedHours} ชม.)`;
-      }
-      return `${baseStr} (${leave.totalDays || leave.durationDays || 1} วัน)`;
-    } catch {
-      return leave.startDate;
-    }
-  };
-
-  const getDurationText = (leave: any) => {
-    if (leave.startFormat === 'hourly' || leave.leaveMode === 'hourly') {
-      const rawHours = leave.leaveHours ? leave.leaveHours : Number(((leave.totalDays || leave.durationDays || 0) * 8).toFixed(2));
-      const h = Math.floor(rawHours);
-      const m = Math.round((rawHours - h) * 60);
-      const formattedHours = m === 0 ? `${h}` : `${h}.${m.toString().padStart(2, '0')}`;
-      return `${formattedHours} ชม.`;
-    }
-    return `${leave.totalDays || leave.durationDays || 0} วัน`;
-  };
-
-  const handleApprove = (leave: Leave) => {
-    const durationText = getDurationText(leave);
-    Swal.fire({
+  // ── approve ──
+  const handleApprove = async (leave: any) => {
+    const result = await Swal.fire({
       title: 'ยืนยันการอนุมัติ',
-      text: `ต้องการอนุมัติการลาของ ${leave.employeeName || leave.userId || 'ไม่ระบุชื่อ'} (${durationText}) หรือไม่?`,
+      text: `อนุมัติคำขอลา ${leave.leaveTypeName} ของ ${leave.employeeName}?`,
       icon: 'question',
       showCancelButton: true,
       confirmButtonColor: '#00C853',
       cancelButtonColor: '#94a3b8',
       confirmButtonText: 'อนุมัติ',
-      cancelButtonText: 'ยกเลิก'
-    }).then(async (result) => {
-      if (result.isConfirmed) {
-        try {
-          const res = await ceoApi.approveLeave(leave.id);
-          if (res.success === false) throw new Error('Approve failed');
-          await refetchLeaves();
-          Swal.fire({ icon: 'success', title: 'อนุมัติการลาสำเร็จ', timer: 1500, showConfirmButton: false });
-        } catch (err) {
-          Swal.fire({ icon: 'error', title: 'เกิดข้อผิดพลาด', text: 'ไม่สามารถดำเนินการอนุมัติได้' });
-        }
-      }
+      cancelButtonText: 'ยกเลิก',
     });
+    if (!result.isConfirmed) return;
+    try {
+      await ceoApprove(leave.id);
+      setSelectedLeave(null);
+      refetch();
+      Swal.fire({ icon: 'success', title: 'อนุมัติสำเร็จ', timer: 1500, showConfirmButton: false });
+    } catch (err: any) {
+      Swal.fire({ icon: 'error', title: 'เกิดข้อผิดพลาด', text: err.message });
+    }
   };
 
-  const handleReject = (leave: Leave) => {
-    Swal.fire({
+  // ── reject ──
+  const handleReject = async (leave: any) => {
+    const { value: reason, isConfirmed } = await Swal.fire({
       title: 'ยืนยันการปฏิเสธ',
-      text: `ระบุเหตุผลที่ปฏิเสธการลาของ ${leave.employeeName || leave.userId || 'ไม่ระบุชื่อ'}`,
+      html: `<p class="text-sm text-gray-600 mb-3">ปฏิเสธคำขอ <strong>${leave.leaveTypeName}</strong> ของ <strong>${leave.employeeName}</strong></p>`,
       input: 'textarea',
-      inputPlaceholder: 'กรอกเหตุผลที่นี่...',
+      inputPlaceholder: 'ระบุเหตุผลที่ปฏิเสธ (บังคับ)...',
       icon: 'warning',
       showCancelButton: true,
       confirmButtonColor: '#dc2626',
@@ -228,94 +165,67 @@ export default function CEOApproval() {
       confirmButtonText: 'ปฏิเสธคำขอ',
       cancelButtonText: 'ยกเลิก',
       preConfirm: (text) => {
-        if (!text) {
-          Swal.showValidationMessage('กรุณาระบุเหตุผลในการปฏิเสธ');
-        }
+        if (!text?.trim()) { Swal.showValidationMessage('กรุณาระบุเหตุผลในการปฏิเสธ'); }
         return text;
-      }
-    }).then(async (result) => {
-      if (result.isConfirmed) {
-        try {
-          const res = await ceoApi.rejectLeave(leave.id, result.value || 'Rejected by CEO');
-          if (res.success === false) throw new Error('Reject failed');
-          await refetchLeaves();
-          Swal.fire({ icon: 'success', title: 'ปฏิเสธการลาสำเร็จ', timer: 1500, showConfirmButton: false });
-        } catch (err) {
-          Swal.fire({ icon: 'error', title: 'เกิดข้อผิดพลาด', text: 'ไม่สามารถดำเนินการปฏิเสธได้' });
-        }
-      }
+      },
     });
-  };
-
-  const handleViewDetails = (leave: Leave, employee: any) => {
-    setSelectedRequest({ leave, employee });
+    if (!isConfirmed || !reason?.trim()) return;
+    try {
+      await ceoReject(leave.id, reason.trim());
+      setSelectedLeave(null);
+      refetch();
+      Swal.fire({ icon: 'success', title: 'ปฏิเสธสำเร็จ', timer: 1500, showConfirmButton: false });
+    } catch (err: any) {
+      Swal.fire({ icon: 'error', title: 'เกิดข้อผิดพลาด', text: err.message });
+    }
   };
 
   return (
     <div className="space-y-6 max-w-[1200px] mx-auto pb-10">
-      {/* Header Section */}
+      {/* Header */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white dark:bg-slate-900 p-6 rounded-3xl shadow-sm border border-slate-100 dark:border-slate-800">
         <div>
           <h1 className="text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
             <CheckCircle2 className="w-6 h-6 text-indigo-600" />
-            รายการคำขออนุมัติการลา
+            รายการคำขออนุมัติการลา (CEO)
           </h1>
-          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-            อนุมัติหรือปฏิเสธคำขอลาของผู้จัดการและ HR
-          </p>
+          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">อนุมัติหรือปฏิเสธคำขอลาที่ต้องผ่านการพิจารณาจากผู้บริหาร</p>
         </div>
       </div>
 
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-
         <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 shadow-sm border border-slate-100 dark:border-slate-800 flex flex-col justify-between h-32">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-purple-50 dark:bg-purple-900/30 flex items-center justify-center text-purple-600 dark:text-purple-400">
-              <Hourglass className="w-5 h-5" strokeWidth={2.5} />
-            </div>
+            <div className="w-10 h-10 rounded-2xl bg-purple-50 dark:bg-purple-900/30 flex items-center justify-center text-purple-600"><Hourglass className="w-5 h-5" strokeWidth={2.5} /></div>
             <h3 className="font-semibold text-slate-700 dark:text-slate-200">รอการตรวจสอบ</h3>
           </div>
-          <div className="text-sm font-medium text-slate-500 dark:text-slate-400 mt-2">
-            <span className="text-2xl font-bold text-slate-900 dark:text-white mr-2">{pendingCount}</span> รายการ
+          <div className="text-sm font-medium text-slate-500 mt-2">
+            <span className="text-2xl font-bold text-slate-900 dark:text-white mr-2">{displayedLeaves.length}</span> รายการ
           </div>
         </div>
 
         <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 shadow-sm border border-slate-100 dark:border-slate-800 flex flex-col justify-between h-32">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center text-blue-600 dark:text-blue-400">
-              <ListOrdered className="w-5 h-5" strokeWidth={2.5} />
-            </div>
+            <div className="w-10 h-10 rounded-2xl bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center text-blue-600"><ListOrdered className="w-5 h-5" strokeWidth={2.5} /></div>
             <h3 className="font-semibold text-slate-700 dark:text-slate-200">ประเภทการลา</h3>
           </div>
-          <div className="text-sm font-medium text-slate-500 dark:text-slate-400 mt-2 truncate">
-            {leaveTypesString}
-          </div>
+          <div className="text-sm font-medium text-slate-500 mt-2 truncate">{leaveTypesString}</div>
         </div>
 
         <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 shadow-sm border border-slate-100 dark:border-slate-800 flex flex-col justify-between h-32">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-emerald-50 dark:bg-emerald-900/30 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
-              <Clock4 className="w-5 h-5" strokeWidth={2.5} />
-            </div>
+            <div className="w-10 h-10 rounded-2xl bg-emerald-50 dark:bg-emerald-900/30 flex items-center justify-center text-emerald-600"><Clock4 className="w-5 h-5" strokeWidth={2.5} /></div>
             <h3 className="font-semibold text-slate-700 dark:text-slate-200">อนุมัติล่าสุด</h3>
           </div>
-          <div className="text-sm font-medium text-slate-500 dark:text-slate-400 mt-2">
-            {latestApprovedText}
-          </div>
+          <div className="text-sm font-medium text-slate-500 mt-2">{latestApprovedText}</div>
         </div>
-
       </div>
 
-      {/* Main Table Card */}
+      {/* Table Card */}
       <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-sm border border-slate-100 dark:border-slate-800 overflow-hidden">
-
-        {/* Table Header Section */}
         <div className="p-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-slate-100 dark:border-slate-800">
-          <h2 className="text-lg font-bold text-slate-900 dark:text-white">
-            คำขอลาที่ค้างอยู่
-          </h2>
-
+          <h2 className="text-lg font-bold text-slate-900 dark:text-white">คำขอลาที่ค้างอยู่ (PENDING_EXECUTIVE)</h2>
           <div className="relative">
             <select
               value={filterMode}
@@ -331,12 +241,9 @@ export default function CEOApproval() {
           </div>
         </div>
 
-        {/* Table Content */}
         <div className="overflow-x-auto">
           {isLoading ? (
-            <div className="p-6">
-              <SkeletonTable cols={6} rows={3} />
-            </div>
+            <div className="p-6"><SkeletonTable cols={6} rows={3} /></div>
           ) : (
             <table className="w-full text-left text-sm whitespace-nowrap">
               <thead className="bg-slate-50/50 dark:bg-slate-800/50 border-b border-slate-100 dark:border-slate-800 text-slate-500 dark:text-slate-400 font-medium">
@@ -354,190 +261,102 @@ export default function CEOApproval() {
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800/50">
                 {displayedLeaves.length === 0 ? (
                   <tr>
-                    <td colSpan={8} className="px-6 py-12 text-center text-slate-500">
-                      ไม่มีคำขอลาที่ค้างอยู่
-                    </td>
+                    <td colSpan={8} className="px-6 py-12 text-center text-slate-500">ไม่มีคำขอลาที่ค้างอยู่</td>
                   </tr>
                 ) : (
-                  [...displayedLeaves].reverse().map((leave) => {
-                    const employee = employees.find(e => e.username === leave.userId || (e.firstName + ' ' + e.lastName) === leave.userId);
-                    const dept = employee?.departmentName || leave.departmentName || leave.department || '';
-                    const shortDept = dept ? dept.substring(0, 3).toUpperCase() : '-';
-                    const empName = leave.employeeName || leave.userId || 'ไม่ระบุชื่อ';
-                    const leaveType = leave.leaveTypeName || leave.type || '-';
-
-                    let firstName = '-';
-                    let lastName = '-';
-                    if (employee && employee.firstName) {
-                      firstName = employee.firstName;
-                      lastName = employee.lastName || '-';
-                    } else {
-                      const nameParts = empName.split(' ');
-                      firstName = nameParts[0] || 'ไม่ระบุชื่อ';
-                      lastName = nameParts.length > 1 ? nameParts.slice(1).join(' ') : '-';
-                    }
-
-                    return (
-                      <tr key={leave.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
-                        <td className="px-6 py-4">
-                          <span className="font-semibold text-blue-500 whitespace-nowrap">{leave.requestCode || '-'}</span>
-                        </td>
-                        <td className="px-6 py-4">
-                          <span className="font-medium text-slate-700 dark:text-slate-200">{firstName}</span>
-                        </td>
-                        <td className="px-6 py-4">
-                          <span className="font-medium text-slate-700 dark:text-slate-200">{lastName}</span>
-                        </td>
-                        <td className="px-6 py-4 text-slate-600 dark:text-slate-300">{dept}</td>
-                        <td className="px-6 py-4 text-slate-600 dark:text-slate-300">{leaveType.split(' ')[0]}</td>
-                        <td className="px-6 py-4 text-slate-600 dark:text-slate-300">{formatDateRange(leave)}</td>
-                        <td className="px-6 py-4 text-center">
-                          <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
-                            รอดำเนินการ
-                          </span>
-                        </td>
-                        <td className="px-6 py-4">
-                          <div className="flex items-center justify-center gap-2">
-                            <button
-                              onClick={() => handleApprove(leave)}
-                              className="bg-[#00C853] hover:bg-[#00B04A] text-white text-xs font-semibold px-3.5 py-1.5 rounded-xl transition-all shadow-sm"
-                            >
-                              อนุมัติ
-                            </button>
-                            <button
-                              onClick={() => handleReject(leave)}
-                              className="bg-red-100 hover:bg-red-200 text-red-600 dark:bg-red-900/30 dark:hover:bg-red-900/50 dark:text-red-400 text-xs font-semibold px-3.5 py-1.5 rounded-xl transition-all"
-                            >
-                              ปฏิเสธ
-                            </button>
-                            <button
-                              onClick={() => handleViewDetails(leave, employee)}
-                              className="flex items-center gap-1.5 text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400 text-xs font-semibold transition-colors bg-slate-100 dark:bg-slate-800 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 px-3 py-1.5 rounded-xl"
-                            >
-                              <Eye className="w-3.5 h-3.5" />
-                              รายละเอียด
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })
+                  displayedLeaves.map((leave) => (
+                    <tr key={leave.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                      <td className="px-6 py-4"><span className="font-semibold text-blue-500">{leave.requestCode || '-'}</span></td>
+                      <td className="px-6 py-4"><span className="font-medium text-slate-700 dark:text-slate-200">{leave.employee?.firstName || '-'}</span></td>
+                      <td className="px-6 py-4"><span className="font-medium text-slate-700 dark:text-slate-200">{leave.employee?.lastName || '-'}</span></td>
+                      <td className="px-6 py-4 text-slate-600 dark:text-slate-300">{leave.departmentName}</td>
+                      <td className="px-6 py-4 text-slate-600 dark:text-slate-300">{leave.leaveTypeName}</td>
+                      <td className="px-6 py-4 text-slate-600 dark:text-slate-300">{leave.dateRangeStr}</td>
+                      <td className="px-6 py-4 text-center">
+                        <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">รอดำเนินการ</span>
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="flex items-center justify-center gap-2">
+                          <button onClick={() => handleApprove(leave)} className="bg-[#00C853] hover:bg-[#00B04A] text-white text-xs font-semibold px-3.5 py-1.5 rounded-xl transition-all shadow-sm">อนุมัติ</button>
+                          <button onClick={() => handleReject(leave)} className="bg-red-100 hover:bg-red-200 text-red-600 text-xs font-semibold px-3.5 py-1.5 rounded-xl transition-all">ปฏิเสธ</button>
+                          <button onClick={() => setSelectedLeave(leave)} className="flex items-center gap-1.5 text-slate-500 hover:text-indigo-600 text-xs font-semibold transition-colors bg-slate-100 hover:bg-indigo-50 px-3 py-1.5 rounded-xl">รายละเอียด</button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))
                 )}
               </tbody>
             </table>
           )}
         </div>
-
       </div>
 
-      {/* Leave Details Modal */}
-      {selectedRequest && (() => {
-        const leave = selectedRequest.leave;
-        const employee = selectedRequest.employee;
-        const empName = employee ? `${employee.firstName} ${employee.lastName}` : leave.employeeName || leave.userId || 'ไม่ระบุชื่อ';
-        const dept = employee?.departmentName || leave.departmentName || leave.department || '-';
-        const dates = formatDateRange(leave);
-        const duration = leave.totalDays || leave.durationDays || 0;
-        const reason = leave.reason || '-';
-        const statusLower = (leave.status || '').toLowerCase();
-
-        let statusText = 'รออนุมัติ';
-        let statusBadgeClass = 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400';
-        let reasonColor = 'border-slate-200 text-slate-500 bg-slate-50';
-        if (statusLower === 'approved' || statusLower.includes('approved')) {
-          statusText = 'อนุมัติ';
-          statusBadgeClass = 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400';
-          reasonColor = 'border-emerald-200 text-emerald-700 bg-emerald-50';
-        } else if (statusLower === 'rejected' || statusLower.includes('rejected')) {
-          statusText = 'ปฏิเสธ';
-          statusBadgeClass = 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400';
-          reasonColor = 'border-red-200 text-red-600 bg-red-50';
-        }
-
-        const approverReason = leave.approverReason || 'ไม่มีหมายเหตุเพิ่มเติม';
-
+      {/* Detail Modal */}
+      {selectedLeave && (() => {
+        const leave = selectedLeave;
+        const approvals = leave.approvals ?? [];
         return (
           <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200">
-            <div className="bg-white rounded-[24px] w-full max-w-[650px] shadow-2xl flex flex-col max-h-[90vh] animate-in zoom-in-95 duration-200 overflow-hidden relative">
+            <div className="bg-white rounded-[24px] w-full max-w-[680px] shadow-2xl flex flex-col max-h-[90vh] animate-in zoom-in-95 duration-200 overflow-hidden">
 
               {/* Header */}
-              <div className="flex items-center justify-between px-6 py-5">
-                <h2 className="text-[20px] font-bold text-black">รายละเอียดคำขอลา (Leave Request Details)</h2>
-                <button
-                  onClick={() => setSelectedRequest(null)}
-                  className="w-8 h-8 flex items-center justify-center text-white bg-red-500 rounded-full hover:bg-red-600 transition-colors shadow-sm"
-                >
+              <div className="flex items-center justify-between px-6 py-5 border-b border-gray-100">
+                <h2 className="text-[20px] font-bold text-black">รายละเอียดคำขอลา</h2>
+                <button onClick={() => setSelectedLeave(null)} className="w-8 h-8 flex items-center justify-center text-white bg-red-500 rounded-full hover:bg-red-600 transition-colors">
                   <X className="w-5 h-5" strokeWidth={3} />
                 </button>
               </div>
 
               {/* Body */}
-              <div className="px-6 pb-6 overflow-y-auto flex-1 space-y-4">
+              <div className="px-6 pb-4 overflow-y-auto flex-1 space-y-4 pt-4">
 
-                {/* Employee Info */}
-                <div className="border border-gray-300 rounded-xl p-5 flex gap-4 bg-white">
-                  <div className="w-[38px] h-[38px] rounded-full bg-fuchsia-100/50 border border-fuchsia-200 text-fuchsia-500 flex items-center justify-center shrink-0 overflow-hidden">
-                    {employee?.user?.avatarUrl ? (
-                      <img src={`http://localhost:8000${employee.user.avatarUrl}`} alt="Avatar" className="w-full h-full object-cover" />
-                    ) : (
-                      <User className="w-5 h-5" strokeWidth={2} />
-                    )}
+                {/* Employee */}
+                <div className="border border-gray-200 rounded-xl p-5 flex gap-4">
+                  <div className="w-10 h-10 rounded-full bg-fuchsia-100 border border-fuchsia-200 text-fuchsia-500 flex items-center justify-center shrink-0 overflow-hidden">
+                    {leave.employee?.user?.avatarUrl ? (
+                      <img src={`http://localhost:8000${leave.employee.user.avatarUrl}`} alt="Avatar" className="w-full h-full object-cover" />
+                    ) : <User className="w-5 h-5" strokeWidth={2} />}
                   </div>
                   <div className="flex-1">
-                    <h3 className="font-bold text-[15px] text-black mb-3">ข้อมูลพนักงาน (Employee Info)</h3>
-                    <div className="text-[14px] text-gray-800 space-y-2">
-                      <p className="flex items-center gap-2"><span className="font-bold min-w-[90px]">ชื่อ:</span> {empName}</p>
-                      <p className="flex items-center gap-2"><span className="font-bold min-w-[90px]">แผนก|ตำแหน่ง:</span> {dept} | {employee?.position?.name || employee?.positionName || (leave as any)?.employee?.position?.name || '-'}</p>
+                    <h3 className="font-bold text-[15px] text-black mb-3">ข้อมูลพนักงาน</h3>
+                    <div className="text-[14px] text-gray-700 space-y-1.5">
+                      <p><span className="font-bold min-w-[90px] inline-block">ชื่อ-นามสกุล:</span>{leave.employeeName}</p>
+                      <p><span className="font-bold min-w-[90px] inline-block">รหัสพนักงาน:</span>{leave.empCode}</p>
+                      <p><span className="font-bold min-w-[90px] inline-block">แผนก | ตำแหน่ง:</span>{leave.departmentName} | {leave.positionName}</p>
+                      <p><span className="font-bold min-w-[90px] inline-block">บทบาท:</span>{leave.employee?.user?.role?.name || '-'}</p>
                     </div>
                   </div>
                 </div>
 
                 {/* Leave Info */}
-                <div className="border border-gray-300 rounded-xl p-5 bg-white">
+                <div className="border border-gray-200 rounded-xl p-5">
                   <div className="flex items-center gap-3 mb-4">
-                    <div className="w-[32px] h-[32px] rounded-full bg-blue-50 border border-blue-100 flex items-center justify-center text-blue-500">
+                    <div className="w-8 h-8 rounded-full bg-blue-50 border border-blue-100 flex items-center justify-center text-blue-500">
                       <CalendarIcon className="w-[18px] h-[18px]" strokeWidth={2.5} />
                     </div>
-                    <h3 className="font-bold text-[15px] text-black">รายละเอียดการลา (Leave Information)</h3>
+                    <h3 className="font-bold text-[15px] text-black">รายละเอียดการลา</h3>
                   </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-[14px] text-gray-800 pl-[44px]">
-                    <div className="space-y-3">
-                      <p className="flex gap-2"><span className="font-bold min-w-[80px]">รหัสการลา:</span> <span className="text-blue-500 font-semibold">{leave.requestCode || '-'}</span></p>
-                      <p className="flex gap-2"><span className="font-bold min-w-[80px]">ประเภทการลา:</span> {leave.type || leave.leaveTypeName || '-'}</p>
-                      <p className="flex gap-2"><span className="font-bold min-w-[80px]">ช่วงเวลา:</span> {dates}</p>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-[14px] text-gray-700 pl-[44px]">
+                    <div className="space-y-2">
+                      <p><span className="font-bold">รหัสการลา:</span> <span className="text-blue-500 font-semibold">{leave.requestCode || '-'}</span></p>
+                      <p><span className="font-bold">ประเภทการลา:</span> {leave.leaveTypeName}</p>
+                      <p><span className="font-bold">ช่วงเวลา:</span> {leave.dateRangeStr}</p>
                     </div>
-                    <div className="space-y-3">
+                    <div className="space-y-2">
                       <p className="flex items-center gap-2">
-                        <span className="w-[26px] h-[26px] bg-green-100 text-green-600 flex items-center justify-center rounded-full shrink-0">
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></svg>
-                        </span>
-                        <span className="font-bold min-w-[80px]">รูปแบบการลา:</span> {leave.startFormat === 'hourly' ? `รายชั่วโมง (${leave.leaveHours || 1} ชม.)` : leave.startFormat === 'morning' ? 'ครึ่งวันเช้า' : leave.startFormat === 'afternoon' ? 'ครึ่งวันบ่าย' : 'เต็มวัน'}
+                        <Clock className="w-4 h-4 text-green-500 shrink-0" />
+                        <span className="font-bold">รูปแบบ:</span>
+                        {leave.startFormat === 'hourly' ? `รายชั่วโมง` : leave.startFormat === 'morning' ? 'ครึ่งวันเช้า' : leave.startFormat === 'afternoon' ? 'ครึ่งวันบ่าย' : 'เต็มวัน'}
                       </p>
-                      <p className="flex items-center gap-2">
-                        <span className="w-[26px] h-[26px] bg-yellow-100 text-yellow-600 flex items-center justify-center rounded-full shrink-0">
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48" /></svg>
-                        </span>
-                        <span className="font-bold min-w-[80px]">เอกสารแนบ:</span>
-                        {leave.attachmentUrl || (leave as any).attachments?.length > 0 || (leave as any).attachment ? (
-                          <button
-                            onClick={() => {
-                              const rawPath = leave.attachmentUrl || (leave as any).attachments?.[0]?.filePath || (leave as any).attachment;
-                              if (rawPath) {
-                                if (rawPath.startsWith("data:")) {
-                                  (window as any).handleViewCEOAttachment?.(rawPath);
-                                } else {
-                                  const filePath = rawPath.replace(/\\/g, '/');
-                                  const url = filePath.startsWith('/') ? filePath : `/${filePath}`;
-                                  window.open(url, '_blank');
-                                }
-                              }
-                            }}
-                            className="text-blue-600 font-bold hover:underline"
-                          >
-                            ดูเอกสารแนบ
-                          </button>
-                        ) : "-"}
-                      </p>
+                      {leave.leaveType?.isSpecial && (
+                        <p className="flex items-center gap-2 text-purple-600">
+                          <AlertCircle className="w-4 h-4 shrink-0" />
+                          <span className="font-bold">คำขอประเภทพิเศษ</span>
+                        </p>
+                      )}
+                      {leave.attachments?.length > 0 && (
+                        <p><span className="font-bold">เอกสารแนบ:</span> <span className="text-emerald-600 font-bold">มีเอกสาร {leave.attachments.length} ไฟล์</span></p>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -545,65 +364,43 @@ export default function CEOApproval() {
                 {/* Reason */}
                 <div>
                   <h3 className="font-bold text-black text-[14px] mb-2">เหตุผลการลา</h3>
-                  <input
-                    type="text"
-                    readOnly
-                    value={reason}
-                    className="w-full border border-gray-300 rounded-xl p-3 text-[14px] text-gray-500 bg-white outline-none cursor-default"
-                  />
+                  <textarea readOnly value={leave.reason || '-'} rows={2} className="w-full border border-gray-300 rounded-xl p-3 text-[14px] text-gray-500 bg-white outline-none cursor-default resize-none" />
                 </div>
 
-                {/* Timestamps */}
-                <div className="mt-4 border-t border-gray-100 pt-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-[13px] text-gray-500">
-                    <p className="flex gap-2">
-                      <span className="font-bold min-w-[120px]">วันที่ยื่นคำลา:</span>
-                      {leave.createdAt ? new Date(leave.createdAt).toLocaleString('th-TH') : '-'}
-                    </p>
-                    <p className="flex gap-2">
-                      <span className="font-bold min-w-[120px]">อัปเดตล่าสุด:</span>
-                      {leave.updatedAt ? new Date(leave.updatedAt).toLocaleString('th-TH') : '-'}
-                    </p>
-                  </div>
-                </div>
-
-                {/* Approval */}
-                <div className="mt-2">
-                  <h3 className="font-bold text-[#00A859] flex items-center gap-2 text-[15px] mb-2">
-                    <span className="font-extrabold text-black/50 tracking-tighter">NID</span> การอนุมัติ (Approval)
-                  </h3>
-                  <div className="flex flex-col md:flex-row items-stretch gap-4 bg-[#F8F9FA] border border-gray-200 rounded-xl p-4">
-                    <div className="w-[120px] flex flex-col justify-center border-r border-gray-200 pr-4 shrink-0">
-                      <span className="font-bold text-[14px] text-black mb-2">สถานะ:</span>
-                      <span className={`inline-flex justify-center items-center px-4 py-1.5 rounded-full text-[13px] font-bold shadow-sm ${statusLower === 'approved' || statusLower.includes('approved') ? 'bg-[#00D06C] text-white' : statusLower === 'rejected' || statusLower.includes('rejected') ? 'bg-red-500 text-white' : 'bg-amber-400 text-white'}`}>
-                        {statusText}
-                      </span>
-                    </div>
-                    <div className="flex-1 flex flex-col justify-center">
-                      <span className="font-bold text-[14px] text-black mb-2">เหตุผลของผู้อนุมัติ (CEO)</span>
-                      <input
-                        type="text"
-                        readOnly
-                        value={approverReason}
-                        className={`w-full border rounded-xl p-3 text-[14px] outline-none cursor-default bg-[#F0FDF4] border-green-200 text-green-700`}
-                      />
+                {/* Approval Timeline */}
+                {approvals.length > 0 && (
+                  <div>
+                    <h3 className="font-bold text-black text-[14px] mb-3">ขั้นตอนการอนุมัติที่ผ่านมา</h3>
+                    <div className="space-y-3">
+                      {approvals.map((ap: any, i: number) => (
+                        <div key={ap.id || i} className="flex items-start gap-3">
+                          <div className={`w-2 h-2 rounded-full mt-2 shrink-0 ${ap.status === 'REJECTED' ? 'bg-red-500' : 'bg-emerald-500'}`} />
+                          <div className="flex-1 bg-gray-50 rounded-xl p-3 text-[13px]">
+                            <p className="font-bold text-gray-700">{getLeaveStatusText(ap.status)}</p>
+                            {ap.comment && <p className="text-gray-500 mt-1">เหตุผล: {ap.comment}</p>}
+                            <p className="text-gray-400 text-[12px] mt-1">{new Date(ap.createdAt).toLocaleString('th-TH')}</p>
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   </div>
-                </div>
-
+                )}
               </div>
 
-              {/* Footer text */}
-              <div className="px-6 py-4 border-t border-gray-100 flex items-center bg-white rounded-b-[24px]">
+              {/* Footer */}
+              <div className="px-6 py-4 border-t border-gray-100 bg-white flex items-center justify-between shrink-0">
                 <span className="text-gray-400 text-[13px]">
-                  วันที่ยื่นคำขอ : {leave.createdAt ? new Date(leave.createdAt).toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) + ' น.' : '-'}
+                  ยื่นเมื่อ: {leave.createdAt ? new Date(leave.createdAt).toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: 'numeric' }) : '-'}
                 </span>
+                <div className="flex items-center gap-3">
+                  <button onClick={() => handleApprove(leave)} className="bg-[#00C853] hover:bg-[#00B04A] text-white text-[13px] font-bold py-2 px-6 rounded-xl shadow-sm transition-colors">อนุมัติ</button>
+                  <button onClick={() => handleReject(leave)} className="bg-red-500 hover:bg-red-600 text-white text-[13px] font-bold py-2 px-6 rounded-xl shadow-sm transition-colors">ปฏิเสธ</button>
+                </div>
               </div>
             </div>
           </div>
         );
       })()}
-
     </div>
   );
 }

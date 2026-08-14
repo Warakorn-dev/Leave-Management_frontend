@@ -118,6 +118,50 @@ export default function LeaveHistoryPage() {
     }));
   }, [allLeaves, filterType, selectedMonthRaw, selectedDate]);
 
+  // Auto-refresh (Polling) ทุกๆ 5 วินาที
+  useEffect(() => {
+    const interval = setInterval(() => {
+      refetchLeaves();
+    }, 5000);
+    return () => clearInterval(interval);
+  }, [refetchLeaves]);
+
+  // ตรวจสอบว่าคำขอที่กำลังเปิดดู หรือ กำลังแก้ไขอยู่ ถูก HR กดดูรายละเอียดหรือดึงไปแล้วหรือไม่
+  useEffect(() => {
+    if (selectedRequest) {
+      const updatedReq = requests.find((r) => r.id === selectedRequest.id);
+      if (updatedReq) {
+        const wasViewed = selectedRequest.raw?.isViewedByHr;
+        const isNowViewed = updatedReq.raw?.isViewedByHr;
+        
+        if (!wasViewed && isNowViewed) {
+          Swal.fire({
+            icon: 'warning',
+            title: 'ไม่สามารถแก้ไขคำขอได้',
+            text: 'HR กำลังตรวจสอบรายละเอียดคำขอนี้ หรือดึงไปตรวจสอบแล้ว ระบบจะทำการยกเลิกการแก้ไขข้อมูลของคุณ',
+            confirmButtonColor: '#3085d6'
+          });
+          
+          if (isEditing) {
+            setIsEditing(false); // เด้งออกจากหน้าแก้ไข
+          }
+          setSelectedRequest(null); // ปิดหน้าต่าง Modal หลักด้วยเลย เพื่อให้ข้อมูลรีเฟรช
+        } else if (updatedReq.status !== selectedRequest.status) {
+          if (updatedReq.status === 'APPROVED' || updatedReq.status === 'REJECTED') {
+            Swal.fire({
+              icon: 'info',
+              title: 'สถานะคำขอมีการเปลี่ยนแปลง',
+              text: `คำขอลานี้ได้ถูก ${updatedReq.status === 'APPROVED' ? 'อนุมัติ' : 'ปฏิเสธ'} แล้ว`,
+              confirmButtonColor: '#3085d6'
+            });
+            setIsEditing(false);
+            setSelectedRequest(null);
+          }
+        }
+      }
+    }
+  }, [requests, selectedRequest, isEditing]);
+
   const handleDelete = async (isApprovedCancel = false) => {
     const result = await Swal.fire({
       title: isApprovedCancel ? 'ยืนยันการขอยกเลิกวันลา' : 'ยืนยันการยกเลิกคำขอ',
@@ -470,30 +514,78 @@ export default function LeaveHistoryPage() {
                 />
               </div>
 
-              {/* Approval */}
+              {/* Approval Timeline */}
               <div className="mt-2">
-                <h3 className={`font-bold flex items-center gap-2 text-[15px] mb-2 ${selectedRequest.status.includes('Approved') ? 'text-[#00A859]' : selectedRequest.status.includes('Rejected') ? 'text-red-500' : 'text-yellow-600'}`}>
-                  <span className="font-extrabold text-black/50 tracking-tighter">NID</span> การอนุมัติ (Approval)
+                <h3 className={`font-bold flex items-center gap-2 text-[15px] mb-3 ${selectedRequest.status === 'APPROVED' ? 'text-[#00A859]' : selectedRequest.status === 'REJECTED' ? 'text-red-500' : 'text-yellow-600'}`}>
+                  การอนุมัติ (Approval Timeline)
                 </h3>
-                <div className="flex flex-col md:flex-row items-start gap-4 bg-[#F8F9FA] border border-gray-200 rounded-xl p-4">
-                  <div className="w-[120px] flex flex-col justify-start border-r border-gray-200 pr-4">
-                    <span className="text-[12px] font-bold text-black mb-2">สถานะ:</span>
-                      <span className={`px-4 py-2 rounded-full text-sm font-bold text-white shadow-sm ${getLeaveStatusBadgeColor(selectedRequest.status)}`}>
-                      {getLeaveStatusText(selectedRequest.status)}
-                    </span>
-                  </div>
-                  <div className="flex-1 flex flex-col justify-start w-full">
-                    <span className="text-[12px] font-bold text-black mb-2">เหตุผลของผู้อนุมัติ</span>
-                    <textarea
-                      readOnly
-                      value={selectedRequest.raw?.approverReason || selectedRequest.raw?.approvals?.[0]?.comment || (selectedRequest.status === 'Pending' ? 'รอการพิจารณา' : 'ไม่มีหมายเหตุเพิ่มเติม')}
-                      className={`w-full border border-gray-300 rounded-xl p-2.5 text-[14px] outline-none cursor-default resize-none min-h-[50px] ${selectedRequest.status.includes('Rejected') ? 'text-red-600 bg-red-50/50' :
-                          selectedRequest.status.includes('Approved') ? 'text-green-600 bg-green-50/50' : 'text-gray-500 bg-white'
-                        }`}
-                      rows={2}
-                    />
-                  </div>
+
+                {/* Overall Status */}
+                <div className="flex items-center gap-3 mb-4 p-3 bg-[#F8F9FA] border border-gray-200 rounded-xl">
+                  <span className="text-[12px] font-bold text-black">สถานะปัจจุบัน:</span>
+                  <span className={`px-3 py-1.5 rounded-full text-sm font-bold text-white shadow-sm ${getLeaveStatusBadgeColor(selectedRequest.status)}`}>
+                    {getLeaveStatusText(selectedRequest.status)}
+                  </span>
                 </div>
+
+                {/* Timeline Steps */}
+                {(() => {
+                  const raw = selectedRequest.raw || {};
+                  const approvals: any[] = raw.approvals || [];
+                  const steps = [
+                    { role: 'HR', label: 'ตรวจสอบ (HR)', statuses: ['PENDING_VERIFY', 'REVIEWING_HR', 'PENDING_SUPERVISOR', 'PENDING_EXECUTIVE', 'APPROVED', 'REJECTED', 'CANCELLED', 'PENDING_CANCELLATION'] },
+                    { role: 'Manager', label: 'หัวหน้างาน (Manager)', statuses: ['PENDING_SUPERVISOR', 'PENDING_EXECUTIVE', 'APPROVED', 'REJECTED', 'CANCELLED'] },
+                    { role: 'CEO', label: 'ผู้บริหาร (CEO)', statuses: ['PENDING_EXECUTIVE', 'APPROVED', 'REJECTED', 'CANCELLED'] },
+                  ];
+
+                  const currentStatus = selectedRequest.status;
+
+                  return (
+                    <div className="space-y-3">
+                      {steps.map((step, idx) => {
+                        const approval = approvals.find((a: any) => a.role === step.role || a.approverRole === step.role);
+                        const isReached = step.statuses.includes(currentStatus);
+
+                        let dotColor = 'bg-gray-300';
+                        let labelColor = 'text-gray-400';
+                        let statusText = 'รอดำเนินการ';
+                        let statusBg = 'bg-gray-100 text-gray-400';
+
+                        if (approval) {
+                          if (approval.status === 'APPROVED') { dotColor = 'bg-emerald-500'; labelColor = 'text-gray-800'; statusText = 'ผ่าน'; statusBg = 'bg-emerald-100 text-emerald-700'; }
+                          else if (approval.status === 'REJECTED') { dotColor = 'bg-red-500'; labelColor = 'text-gray-800'; statusText = 'ตีกลับ'; statusBg = 'bg-red-100 text-red-600'; }
+                          else { dotColor = 'bg-blue-400'; labelColor = 'text-gray-700'; statusText = 'กำลังตรวจ'; statusBg = 'bg-blue-100 text-blue-600'; }
+                        } else if (isReached && idx === 0) {
+                          dotColor = currentStatus === 'REVIEWING_HR' ? 'bg-blue-400 animate-pulse' : 'bg-emerald-400';
+                          labelColor = 'text-gray-700';
+                          statusText = currentStatus === 'REVIEWING_HR' ? 'กำลังตรวจ' : 'ผ่านแล้ว';
+                          statusBg = currentStatus === 'REVIEWING_HR' ? 'bg-blue-100 text-blue-600' : 'bg-emerald-100 text-emerald-700';
+                        }
+
+                        return (
+                          <div key={step.role} className="flex items-start gap-3">
+                            <div className="flex flex-col items-center shrink-0">
+                              <div className={`w-3 h-3 rounded-full mt-1 ${dotColor}`} />
+                              {idx < steps.length - 1 && <div className="w-px h-8 bg-gray-200 mt-1" />}
+                            </div>
+                            <div className="flex-1 pb-2">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <span className={`text-[13px] font-bold ${labelColor}`}>{step.label}</span>
+                                <span className={`px-2 py-0.5 rounded-full text-[11px] font-bold ${statusBg}`}>{statusText}</span>
+                                {approval?.createdAt && (
+                                  <span className="text-[11px] text-gray-400">{new Date(approval.createdAt).toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
+                                )}
+                              </div>
+                              {approval?.comment && (
+                                <p className="text-[12px] text-gray-500 mt-1 pl-1">เหตุผล: {approval.comment}</p>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  );
+                })()}
               </div>
 
             </div>
@@ -507,10 +599,12 @@ export default function LeaveHistoryPage() {
                     <Trash2 className="w-4 h-4" strokeWidth={2.5} />
                     ยกเลิกคำขอลา
                   </button>
-                  <button onClick={handleEditClick} className="text-blue-600 hover:text-blue-700 font-bold text-[14px] flex items-center gap-1.5 transition-colors">
-                    <Edit3 className="w-4 h-4" strokeWidth={2.5} />
-                    แก้ไขข้อมูล
-                  </button>
+                  {!selectedRequest.raw?.isViewedByHr && (
+                    <button onClick={handleEditClick} className="text-blue-600 hover:text-blue-700 font-bold text-[14px] flex items-center gap-1.5 transition-colors">
+                      <Edit3 className="w-4 h-4" strokeWidth={2.5} />
+                      แก้ไขข้อมูล
+                    </button>
+                  )}
                 </div>
               </div>
             )}

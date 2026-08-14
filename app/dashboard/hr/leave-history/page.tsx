@@ -16,8 +16,9 @@ export default function LeaveHistoryPage() {
   const [requests, setRequests] = useState<any[]>([]);
   const [username, setUsername] = useState("xxxxx xxxxxx");
   const [filterType, setFilterType] = useState<"daily" | "monthly">("monthly");
-  const [selectedMonthRaw, setSelectedMonthRaw] = useState(() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`; });
   const [selectedDate, setSelectedDate] = useState<Date | null>(new Date());
+  const [fromDate, setFromDate] = useState<Date | null>(new Date());
+  const [toDate, setToDate] = useState<Date | null>(new Date());
   const [selectedRequest, setSelectedRequest] = useState<any>(null);
   const [viewMode, setViewMode] = useState<"department" | "personal">("department");
   const [filterLeaveType, setFilterLeaveType] = useState<string>("");
@@ -55,12 +56,7 @@ export default function LeaveHistoryPage() {
 
   // Removed local calculateDays in favor of centralized calculateLeaveDays from store.ts
 
-  const formatMonthYear = (yyyyMM: string) => {
-    if (!yyyyMM) return "";
-    const [year, month] = yyyyMM.split('-');
-    const months = ["มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน", "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"];
-    return `${months[parseInt(month) - 1]} ${parseInt(year) + 543}`;
-  };
+
 
   const formatDate = (dateString: string) => {
     const d = new Date(dateString);
@@ -93,8 +89,14 @@ export default function LeaveHistoryPage() {
       // Date filter
       let dateMatch = true;
       if (filterType === "monthly") {
-        dateMatch = r.startDate.startsWith(selectedMonthRaw);
-      } else {
+        if (fromDate && toDate) {
+          const fromStr = `${fromDate.getFullYear()}-${String(fromDate.getMonth() + 1).padStart(2, '0')}-${String(fromDate.getDate()).padStart(2, '0')}`;
+          const toStr = `${toDate.getFullYear()}-${String(toDate.getMonth() + 1).padStart(2, '0')}-${String(toDate.getDate()).padStart(2, '0')}`;
+          const startStr = r.startDate.split('T')[0];
+          const endStr = r.endDate ? r.endDate.split('T')[0] : startStr;
+          dateMatch = startStr <= toStr && endStr >= fromStr;
+        }
+      } else if (filterType === "daily") {
         if (selectedDate) {
           const selectedStr = `${selectedDate.getFullYear()}-${String(selectedDate.getMonth() + 1).padStart(2, '0')}-${String(selectedDate.getDate()).padStart(2, '0')}`;
           const startStr = r.startDate.split('T')[0];
@@ -114,11 +116,11 @@ export default function LeaveHistoryPage() {
       if (searchId && searchId.trim() !== "") {
         const term = searchId.trim().toLowerCase();
         const leaveId = String(r.id);
-        
+
         if (viewMode === "department") {
           const empCode = r.employee?.employeeCode || (r.employee?.id ? `EMP-${String(r.employee.id).substring(0, 5).toUpperCase()}` : `EMP-000`);
           const fullName = r.user?.firstName ? `${r.user.firstName} ${r.user.lastName}`.toLowerCase() : (r.userId || 'unknown').toLowerCase();
-          
+
           if (!leaveId.includes(term) && !empCode.toLowerCase().includes(term) && !fullName.includes(term)) {
             return false;
           }
@@ -157,7 +159,7 @@ export default function LeaveHistoryPage() {
         }
       };
     }));
-  }, [router, filterType, selectedMonthRaw, selectedDate, viewMode, allLeaves, filterLeaveType, searchId]);
+  }, [router, filterType, selectedDate, fromDate, toDate, viewMode, allLeaves, filterLeaveType, searchId]);
 
   const handleDelete = async () => {
     const isApprovedCancel = selectedRequest?.status?.includes('Approved');
@@ -359,26 +361,40 @@ export default function LeaveHistoryPage() {
                 <option value="daily">รายวัน</option>
               </select>
 
-<<<<<<< HEAD
-              <div className="relative inline-block w-[180px] h-full flex items-center">
+              <div className="relative inline-block h-full flex items-center">
                 {filterType === "monthly" ? (
-                  <DatePicker 
-                    selected={selectedMonthRaw ? new Date(`${selectedMonthRaw}-01`) : null}
-                    onChange={(date: Date | null) => {
-                      if (date) {
-                        setSelectedMonthRaw(`${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`);
-                      }
-                    }}
-                    showMonthYearPicker
-                    showMonthDropdown
-                    showYearDropdown
-                    dropdownMode="select"
-                    dateFormat="MM/yyyy"
-                    placeholderText="เลือกเดือน"
-                    className="w-full bg-transparent border-none text-black text-[15px] font-bold py-3 px-4 focus:outline-none cursor-pointer rounded-r-xl"
-                  />
+                  <div className="flex items-center">
+                    <DatePicker
+                      selected={fromDate}
+                      onChange={(date: Date | null) => {
+                        setFromDate(date);
+                        if (date && toDate && date > toDate) setToDate(date);
+                      }}
+                      showMonthDropdown
+                      showYearDropdown
+                      dropdownMode="select"
+                      dateFormat="dd/MM/yyyy"
+                      placeholderText="ตั้งแต่วันที่"
+                      className="w-[120px] bg-transparent border-none text-black text-[15px] font-bold py-3 px-4 focus:outline-none cursor-pointer"
+                    />
+                    <span className="text-gray-400 font-medium">-</span>
+                    <DatePicker
+                      selected={toDate}
+                      onChange={(date: Date | null) => {
+                        setToDate(date);
+                        if (date && fromDate && date < fromDate) setFromDate(date);
+                      }}
+                      minDate={fromDate || undefined}
+                      showMonthDropdown
+                      showYearDropdown
+                      dropdownMode="select"
+                      dateFormat="dd/MM/yyyy"
+                      placeholderText="ถึงวันที่"
+                      className="w-[120px] bg-transparent border-none text-black text-[15px] font-bold py-3 px-4 focus:outline-none cursor-pointer rounded-r-xl"
+                    />
+                  </div>
                 ) : (
-                  <DatePicker 
+                  <DatePicker
                     selected={selectedDate}
                     onChange={(date: Date | null) => setSelectedDate(date)}
                     showMonthDropdown
@@ -386,28 +402,8 @@ export default function LeaveHistoryPage() {
                     dropdownMode="select"
                     dateFormat="dd/MM/yyyy"
                     placeholderText="เลือกวันที่"
-                    className="w-full bg-transparent border-none text-black text-[15px] font-bold py-3 px-4 focus:outline-none cursor-pointer rounded-r-xl"
+                    className="w-[180px] bg-transparent border-none text-black text-[15px] font-bold py-3 px-4 focus:outline-none cursor-pointer rounded-r-xl"
                   />
-=======
-              <div className="relative flex items-center h-full">
-                {filterType === "monthly" ? (
-                  <div className="w-[180px] h-full">
-                    <DatePicker
-                      value={selectedMonthRaw}
-                      onChange={(newMonth: any) => setSelectedMonthRaw(newMonth)}
-                      views={['year', 'month']}
-                      format="MM/BBBB"
-                    />
-                  </div>
-                ) : (
-                  <div className="w-[180px] h-full">
-                    <DatePicker
-                      selected={selectedDate}
-                      onChange={(date: Date | null) => setSelectedDate(date)}
-                      placeholderText="เลือกวันที่"
-                    />
-                  </div>
->>>>>>> PR
                 )}
               </div>
             </div>
@@ -444,7 +440,7 @@ export default function LeaveHistoryPage() {
                 className="w-full pl-10 pr-4 py-2.5 bg-white border border-gray-200 rounded-xl text-[14px] text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-400 shadow-sm transition-all"
               />
             </div>
-            
+
             <div className="relative w-full md:w-[250px] ml-auto">
               <select
                 value={filterLeaveType}
@@ -471,7 +467,7 @@ export default function LeaveHistoryPage() {
                     <CalendarIcon className="w-10 h-10 text-gray-400" />
                   </div>
                   <h3 className="text-xl font-bold text-gray-800 mb-2">ไม่มีข้อมูลประวัติการลา</h3>
-                  <p className="text-gray-500 font-medium">ไม่มีประวัติการยื่นคำขอลาใน{filterType === "monthly" ? `เดือน ${formatMonthYear(selectedMonthRaw)}` : `วันที่ ${selectedDate ? `${selectedDate.getDate()} ${["ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."][selectedDate.getMonth()]} ${selectedDate.getFullYear() + 543}` : "ที่เลือก"}`}</p>
+                  <p className="text-gray-500 font-medium">ไม่มีประวัติการยื่นคำขอลาใน{filterType === "monthly" ? `ช่วงเวลาที่เลือก` : `วันที่ ${selectedDate ? `${selectedDate.getDate()} ${["ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."][selectedDate.getMonth()]} ${selectedDate.getFullYear() + 543}` : "ที่เลือก"}`}</p>
                 </div>
               ) : (
                 <table className="w-full text-sm text-left">
@@ -694,7 +690,7 @@ export default function LeaveHistoryPage() {
               {/* Approval */}
               <div className="mt-2">
                 <h3 className="font-bold text-[#00A859] flex items-center gap-2 text-[15px] mb-2">
-                  <span className="font-extrabold text-black/50 tracking-tighter">NID</span> การอนุมัติ (Approval)
+                  การอนุมัติ (Approval)
                 </h3>
                 <div className="flex flex-col md:flex-row items-stretch gap-4 bg-[#F8F9FA] border border-gray-200 rounded-xl p-4">
                   <div className="w-[120px] flex flex-col justify-center border-r border-gray-200 pr-4">
@@ -822,31 +818,18 @@ export default function LeaveHistoryPage() {
                     <>
                       <div className="md:col-span-2 md:w-[calc(50%-1.5rem)]">
                         <label className="block text-[13px] font-bold text-gray-800 mb-2">วันที่ลา</label>
-<<<<<<< HEAD
-<<<<<<< HEAD
-                        <DatePicker 
-=======
-                        <ThaiDatePicker
->>>>>>> PR
+                        <DatePicker
                           selected={editForm.leaveDate ? new Date(editForm.leaveDate) : null}
                           onChange={(date: Date | null) => {
                             if (date) {
                               const d = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
                               setEditForm({ ...editForm, leaveDate: d.toISOString().split('T')[0] });
-=======
-                        <DatePicker
-                          value={editForm.leaveDate || null}
-                          onChange={(val: any) => {
-                            if (val && typeof val === 'object' && typeof val.format === 'function') {
-                              setEditForm({ ...editForm, leaveDate: val.format('YYYY-MM-DD') });
-                            } else if (typeof val === 'string') {
-                              setEditForm({ ...editForm, leaveDate: val.substring(0, 10) });
->>>>>>> 278a4765ce02a7aa0ece327b9c5c8574ef37fbaa
                             } else {
                               setEditForm({ ...editForm, leaveDate: '' });
                             }
                           }}
                           placeholderText="วว/ดด/ปปปป"
+                          className="w-full bg-transparent border-none text-black text-[15px] font-bold py-3 px-4 focus:outline-none cursor-pointer rounded-lg"
                         />
                       </div>
                       <div className="md:col-span-2">
@@ -862,31 +845,18 @@ export default function LeaveHistoryPage() {
                     <>
                       <div className="md:col-span-1">
                         <label className="block text-[13px] font-bold text-gray-800 mb-2">วันที่เริ่มต้น</label>
-<<<<<<< HEAD
-<<<<<<< HEAD
-                        <DatePicker 
-=======
-                        <ThaiDatePicker
->>>>>>> PR
+                        <DatePicker
                           selected={editForm.startDate ? new Date(editForm.startDate) : null}
                           onChange={(date: Date | null) => {
                             if (date) {
                               const d = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
                               setEditForm({ ...editForm, startDate: d.toISOString().split('T')[0] });
-=======
-                        <DatePicker
-                          value={editForm.startDate || null}
-                          onChange={(val: any) => {
-                            if (val && typeof val === 'object' && typeof val.format === 'function') {
-                              setEditForm({ ...editForm, startDate: val.format('YYYY-MM-DD') });
-                            } else if (typeof val === 'string') {
-                              setEditForm({ ...editForm, startDate: val.substring(0, 10) });
->>>>>>> 278a4765ce02a7aa0ece327b9c5c8574ef37fbaa
                             } else {
                               setEditForm({ ...editForm, startDate: '' });
                             }
                           }}
                           placeholderText="วว/ดด/ปปปป"
+                          className="w-full bg-transparent border-none text-black text-[15px] font-bold py-3 px-4 focus:outline-none cursor-pointer rounded-lg"
                         />
                         {editForm.leaveMode === 'half_day' && (
                           <div className="flex items-center gap-4 mt-3">
@@ -903,31 +873,19 @@ export default function LeaveHistoryPage() {
                       </div>
                       <div className="md:col-span-1">
                         <label className="block text-[13px] font-bold text-gray-800 mb-2">วันที่สิ้นสุด</label>
-<<<<<<< HEAD
-<<<<<<< HEAD
-                        <DatePicker 
-=======
-                        <ThaiDatePicker
->>>>>>> PR
+
+                        <DatePicker
                           selected={editForm.endDate ? new Date(editForm.endDate) : null}
                           onChange={(date: Date | null) => {
                             if (date) {
                               const d = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
                               setEditForm({ ...editForm, endDate: d.toISOString().split('T')[0] });
-=======
-                        <DatePicker
-                          value={editForm.endDate || null}
-                          onChange={(val: any) => {
-                            if (val && typeof val === 'object' && typeof val.format === 'function') {
-                              setEditForm({ ...editForm, endDate: val.format('YYYY-MM-DD') });
-                            } else if (typeof val === 'string') {
-                              setEditForm({ ...editForm, endDate: val.substring(0, 10) });
->>>>>>> 278a4765ce02a7aa0ece327b9c5c8574ef37fbaa
                             } else {
                               setEditForm({ ...editForm, endDate: '' });
                             }
                           }}
                           placeholderText="วว/ดด/ปปปป"
+                          className="w-full bg-transparent border-none text-black text-[15px] font-bold py-3 px-4 focus:outline-none cursor-pointer rounded-lg"
                         />
                       </div>
                     </>
