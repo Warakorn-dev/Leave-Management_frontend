@@ -18,6 +18,7 @@ export default function ManagerApprovePage() {
   const [showRejectModal, setShowRejectModal] = useState(false);
   const [rejectData, setRejectData] = useState<{id: string, reason: string} | null>(null);
   const [rejectReasonInput, setRejectReasonInput] = useState("");
+  const [previewAttachment, setPreviewAttachment] = useState<{ url: string, isImage: boolean } | null>(null);
 
   useEffect(() => {
     setApproverReason("");
@@ -65,7 +66,7 @@ export default function ManagerApprovePage() {
     
     // For manager: approve leaves in their department (where they are not CEO, not Manager themselves unless specified)
     const realPending = allLeaves.filter((r: any) => 
-      r.status === 'Pending' && 
+      r.status === 'PENDING_SUPERVISOR' && 
       r.user?.role !== 'CEO' && 
       r.user?.role !== 'Manager' &&
       (r.user?.department?.name === storedDept || r.department === storedDept)
@@ -217,7 +218,8 @@ export default function ManagerApprovePage() {
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-[#F2F2F2] text-gray-500 text-[13px]">
-                <th className="py-4 px-6 font-bold whitespace-nowrap rounded-l-md">ชื่อพนักงาน</th>
+                <th className="py-4 px-6 font-bold whitespace-nowrap rounded-l-md">รหัสคำขอลา</th>
+                <th className="py-4 px-6 font-bold whitespace-nowrap">ชื่อพนักงาน</th>
                 <th className="py-4 px-6 font-bold whitespace-nowrap">ประเภทวันลา</th>
                 <th className="py-4 px-6 font-bold whitespace-nowrap">วันเวลาที่ขอลา</th>
                 <th className="py-4 px-6 font-bold whitespace-nowrap">เอกสารแนบ</th>
@@ -234,6 +236,7 @@ export default function ManagerApprovePage() {
               ) : (
                 requests.map((req, idx) => (
                   <tr key={req.id} className="border-b border-gray-100 last:border-0 hover:bg-gray-50/50 transition-colors">
+                    <td className="py-6 px-6 text-[14px] text-blue-600 font-bold whitespace-nowrap">{req.requestCode || '-'}</td>
                     <td className="py-4 px-6">
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold shrink-0">
@@ -366,9 +369,11 @@ export default function ManagerApprovePage() {
                       {selectedRequest.attachments && selectedRequest.attachments.length > 0 ? (
                         <button 
                           onClick={() => {
-                            const filePath = selectedRequest.attachments[0].filePath.replace(/\\/g, '/');
-                            const url = filePath.startsWith('/') ? filePath : `/${filePath}`;
-                            window.open(url, '_blank');
+                            const att = selectedRequest.attachments[0];
+                            const isData = att.filePath.startsWith('data:');
+                            const fileSrc = isData ? att.filePath : (att.filePath.startsWith('http') ? att.filePath : `http://localhost:8000${att.filePath.startsWith('/') ? '' : '/'}${att.filePath}`);
+                            const isImage = att.fileType.includes('image') || (!isData && att.filePath.match(/\.(jpeg|jpg|gif|png)$/i));
+                            setPreviewAttachment({ url: fileSrc, isImage });
                           }}
                           className="text-blue-600 font-bold hover:underline ml-2"
                         >
@@ -526,6 +531,30 @@ export default function ManagerApprovePage() {
           </div>
         </div>
       )}
+      {/* Preview Attachment Modal */}
+      {previewAttachment && (
+        <div className="fixed inset-0 z-[140] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200" onClick={() => setPreviewAttachment(null)}>
+          <div className="bg-white rounded-[24px] w-full max-w-4xl shadow-2xl flex flex-col max-h-[90vh] animate-in zoom-in-95 duration-200 border-2 border-blue-500 overflow-hidden relative" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 bg-[#FAFAFA]">
+              <h2 className="text-[16px] font-bold text-black">ไฟล์เอกสารแนบ (Attachment)</h2>
+              <button 
+                onClick={() => setPreviewAttachment(null)}
+                className="w-8 h-8 flex items-center justify-center text-white bg-red-500 rounded-full hover:bg-red-600 transition-colors shadow-sm"
+              >
+                <X className="w-5 h-5" strokeWidth={3} />
+              </button>
+            </div>
+            <div className="p-6 overflow-y-auto flex-1 flex items-center justify-center bg-gray-50/50">
+              {previewAttachment.isImage ? (
+                <img src={previewAttachment.url} alt="Preview" className="max-w-full max-h-[70vh] object-contain rounded-lg shadow-sm border border-gray-200" />
+              ) : (
+                <iframe src={previewAttachment.url} className="w-full h-[75vh] bg-white rounded-lg shadow-sm border border-gray-200" />
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }

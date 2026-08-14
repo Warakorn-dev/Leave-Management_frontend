@@ -147,13 +147,14 @@ export interface ThaiDatePickerProps {
   className?: string;
   disabled?: boolean;
   minDate?: Date | null;
+  maxDate?: Date | null;
   isPlain?: boolean;
   minYear?: number;
   maxYear?: number;
 }
 
 export function ThaiDatePicker({
-  selected, onChange, placeholderText = "วว/ดด/ปปปป", className, disabled, minDate, isPlain = false, minYear, maxYear
+  selected, onChange, placeholderText = "วว/ดด/ปปปป", className, disabled, minDate, maxDate, isPlain = false, minYear, maxYear
 }: ThaiDatePickerProps) {
   const { useHolidaysQuery, useLeavesQuery } = useLeave();
   const { data: holidays = [] } = useHolidaysQuery();
@@ -175,6 +176,13 @@ export function ThaiDatePicker({
     d.setHours(0, 0, 0, 0);
     return d.getTime();
   }, [minDate]);
+
+  const maxDateNorm = useMemo(() => {
+    if (!maxDate) return null;
+    const d = new Date(maxDate);
+    d.setHours(23, 59, 59, 999);
+    return d.getTime();
+  }, [maxDate]);
 
   const cells = useMemo(() => buildCalendarDays(vMonth, vYear), [vMonth, vYear]);
 
@@ -273,11 +281,12 @@ export function ThaiDatePicker({
               const isSel = c.dateStr === selStr;
               const cellTime = new Date(c.year, c.month, c.day).getTime();
               const isBeforeMin = minDateNorm !== null && cellTime < minDateNorm;
+              const isAfterMax = maxDateNorm !== null && cellTime > maxDateNorm;
               const isHoliday = !isPlain && holidays.some((h: any) => h.date && h.date.split('T')[0] === c.dateStr);
               
               // Check if date overlaps with existing leave
               const isLeave = !isPlain && myLeaves.some((l: any) => {
-                if (l.status === 'Rejected' || l.status === 'Cancelled') return false;
+                if (['REJECTED', 'Rejected', 'CANCELLED', 'Cancelled'].includes(l.status)) return false;
                 if (!l.startDate || !l.endDate) return false;
                 const s = new Date(l.startDate);
                 s.setHours(0,0,0,0);
@@ -286,7 +295,7 @@ export function ThaiDatePicker({
                 return cellTime >= s.getTime() && cellTime <= e.getTime();
               });
 
-              const isDisabled = isBeforeMin || isLeave;
+              const isDisabled = isBeforeMin || isAfterMax || isLeave;
 
               return (
                 <button
@@ -299,9 +308,9 @@ export function ThaiDatePicker({
                   }}
                   className={[
                     "h-9 flex items-center justify-center text-[13px] rounded transition-all",
-                    isBeforeMin ? "text-gray-300 bg-gray-50 cursor-not-allowed" : "",
+                    (isBeforeMin || isAfterMax) ? "text-gray-300 bg-gray-50 cursor-not-allowed" : "",
                     isLeave ? "bg-orange-100 text-orange-600 font-bold cursor-not-allowed border border-orange-200" : "",
-                    (!c.isCurrentMonth && !isBeforeMin && !isLeave ? "text-gray-300" : ""),
+                    (!c.isCurrentMonth && !isBeforeMin && !isAfterMax && !isLeave ? "text-gray-300" : ""),
                     c.isCurrentMonth && !isSel && !isDisabled && !isHoliday ? "text-gray-800 hover:bg-blue-50" : "",
                     c.isCurrentMonth && !isSel && !isDisabled && isHoliday ? "text-red-600 font-bold hover:bg-red-50" : "",
                     c.isToday && !isSel && !isDisabled ? "border border-blue-500 font-bold text-blue-600" : "",

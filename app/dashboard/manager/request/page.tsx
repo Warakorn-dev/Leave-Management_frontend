@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useLeave } from "@/hooks/useLeave";
 import { useLeaveBalance } from "@/hooks/useLeaveBalance";
 import { Upload, Check, X } from "lucide-react";
-import { ThaiDatePicker } from "@/components/ThaiCalendarPicker";
+import { DatePicker } from "@/components/DateAndTime";
 import { useRouter } from "next/navigation";
 import { LeaveTimePicker } from "@/components/LeaveTimePicker";
 import { userApi, uploadApi } from "@/api";
@@ -35,9 +35,33 @@ export default function ManagerRequestPage() {
 
   const { useLeaveBalancesQuery } = useLeaveBalance();
   const { data: balances = [] } = useLeaveBalancesQuery();
-  const { useCreateLeaveMutation, useHolidaysQuery } = useLeave();
+  const { useCreateLeaveMutation, useHolidaysQuery, useLeavesQuery } = useLeave();
   const { mutateAsync: createLeave } = useCreateLeaveMutation();
   const { data: holidaysData = [] } = useHolidaysQuery();
+  const { data: myLeaves = [] } = useLeavesQuery();
+
+  const isDateDisabled = (date: any) => {
+    if (!date) return false;
+    let checkDateStr = '';
+    if (typeof date.isValid === 'function' && date.isValid()) {
+      checkDateStr = date.format('YYYY-MM-DD');
+    } else if (date instanceof Date) {
+      const d = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
+      checkDateStr = d.toISOString().split('T')[0];
+    } else {
+      return false;
+    }
+
+    return myLeaves.some((leave: any) => {
+      if (['REJECTED', 'Rejected', 'CANCELLED', 'Cancelled'].includes(leave.status)) return false;
+      const start = new Date(leave.startDate);
+      const startStr = new Date(start.getTime() - start.getTimezoneOffset() * 60000).toISOString().split('T')[0];
+      const end = new Date(leave.endDate);
+      const endStr = new Date(end.getTime() - end.getTimezoneOffset() * 60000).toISOString().split('T')[0];
+      
+      return checkDateStr >= startStr && checkDateStr <= endStr;
+    });
+  };
 
   useEffect(() => {
     const fetchUserProfile = async () => {
@@ -161,7 +185,7 @@ export default function ManagerRequestPage() {
       <div className="bg-white flex items-center justify-between px-8 py-5 shadow-sm z-10">
         <div>
           <h1 className="text-xl font-bold text-black tracking-tight">แบบฟอร์มยื่นลา (Leave Request)</h1>
-          <p className="text-xs text-gray-500 mt-1 font-medium">กรุณากรอกข้อมูลให้ครบถ้วนเพื่อส่งให้ CEO อนุมัติ</p>
+          <p className="text-xs text-gray-500 mt-1 font-medium">กรุณากรอกข้อมูลให้ครบถ้วนเพื่อเข้าสู่กระบวนการพิจารณา</p>
         </div>
       </div>
 
@@ -270,7 +294,7 @@ export default function ManagerRequestPage() {
                 <>
                   <div className="md:col-span-2 md:w-[calc(50%-1.5rem)]">
                     <label className="text-[13px] font-semibold text-gray-800 block mb-2">วันที่ลา</label>
-                    <ThaiDatePicker 
+                    <DatePicker 
                       selected={leaveDate ? new Date(leaveDate) : null}
                       onChange={(date: Date | null) => {
                         if (date) {
@@ -280,8 +304,8 @@ export default function ManagerRequestPage() {
                           setLeaveDate('');
                         }
                       }}
+                      shouldDisableDate={isDateDisabled}
                       placeholderText="วว/ดด/ปปปป"
-                      className="w-full border border-gray-300 rounded-md px-3 py-2.5 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 bg-white shadow-sm transition-all text-gray-700"
                     />
                   </div>
                   <div className="md:col-span-2">
@@ -297,18 +321,19 @@ export default function ManagerRequestPage() {
                 <>
                   <div>
                     <label className="text-[13px] font-semibold text-gray-800 block mb-2">วันที่เริ่มต้น</label>
-                    <ThaiDatePicker 
-                      selected={startDate ? new Date(startDate) : null}
-                      onChange={(date: Date | null) => {
-                        if (date) {
-                          const d = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
-                          setStartDate(d.toISOString().split('T')[0]);
+                    <DatePicker 
+                      value={startDate || null}
+                      onChange={(val: any) => {
+                        if (val && typeof val === 'object' && typeof val.format === 'function') {
+                          setStartDate(val.format('YYYY-MM-DD'));
+                        } else if (typeof val === 'string') {
+                          setStartDate(val.substring(0, 10));
                         } else {
                           setStartDate('');
                         }
                       }}
+                      shouldDisableDate={isDateDisabled}
                       placeholderText="วว/ดด/ปปปป"
-                      className="w-full border border-gray-300 rounded-md px-3 py-2.5 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 bg-white shadow-sm transition-all text-gray-700"
                     />
                     {leaveMode === 'half_day' && (
                       <div className="flex items-center gap-4 mt-3">
@@ -325,19 +350,20 @@ export default function ManagerRequestPage() {
                   </div>
                   <div>
                     <label className="text-[13px] font-semibold text-gray-800 block mb-2">วันที่สิ้นสุด</label>
-                    <ThaiDatePicker 
-                      selected={endDate ? new Date(endDate) : null}
-                      minDate={startDate ? new Date(startDate) : undefined}
-                      onChange={(date: Date | null) => {
-                        if (date) {
-                          const d = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
-                          setEndDate(d.toISOString().split('T')[0]);
+                    <DatePicker 
+                      value={endDate || null}
+                      minDate={startDate ? startDate : undefined}
+                      onChange={(val: any) => {
+                        if (val && typeof val === 'object' && typeof val.format === 'function') {
+                          setEndDate(val.format('YYYY-MM-DD'));
+                        } else if (typeof val === 'string') {
+                          setEndDate(val.substring(0, 10));
                         } else {
                           setEndDate('');
                         }
                       }}
+                      shouldDisableDate={isDateDisabled}
                       placeholderText="วว/ดด/ปปปป"
-                      className="w-full border border-gray-300 rounded-md px-3 py-2.5 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 bg-white shadow-sm transition-all text-gray-700"
                     />
                   </div>
                 </>
@@ -432,6 +458,27 @@ export default function ManagerRequestPage() {
                 {isSubmitting ? 'กำลังประมวลผล...' : 'ยืนยัน'}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Error Modal */}
+      {showErrorModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-[400px] w-full p-8 text-center animate-in zoom-in-95 duration-200 mx-4 border-t-4 border-red-500">
+            <div className="w-16 h-16 bg-red-100 rounded-full mx-auto flex items-center justify-center mb-4">
+              <X className="w-8 h-8 text-red-600" strokeWidth={3} />
+            </div>
+            <h2 className="text-xl font-bold text-gray-900 mb-2">ข้อผิดพลาด</h2>
+            <p className="text-gray-600 text-[15px] mb-6 leading-relaxed">
+              {errorMsg}
+            </p>
+            <button 
+              onClick={() => setShowErrorModal(false)}
+              className="bg-gray-100 hover:bg-gray-200 text-gray-800 font-bold py-2.5 px-8 rounded-xl transition-colors text-sm w-full"
+            >
+              ตกลง
+            </button>
           </div>
         </div>
       )}

@@ -27,11 +27,15 @@ export default function LeaveCalendarPage() {
 
     const apiLeaves = leavesData
       .filter((leave: any) => {
-        return leave.status.includes('Approved');
+        const s = (leave.status || '').toUpperCase();
+        return s === 'APPROVED' || s.includes('APPROVED');
       })
-      .map((leave: any) => ({
-        startDate: leave.startDate.split('T')[0],
-        endDate: leave.endDate.split('T')[0],
+      .map((leave: any) => {
+        const startD = new Date(leave.startDate);
+        const endD = new Date(leave.endDate);
+        return {
+        startDate: `${startD.getFullYear()}-${(startD.getMonth() + 1).toString().padStart(2, '0')}-${startD.getDate().toString().padStart(2, '0')}`,
+        endDate: `${endD.getFullYear()}-${(endD.getMonth() + 1).toString().padStart(2, '0')}-${endD.getDate().toString().padStart(2, '0')}`,
         type: leave.leaveType?.name || leave.type,
         status: leave.status,
         name: leave.user?.firstName ? `${leave.user.title || ''}${leave.user.firstName} ${leave.user.lastName || ''}`.trim() : (leave.employee?.firstName ? `${leave.employee.title || ''}${leave.employee.firstName} ${leave.employee.lastName || ''}`.trim() : (leave.userId || 'User')),
@@ -43,7 +47,8 @@ export default function LeaveCalendarPage() {
         startTime: leave.startTime,
         endTime: leave.endTime,
         leaveHours: leave.leaveHours
-      }));
+      };
+    });
     setAllLeaves(apiLeaves);
 
     setPublicHolidays(holidaysData.map((h: any) => ({
@@ -417,4 +422,5 @@ export default function LeaveCalendarPage() {
     </div>
   );
 }
+
 

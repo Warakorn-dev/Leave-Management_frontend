@@ -10,7 +10,7 @@ import {
 } from 'lucide-react';
 import Swal from 'sweetalert2';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
-import { ThaiDatePicker } from '@/components/ThaiCalendarPicker';
+import { DatePicker } from '@/components/DateAndTime';
 import { holidayApi } from '@/api';
 
 interface Holiday {
@@ -293,11 +293,10 @@ export default function HolidayManagementPage() {
               <div>
                 <label className="block text-sm font-bold text-slate-700 mb-1.5">วันที่ <span className="text-red-500">*</span></label>
                 <div className="relative">
-                  <ThaiDatePicker 
+                  <DatePicker 
                     selected={formData.date}
                     onChange={(date: Date | null) => date && setFormData({ ...formData, date })}
                     placeholderText="วว/ดด/ปปปป"
-                    className="w-full bg-slate-50 border-0 rounded-xl px-4 py-3 text-sm font-medium text-slate-700 outline-none ring-1 ring-slate-200 focus:ring-2 focus:ring-blue-500/20"
                   />
                 </div>
               </div>
@@ -345,11 +344,10 @@ export default function HolidayManagementPage() {
               <div>
                 <label className="block text-sm font-bold text-slate-700 mb-1.5">วันที่ <span className="text-red-500">*</span></label>
                 <div className="relative">
-                  <ThaiDatePicker 
+                  <DatePicker 
                     selected={formData.date}
                     onChange={(date: Date | null) => date && setFormData({ ...formData, date })}
                     placeholderText="วว/ดด/ปปปป"
-                    className="w-full bg-slate-50 border-0 rounded-xl px-4 py-3 text-sm font-medium text-slate-700 outline-none ring-1 ring-slate-200 focus:ring-2 focus:ring-blue-500/20"
                   />
                 </div>
               </div>

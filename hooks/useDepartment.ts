@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Department } from '@/types';
+import { Department } from '@/lib/types';
 
 import { axiosInstance } from '@/api';
 

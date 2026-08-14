@@ -5,7 +5,7 @@ import { useLeave } from "@/hooks/useLeave";
 import { useLeaveBalance } from "@/hooks/useLeaveBalance";
 import { useRouter } from "next/navigation";
 import { Mail, Bell, Settings, Search, Check, X, Building, User, Upload } from "lucide-react";
-import { ThaiDatePicker } from "@/components/ThaiCalendarPicker";
+import { DatePicker } from "@/components/DateAndTime";
 import { calculateLeaveDays } from "@/lib/store";
 import { LeaveTimePicker } from "@/components/LeaveTimePicker";
 import { userApi, uploadApi } from "@/api";
@@ -37,9 +37,33 @@ export default function RequestLeavePage() {
 
   const { useLeaveBalancesQuery } = useLeaveBalance();
   const { data: balances = [] } = useLeaveBalancesQuery();
-  const { useCreateLeaveMutation, useHolidaysQuery } = useLeave();
+  const { useCreateLeaveMutation, useHolidaysQuery, useLeavesQuery } = useLeave();
   const { mutateAsync: createLeave } = useCreateLeaveMutation();
   const { data: holidaysData = [] } = useHolidaysQuery();
+  const { data: myLeaves = [] } = useLeavesQuery();
+
+  const isDateDisabled = (date: any) => {
+    if (!date) return false;
+    let checkDateStr = '';
+    if (typeof date.isValid === 'function' && date.isValid()) {
+      checkDateStr = date.format('YYYY-MM-DD');
+    } else if (date instanceof Date) {
+      const d = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
+      checkDateStr = d.toISOString().split('T')[0];
+    } else {
+      return false;
+    }
+
+    return myLeaves.some((leave: any) => {
+      if (['REJECTED', 'Rejected', 'CANCELLED', 'Cancelled'].includes(leave.status)) return false;
+      const start = new Date(leave.startDate);
+      const startStr = new Date(start.getTime() - start.getTimezoneOffset() * 60000).toISOString().split('T')[0];
+      const end = new Date(leave.endDate);
+      const endStr = new Date(end.getTime() - end.getTimezoneOffset() * 60000).toISOString().split('T')[0];
+      
+      return checkDateStr >= startStr && checkDateStr <= endStr;
+    });
+  };
 
   useEffect(() => {
     const fetchUserProfile = async () => {
@@ -192,7 +216,7 @@ export default function RequestLeavePage() {
       <div className="bg-white flex items-center justify-between px-8 py-5 shadow-sm z-10">
         <div>
           <h1 className="text-xl font-bold text-black tracking-tight">แบบฟอร์มยื่นลา (Leave Request)</h1>
-          <p className="text-xs text-gray-500 mt-1 font-medium">กรุณากรอกข้อมูลให้ครบถ้วนเพื่อส่งให้ CEO อนุมัติ</p>
+          <p className="text-xs text-gray-500 mt-1 font-medium">กรุณากรอกข้อมูลให้ครบถ้วนเพื่อเข้าสู่กระบวนการพิจารณา</p>
         </div>
       </div>
 
@@ -301,18 +325,19 @@ export default function RequestLeavePage() {
                 <>
                   <div className="md:col-span-2 md:w-[calc(50%-1.5rem)]">
                     <label className="text-[13px] font-semibold text-gray-800 block mb-2">วันที่ลา</label>
-                    <ThaiDatePicker 
-                      selected={leaveDate ? new Date(leaveDate) : null}
-                      onChange={(date: Date | null) => {
-                        if (date) {
-                          const d = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
-                          setLeaveDate(d.toISOString().split('T')[0]);
+                    <DatePicker 
+                      value={leaveDate || null}
+                      onChange={(val: any) => {
+                        if (val && typeof val === 'object' && typeof val.format === 'function') {
+                          setLeaveDate(val.format('YYYY-MM-DD'));
+                        } else if (typeof val === 'string') {
+                          setLeaveDate(val.substring(0, 10));
                         } else {
                           setLeaveDate('');
                         }
                       }}
+                      shouldDisableDate={isDateDisabled}
                       placeholderText="วว/ดด/ปปปป"
-                      className="w-full border border-gray-300 rounded-md px-3 py-2.5 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 bg-white shadow-sm transition-all text-gray-700"
                     />
                   </div>
                   <div className="md:col-span-2">
@@ -328,18 +353,19 @@ export default function RequestLeavePage() {
                 <>
                   <div>
                     <label className="text-[13px] font-semibold text-gray-800 block mb-2">วันที่เริ่มต้น</label>
-                    <ThaiDatePicker 
-                      selected={startDate ? new Date(startDate) : null}
-                      onChange={(date: Date | null) => {
-                        if (date) {
-                          const d = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
-                          setStartDate(d.toISOString().split('T')[0]);
+                    <DatePicker 
+                      value={startDate || null}
+                      onChange={(val: any) => {
+                        if (val && typeof val === 'object' && typeof val.format === 'function') {
+                          setStartDate(val.format('YYYY-MM-DD'));
+                        } else if (typeof val === 'string') {
+                          setStartDate(val.substring(0, 10));
                         } else {
                           setStartDate('');
                         }
                       }}
+                      shouldDisableDate={isDateDisabled}
                       placeholderText="วว/ดด/ปปปป"
-                      className="w-full border border-gray-300 rounded-md px-3 py-2.5 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 bg-white shadow-sm transition-all text-gray-700"
                     />
                     {leaveMode === 'half_day' && (
                       <div className="flex items-center gap-4 mt-3">
@@ -356,19 +382,20 @@ export default function RequestLeavePage() {
                   </div>
                   <div>
                     <label className="text-[13px] font-semibold text-gray-800 block mb-2">วันที่สิ้นสุด</label>
-                    <ThaiDatePicker 
-                      selected={endDate ? new Date(endDate) : null}
-                      minDate={startDate ? new Date(startDate) : undefined}
-                      onChange={(date: Date | null) => {
-                        if (date) {
-                          const d = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
-                          setEndDate(d.toISOString().split('T')[0]);
+                    <DatePicker 
+                      value={endDate || null}
+                      minDate={startDate ? startDate : undefined}
+                      onChange={(val: any) => {
+                        if (val && typeof val === 'object' && typeof val.format === 'function') {
+                          setEndDate(val.format('YYYY-MM-DD'));
+                        } else if (typeof val === 'string') {
+                          setEndDate(val.substring(0, 10));
                         } else {
                           setEndDate('');
                         }
                       }}
+                      shouldDisableDate={isDateDisabled}
                       placeholderText="วว/ดด/ปปปป"
-                      className="w-full border border-gray-300 rounded-md px-3 py-2.5 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 bg-white shadow-sm transition-all text-gray-700"
                     />
                   </div>
                 </>

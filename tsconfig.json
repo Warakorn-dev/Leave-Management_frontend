@@ -36,6 +36,7 @@
     ".next/dev/types/**/*.ts",
     "**/*.mts"
   ],
+<<<<<<< HEAD
   "exclude": [
     "node_modules",
     "add-leaders.ts",
@@ -55,3 +56,7 @@
     "_backend_src_backup"
   ]
 }
+=======
+  "exclude": ["node_modules"]
+}
+>>>>>>> 278a4765ce02a7aa0ece327b9c5c8574ef37fbaa

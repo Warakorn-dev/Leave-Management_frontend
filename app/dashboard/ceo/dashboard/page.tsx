@@ -20,7 +20,7 @@ import { format, parseISO } from 'date-fns';
 import { th } from 'date-fns/locale';
 import Swal from 'sweetalert2';
 import { previewAttachment } from "@/lib/attachmentPreview";
-import { Leave } from '@/types';
+import { Leave } from '@/lib/types';
 
 export default function CEODashboard() {
   const [isMounted, setIsMounted] = useState(false);
@@ -44,15 +44,8 @@ export default function CEODashboard() {
   }, []);
 
   const pendingCEOLeaves = useMemo(() => {
-    return allLeaves.filter(l => {
-      if (l.status === 'Waiting CEO') return true;
-      if (l.status === 'Pending') {
-        const employee = employees.find(e => e.id === l.employeeId || e.employeeId === l.employeeId || e.username === l.userId || (e.firstName + ' ' + e.lastName) === l.userId);
-        return employee?.role === 'manager';
-      }
-      return false;
-    });
-  }, [allLeaves, employees]);
+    return allLeaves.filter(l => l.status === 'PENDING_EXECUTIVE');
+  }, [allLeaves]);
 
   const recentLeaves = useMemo(() => {
     // Sort CEO-specific leaves by latest createdAt, and take the top 7 to show in the dashboard
@@ -102,15 +95,21 @@ export default function CEODashboard() {
   allLeaves.forEach((req: any) => {
     let typeText = 'ยื่นคำขอลา';
     let color = 'bg-[#FF9800]';
-    if (req.status === 'Approved') {
+    if (req.status === 'APPROVED') {
       typeText = 'อนุมัติแล้ว';
       color = 'bg-[#4CAF50]';
-    } else if (req.status === 'Rejected') {
+    } else if (req.status === 'REJECTED') {
       typeText = 'ปฏิเสธแล้ว';
       color = 'bg-[#F44336]';
-    } else if (req.status === 'Waiting CEO') {
+    } else if (req.status === 'PENDING_EXECUTIVE') {
       typeText = 'รอ CEO อนุมัติ';
       color = 'bg-[#2196F3]';
+    } else if (req.status === 'PENDING_VERIFY') {
+      typeText = 'รอ HR ตรวจสอบ';
+      color = 'bg-[#FF9800]';
+    } else if (req.status === 'PENDING_SUPERVISOR') {
+      typeText = 'รอหัวหน้างานอนุมัติ';
+      color = 'bg-[#FF9800]';
     }
 
     const empName = req.user?.firstName || req.employeeName || req.userId || 'พนักงาน';
@@ -152,6 +151,12 @@ export default function CEODashboard() {
         return <span className="text-red-500 bg-red-50 px-3 py-1 rounded-full text-xs font-bold">ปฏิเสธ</span>;
       case 'cancelled':
         return <span className="text-slate-500 bg-slate-100 px-3 py-1 rounded-full text-xs font-bold">ยกเลิก</span>;
+      case 'pending_executive':
+        return <span className="text-amber-500 bg-amber-50 px-3 py-1 rounded-full text-xs font-bold">รอ CEO อนุมัติ</span>;
+      case 'pending_verify':
+        return <span className="text-amber-500 bg-amber-50 px-3 py-1 rounded-full text-xs font-bold">รอ HR ตรวจสอบ</span>;
+      case 'pending_supervisor':
+        return <span className="text-amber-500 bg-amber-50 px-3 py-1 rounded-full text-xs font-bold">รอหัวหน้างานอนุมัติ</span>;
       default:
         return <span className="text-amber-500 bg-amber-50 px-3 py-1 rounded-full text-xs font-bold">รออนุมัติ</span>;
     }
@@ -298,6 +303,7 @@ export default function CEODashboard() {
               <table className="w-full text-left text-[14px]">
                 <thead className="bg-[#e0e7ff] text-[#4f46e5]">
                   <tr>
+                    <th className="py-3 px-4 font-bold whitespace-nowrap">รหัสคำขอลา</th>
                     <th className="py-3 px-4 font-bold whitespace-nowrap">พนักงาน</th>
                     <th className="py-3 px-4 font-bold whitespace-nowrap">แผนก</th>
                     <th className="py-3 px-4 font-bold whitespace-nowrap">ประเภทการลา</th>
@@ -315,15 +321,16 @@ export default function CEODashboard() {
                       // Match short dept name by looking up the employee
                       const employee = employees.find(e => e.id === leave.employeeId || e.employeeId === leave.employeeId || e.username === leave.userId || (e.firstName + ' ' + e.lastName) === leave.userId);
                       const dept = employee?.departmentName || leave.departmentName || leave.department || '';
-                      const shortDept = dept ? `(${dept.substring(0, 3).toUpperCase()})` : '(-)';
+                      const shortDept = dept ? `(${dept})` : '(-)';
                       const empName = leave.employeeName || leave.userId || 'ไม่ระบุชื่อ';
                       const leaveType = leave.leaveTypeName || leave.type || '-';
 
                       return (
                         <tr key={leave.id} className="hover:bg-slate-50 transition-colors">
-                          <td className="py-3 px-4 font-medium text-slate-700">{empName.split(' ')[0]}</td>
+                          <td className="py-3 px-4 text-sm font-semibold text-blue-600 whitespace-nowrap">{leave.requestCode || '-'}</td>
+                          <td className="py-3 px-4 font-medium text-slate-700">{empName}</td>
                           <td className="py-3 px-4 text-xs font-semibold text-slate-500">{shortDept}</td>
-                          <td className="py-3 px-4 truncate max-w-[100px] text-slate-700">{leaveType.split(' ')[0]}</td>
+                          <td className="py-3 px-4 truncate max-w-[150px] text-slate-700">{leaveType}</td>
                           <td className="py-3 px-4">{formatDateRange(leave.startDate, leave.endDate)}</td>
                           <td className="py-3 px-4 text-center">
                             {getStatusLabel(leave.status)}

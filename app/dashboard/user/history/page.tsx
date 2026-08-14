@@ -6,9 +6,10 @@ import { Mail, Bell, Settings, Calendar as CalendarIcon, X, User, Download, Edit
 import { useLeave } from "@/hooks/useLeave";
 import { useLeaveBalance } from "@/hooks/useLeaveBalance";
 import Swal from "sweetalert2";
-import { ThaiDatePicker, ThaiMonthPicker } from "@/components/ThaiCalendarPicker";
+import { DatePicker } from "@/components/DateAndTime";
 import { LeaveTimePicker } from "@/components/LeaveTimePicker";
 import { uploadApi } from "@/api";
+import { getLeaveStatusText, getLeaveStatusBadgeColor } from "@/lib/utils";
 
 export default function LeaveHistoryPage() {
   const [requests, setRequests] = useState<any[]>([]);
@@ -21,6 +22,7 @@ export default function LeaveHistoryPage() {
 
   const router = useRouter();
   const [showConfirmEdit, setShowConfirmEdit] = useState(false);
+  const [previewAttachment, setPreviewAttachment] = useState<{ url: string, isImage: boolean } | null>(null);
 
   const [isEditing, setIsEditing] = useState(false);
   const [editAttachment, setEditAttachment] = useState<File | null>(null);
@@ -105,6 +107,7 @@ export default function LeaveHistoryPage() {
 
       return {
         id: r.id,
+        requestCode: r.requestCode,
         dateStr,
         type: r.leaveType?.name || r.type,
         days: daysStr,
@@ -134,7 +137,8 @@ export default function LeaveHistoryPage() {
         refetchLeaves();
         Swal.fire({
           icon: 'success',
-          title: isApprovedCancel ? 'ยกเลิกวันลาสำเร็จ' : 'ยกเลิกคำขอสำเร็จ',
+          title: isApprovedCancel ? 'ส่งคำขอยกเลิกวันลาแล้ว' : 'ยกเลิกคำขอสำเร็จ',
+          text: isApprovedCancel ? 'คำขอถูกส่งให้ HR พิจารณา เมื่ออนุมัติแล้วระบบจะคืนสิทธิวันลาให้' : undefined,
           showConfirmButton: false,
           timer: 1500
         });
@@ -205,7 +209,8 @@ export default function LeaveHistoryPage() {
       const payload: any = {
         leaveTypeId: editForm.type,
         reason: editForm.reason,
-        leaveMode: editForm.leaveMode
+        leaveMode: editForm.leaveMode,
+        status: 'PENDING_VERIFY'
       };
       
       if (editForm.leaveMode === 'hourly') {
@@ -273,18 +278,17 @@ export default function LeaveHistoryPage() {
 
               <div className="relative inline-block w-[180px]">
                 {filterType === "monthly" ? (
-                  <ThaiMonthPicker 
+                  <DatePicker 
                     value={selectedMonthRaw} 
-                    onChange={(newMonth) => setSelectedMonthRaw(newMonth)} 
-                    className="w-full h-full bg-transparent border-none text-black text-[15px] font-bold py-3 px-4 focus:outline-none cursor-pointer flex items-center justify-between rounded-r-xl"
+                    onChange={(newMonth: any) => setSelectedMonthRaw(newMonth)} 
+                    views={['year', 'month']}
+                    format="MM/BBBB"
                   />
                 ) : (
-                  <ThaiDatePicker 
+                  <DatePicker 
                     selected={selectedDate}
                     onChange={(date: Date | null) => setSelectedDate(date)}
                     placeholderText="เลือกวันที่"
-                    isPlain={true}
-                    className="w-full h-full bg-transparent border-none text-black text-[15px] font-bold py-3 px-4 focus:outline-none cursor-pointer rounded-r-xl"
                   />
                 )}
               </div>
@@ -306,26 +310,26 @@ export default function LeaveHistoryPage() {
                 <table className="w-full text-sm text-left">
                   <thead className="bg-[#CDE4EB] text-gray-800 text-[15px]">
                     <tr>
-                      <th className="px-6 py-4 font-bold whitespace-nowrap">วันที่ลา</th>
-                      <th className="px-6 py-4 font-bold whitespace-nowrap">ประเภทการลา</th>
-                      <th className="px-6 py-4 font-bold text-center whitespace-nowrap">จำนวนวันลา</th>
-                      <th className="px-6 py-4 font-bold whitespace-nowrap">เหตุผล</th>
-                      <th className="px-6 py-4 font-bold text-center whitespace-nowrap">สถานะ</th>
-                      <th className="px-6 py-4 font-bold text-center whitespace-nowrap">จัดการ</th>
+                      <th className="px-6 py-4 font-bold whitespace-nowrap w-[15%]">รหัสการลา</th>
+                      <th className="px-6 py-4 font-bold whitespace-nowrap w-[15%]">วันที่ลา</th>
+                      <th className="px-6 py-4 font-bold whitespace-nowrap w-[15%]">ประเภทการลา</th>
+                      <th className="px-6 py-4 font-bold text-center whitespace-nowrap w-[15%]">จำนวนวันลา</th>
+                      <th className="px-6 py-4 font-bold whitespace-nowrap w-[20%]">เหตุผล</th>
+                      <th className="px-6 py-4 font-bold text-center whitespace-nowrap w-[10%]">สถานะ</th>
+                      <th className="px-6 py-4 font-bold text-center whitespace-nowrap w-[10%]">จัดการ</th>
                     </tr>
                   </thead>
                   <tbody>
                     {requests.map((req, idx) => (
                       <tr key={req.id || idx} className="border-b border-gray-100 last:border-0 hover:bg-gray-50 transition-colors">
+                        <td className="px-6 py-5 text-blue-500 font-semibold whitespace-nowrap">{req.requestCode || '-'}</td>
                         <td className="px-6 py-5 text-black font-medium whitespace-nowrap">{req.dateStr}</td>
                         <td className="px-6 py-5 text-black font-medium whitespace-nowrap">{req.type}</td>
                         <td className="px-6 py-5 text-black font-medium text-center whitespace-nowrap">{req.days}</td>
                         <td className="px-6 py-5 text-black font-medium">{req.reason}</td>
                         <td className="px-6 py-5 text-center whitespace-nowrap">
-                          <span className={`inline-block px-5 py-1.5 rounded-full text-xs font-bold text-white shadow-sm min-w-[80px] ${req.status.includes('Approved') ? 'bg-[#00E676]' :
-                              req.status.includes('Rejected') ? 'bg-[#FF0000]' : 'bg-[#FFA000]'
-                            }`}>
-                            {req.status.includes('Approved') ? 'อนุมัติ' : req.status.includes('Rejected') ? 'ปฏิเสธ' : 'รออนุมัติ'}
+                          <span className={`inline-block px-5 py-1.5 rounded-full text-[13px] font-bold text-white shadow-sm min-w-[120px] text-center ${getLeaveStatusBadgeColor(req.status)}`}>
+                            {getLeaveStatusText(req.status)}
                           </span>
                         </td>
                         <td className="px-6 py-5 text-center whitespace-nowrap">
@@ -428,10 +432,28 @@ export default function LeaveHistoryPage() {
                       <span className="w-[26px] h-[26px] bg-yellow-100 text-yellow-600 flex items-center justify-center rounded-full shrink-0">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48" /></svg>
                       </span>
-                      <span className="font-bold min-w-[80px]">เอกสารแนบ:</span> -
-                      <button className="ml-auto p-1.5 border border-gray-300 rounded-md hover:bg-gray-100 text-black">
-                        <Download className="w-[14px] h-[14px]" strokeWidth={2.5} />
-                      </button>
+                      <span className="font-bold min-w-[80px]">เอกสารแนบ:</span> {selectedRequest.raw?.attachments && selectedRequest.raw.attachments.length > 0 ? (
+                        <>
+                          <span className="text-blue-500 font-medium truncate max-w-[150px]">
+                            {selectedRequest.raw.attachments[0].fileType.includes('image') ? 'รูปภาพแนบ' : 'ไฟล์แนบ'}
+                          </span>
+                          <button 
+                            className="ml-auto p-1.5 border border-gray-300 rounded-md hover:bg-gray-100 text-black"
+                            onClick={() => {
+                              const att = selectedRequest.raw.attachments[0];
+                              const isData = att.filePath.startsWith('data:');
+                              const fileSrc = isData ? att.filePath : (att.filePath.startsWith('http') ? att.filePath : `http://localhost:8000${att.filePath.startsWith('/') ? '' : '/'}${att.filePath}`);
+                              const isImage = att.fileType.includes('image') || (!isData && att.filePath.match(/\.(jpeg|jpg|gif|png)$/i));
+                              
+                              setPreviewAttachment({ url: fileSrc, isImage });
+                            }}
+                          >
+                            <Download className="w-[14px] h-[14px]" strokeWidth={2.5} />
+                          </button>
+                        </>
+                      ) : (
+                        <span className="text-gray-400">-</span>
+                      )}
                     </p>
                   </div>
                 </div>
@@ -456,10 +478,8 @@ export default function LeaveHistoryPage() {
                 <div className="flex flex-col md:flex-row items-start gap-4 bg-[#F8F9FA] border border-gray-200 rounded-xl p-4">
                   <div className="w-[120px] flex flex-col justify-start border-r border-gray-200 pr-4">
                     <span className="text-[12px] font-bold text-black mb-2">สถานะ:</span>
-                      <span className={`inline-flex justify-center items-center px-4 py-1.5 rounded-full text-[13px] font-bold text-white shadow-sm ${selectedRequest.status.includes('Approved') ? 'bg-[#00E676]' :
-                        selectedRequest.status.includes('Rejected') ? 'bg-[#FF0000]' : selectedRequest.status === 'Cancelled' ? 'bg-gray-500' : 'bg-[#FFA000]'
-                      }`}>
-                      {selectedRequest.status.includes('Approved') ? 'อนุมัติ' : selectedRequest.status.includes('Rejected') ? 'ปฏิเสธ' : selectedRequest.status === 'Cancelled' ? 'ยกเลิกแล้ว' : 'รออนุมัติ'}
+                      <span className={`px-4 py-2 rounded-full text-sm font-bold text-white shadow-sm ${getLeaveStatusBadgeColor(selectedRequest.status)}`}>
+                      {getLeaveStatusText(selectedRequest.status)}
                     </span>
                   </div>
                   <div className="flex-1 flex flex-col justify-start w-full">
@@ -479,7 +499,7 @@ export default function LeaveHistoryPage() {
             </div>
 
             {/* Footer */}
-            {(!selectedRequest.status.includes('Approved') && !selectedRequest.status.includes('Rejected') && selectedRequest.status !== 'Cancelled') && (
+            {(!selectedRequest.status.includes('Approved') && !['Cancelled', 'CANCELLED', 'PENDING_CANCELLATION'].includes(selectedRequest.status)) && (
               <div className="px-6 py-4 border-t border-gray-100 flex items-center justify-between bg-white mt-auto shrink-0">
                 <span className="text-[13px] font-medium text-gray-300">วันที่ยื่นคำขอ : {selectedRequest.raw?.createdAt ? new Date(selectedRequest.raw.createdAt).toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) + ' น.' : '-'}</span>
                 <div className="flex items-center gap-5">
@@ -494,7 +514,7 @@ export default function LeaveHistoryPage() {
                 </div>
               </div>
             )}
-            {(selectedRequest.status.includes('Approved') || selectedRequest.status.includes('Rejected') || selectedRequest.status === 'Cancelled') && (
+            {(selectedRequest.status.includes('Approved') || ['Cancelled', 'CANCELLED', 'PENDING_CANCELLATION'].includes(selectedRequest.status)) && (
               <div className="px-6 py-4 border-t border-gray-100 flex items-center justify-between bg-white mt-auto shrink-0">
                 <span className="text-[13px] font-medium text-gray-300">วันที่ยื่นคำขอ : {selectedRequest.raw?.createdAt ? new Date(selectedRequest.raw.createdAt).toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) + ' น.' : '-'}</span>
                 
@@ -585,19 +605,18 @@ export default function LeaveHistoryPage() {
                     <>
                       <div className="md:col-span-2 md:w-[calc(50%-1.5rem)]">
                         <label className="block text-[13px] font-bold text-gray-800 mb-2">วันที่ลา</label>
-                        <ThaiDatePicker 
-                          selected={editForm.leaveDate ? new Date(editForm.leaveDate) : null}
-                          onChange={(date: Date | null) => {
-                            if (date) {
-                              const d = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
-                              setEditForm({ ...editForm, leaveDate: d.toISOString().split('T')[0] });
+                        <DatePicker 
+                          value={editForm.leaveDate || null}
+                          onChange={(val: any) => {
+                            if (val && typeof val === 'object' && typeof val.format === 'function') {
+                              setEditForm({ ...editForm, leaveDate: val.format('YYYY-MM-DD') });
+                            } else if (typeof val === 'string') {
+                              setEditForm({ ...editForm, leaveDate: val.substring(0, 10) });
                             } else {
                               setEditForm({ ...editForm, leaveDate: '' });
                             }
                           }}
                           placeholderText="วว/ดด/ปปปป"
-                          isPlain={true}
-                          className="w-full border border-gray-300 rounded-md px-3 py-2.5 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 bg-white shadow-sm transition-all text-gray-700 cursor-pointer"
                         />
                       </div>
                       <div className="md:col-span-2">
@@ -613,19 +632,18 @@ export default function LeaveHistoryPage() {
                     <>
                       <div className="md:col-span-1">
                         <label className="block text-[13px] font-bold text-gray-800 mb-2">วันที่เริ่มต้น</label>
-                        <ThaiDatePicker 
-                          selected={editForm.startDate ? new Date(editForm.startDate) : null}
-                          onChange={(date: Date | null) => {
-                            if (date) {
-                              const d = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
-                              setEditForm({ ...editForm, startDate: d.toISOString().split('T')[0] });
+                        <DatePicker 
+                          value={editForm.startDate || null}
+                          onChange={(val: any) => {
+                            if (val && typeof val === 'object' && typeof val.format === 'function') {
+                              setEditForm({ ...editForm, startDate: val.format('YYYY-MM-DD') });
+                            } else if (typeof val === 'string') {
+                              setEditForm({ ...editForm, startDate: val.substring(0, 10) });
                             } else {
                               setEditForm({ ...editForm, startDate: '' });
                             }
                           }}
                           placeholderText="วว/ดด/ปปปป"
-                          isPlain={true}
-                          className="w-full border border-gray-300 rounded-md px-3 py-2.5 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 bg-white shadow-sm transition-all text-gray-700 cursor-pointer"
                         />
                         {editForm.leaveMode === 'half_day' && (
                           <div className="flex items-center gap-4 mt-3">
@@ -642,19 +660,18 @@ export default function LeaveHistoryPage() {
                       </div>
                       <div className="md:col-span-1">
                         <label className="block text-[13px] font-bold text-gray-800 mb-2">วันที่สิ้นสุด</label>
-                        <ThaiDatePicker 
-                          selected={editForm.endDate ? new Date(editForm.endDate) : null}
-                          onChange={(date: Date | null) => {
-                            if (date) {
-                              const d = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
-                              setEditForm({ ...editForm, endDate: d.toISOString().split('T')[0] });
+                        <DatePicker 
+                          value={editForm.endDate || null}
+                          onChange={(val: any) => {
+                            if (val && typeof val === 'object' && typeof val.format === 'function') {
+                              setEditForm({ ...editForm, endDate: val.format('YYYY-MM-DD') });
+                            } else if (typeof val === 'string') {
+                              setEditForm({ ...editForm, endDate: val.substring(0, 10) });
                             } else {
                               setEditForm({ ...editForm, endDate: '' });
                             }
                           }}
                           placeholderText="วว/ดด/ปปปป"
-                          className="w-full border border-gray-300 rounded-md px-3 py-2.5 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 bg-white shadow-sm transition-all text-gray-700 cursor-pointer"
-                          // disabled={editForm.leaveMode === 'half_day'} // ThaiDatePicker ไม่รองรับ disabled ตอนนี้
                         />
                       </div>
                     </>
@@ -743,6 +760,30 @@ export default function LeaveHistoryPage() {
           )}
         </div>
       )}
+      {/* Preview Attachment Modal */}
+      {previewAttachment && (
+        <div className="fixed inset-0 z-[140] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200" onClick={() => setPreviewAttachment(null)}>
+          <div className="bg-white rounded-[24px] w-full max-w-4xl shadow-2xl flex flex-col max-h-[90vh] animate-in zoom-in-95 duration-200 border-2 border-blue-500 overflow-hidden relative" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 bg-[#FAFAFA]">
+              <h2 className="text-[16px] font-bold text-black">ไฟล์เอกสารแนบ (Attachment)</h2>
+              <button 
+                onClick={() => setPreviewAttachment(null)}
+                className="w-8 h-8 flex items-center justify-center text-white bg-red-500 rounded-full hover:bg-red-600 transition-colors shadow-sm"
+              >
+                <X className="w-5 h-5" strokeWidth={3} />
+              </button>
+            </div>
+            <div className="p-6 overflow-y-auto flex-1 flex items-center justify-center bg-gray-50/50">
+              {previewAttachment.isImage ? (
+                <img src={previewAttachment.url} alt="Preview" className="max-w-full max-h-[70vh] object-contain rounded-lg shadow-sm border border-gray-200" />
+              ) : (
+                <iframe src={previewAttachment.url} className="w-full h-[75vh] bg-white rounded-lg shadow-sm border border-gray-200" />
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }

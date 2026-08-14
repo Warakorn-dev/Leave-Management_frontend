@@ -9,8 +9,8 @@ import { usePositionsQuery } from '@/hooks/usePosition';
 import { UserPlus, ArrowLeft, ChevronDown, Eye, EyeOff } from 'lucide-react';
 import Swal from 'sweetalert2';
 import Link from 'next/link';
-import { Employee } from '@/types';
-import { ThaiDatePicker } from '@/components/ThaiCalendarPicker';
+import { Employee } from '@/lib/types';
+import { DatePicker } from '@/components/DateAndTime';
 
 export default function AddEmployeePage() {
   const { user } = useAuth();
@@ -150,8 +150,8 @@ export default function AddEmployeePage() {
       return;
     }
 
-    if (!formData.employeeId || !formData.title || !formData.firstName || !formData.lastName || !formData.username || !formData.password || !formData.email) {
-      Swal.fire('ข้อมูลไม่ครบถ้วน', 'กรุณากรอกข้อมูลที่จำเป็นให้ครบ', 'error');
+    if (!formData.employeeId || !formData.title || !formData.firstName || !formData.lastName || !formData.username || !formData.password || !formData.email || !formData.departmentId || !formData.positionId) {
+      Swal.fire('ข้อมูลไม่ครบถ้วน', 'กรุณากรอกข้อมูลที่จำเป็นให้ครบ (รวมถึงแผนกและตำแหน่ง)', 'error');
       return;
     }
 
@@ -196,9 +196,15 @@ export default function AddEmployeePage() {
           router.push('/dashboard/hr/employees');
         });
       },
-      onError: (err) => {
+      onError: (err: any) => {
         setIsLoading(false);
-        Swal.fire('เกิดข้อผิดพลาด', err.message || 'ไม่สามารถเพิ่มพนักงานได้', 'error');
+        let errorMsg = err.response?.data?.message;
+        if (Array.isArray(errorMsg)) {
+          errorMsg = errorMsg[0]; // take the first validation error
+        } else if (!errorMsg) {
+          errorMsg = err.response?.data?.error || err.message || 'ไม่สามารถเพิ่มพนักงานได้';
+        }
+        Swal.fire('เกิดข้อผิดพลาด', errorMsg, 'error');
       }
     });
   };
@@ -419,7 +425,7 @@ export default function AddEmployeePage() {
 
             <div className="space-y-3">
               <label className="block text-[#475569] font-medium text-[17px]">วันเกิด (Date of Birth)</label>
-              <ThaiDatePicker 
+              <DatePicker 
                 selected={formData.dateOfBirth ? new Date(formData.dateOfBirth) : null}
                 onChange={(date: Date | null) => {
                   handleChange({
@@ -427,10 +433,8 @@ export default function AddEmployeePage() {
                   } as any);
                 }}
                 placeholderText="วว/ดด/ปปปป"
-                isPlain={true}
                 minYear={1990}
                 maxYear={new Date().getFullYear()}
-                className="w-full bg-[#f8fafc] border border-[#e2e8f0] px-5 py-3.5 rounded-xl text-[15px] text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-100 transition-all"
               />
             </div>
 
@@ -547,7 +551,7 @@ export default function AddEmployeePage() {
 
             <div className="space-y-3 md:col-span-2 md:w-1/2 md:pr-4">
               <label className="block text-[#475569] font-medium text-[17px]">วันที่เริ่มทำงาน (Start Date)</label>
-              <ThaiDatePicker 
+              <DatePicker 
                 selected={formData.joinDate ? new Date(formData.joinDate) : null}
                 onChange={(date: Date | null) => {
                   handleChange({
@@ -555,8 +559,6 @@ export default function AddEmployeePage() {
                   } as any);
                 }}
                 placeholderText="วว/ดด/ปปปป"
-                isPlain={true}
-                className="w-full bg-[#f8fafc] border border-[#e2e8f0] px-5 py-3.5 rounded-xl text-[15px] text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-100 transition-all cursor-pointer"
               />
             </div>
           </div>

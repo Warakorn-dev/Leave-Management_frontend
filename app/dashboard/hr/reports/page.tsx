@@ -16,6 +16,7 @@ import {
 import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import { DatePicker } from '@/components/DateAndTime';
 
 export default function HRReports() {
   const { useLeavesQuery } = useLeave();
@@ -69,7 +70,7 @@ export default function HRReports() {
     const days = Number(l.durationDays ?? l.totalDays ?? 0);
     const isFull = mode === 'full' || mode === 'full_day';
 
-    if (!isFull && (mode === 'hourly' || (l.leaveHours && l.leaveHours < 8 && mode !== 'half_day' && mode !== 'morning' && mode !== 'afternoon'))) {
+    if (!isFull && (mode === 'hourly' || (days > 0 && days < 0.5))) {
       const hours = l.leaveHours || Math.round(days * 8);
       return `${hours} ชม.`;
     }
@@ -125,10 +126,16 @@ export default function HRReports() {
       return;
     }
 
-    const formattedData = filteredLeaves.map((l, index) => ({
+    const formattedData = filteredLeaves.map((l, index) => {
+      const empName = l.employeeName || l.userId || 'ไม่ระบุชื่อ';
+      const firstName = l.employee?.firstName || l.user?.firstName || (empName !== 'ไม่ระบุชื่อ' ? empName.split(' ')[0] : 'ไม่ระบุชื่อ');
+      const lastName = l.employee?.lastName || l.user?.lastName || (empName !== 'ไม่ระบุชื่อ' && empName.split(' ').length > 1 ? empName.split(' ').slice(1).join(' ') : '');
+      return {
       '#': index + 1,
+      'รหัสคำขอลา': l.requestCode || '-',
       'รหัสพนักงาน': l.employeeCode || l.employee?.employeeCode || (l.employeeId?.startsWith('EMP-') ? l.employeeId : `EMP-${String(l.employeeId || '').substring(0, 6).toUpperCase()}`),
-      'ชื่อ-นามสกุล': l.employeeName || l.userId || 'ไม่ระบุชื่อ',
+      'ชื่อ': firstName,
+      'นามสกุล': lastName,
       'แผนกงาน': l.departmentName || l.department || '-',
       'ประเภทการลา': l.leaveTypeName || l.type || '-',
       'วันที่ยื่นลา': formatDateDisplay(l.startDate, l.endDate, l),
@@ -137,14 +144,15 @@ export default function HRReports() {
       'ผู้อนุมัติ': l.approverName || '-',
       'สถานะ': (l.status || '').toLowerCase().includes('approved') ? 'อนุมัติแล้ว' : (l.status || '').toLowerCase() === 'pending' ? 'รออนุมัติ' : 'ปฏิเสธ',
       'วันที่ยื่นคำขอ': new Date(l.createdAt || 0).toLocaleDateString('th-TH')
-    }));
+    };
+    });
 
     const worksheet = XLSX.utils.json_to_sheet(formattedData);
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, 'Leave Report');
 
     worksheet['!cols'] = [
-      { wch: 5 }, { wch: 15 }, { wch: 25 }, { wch: 20 }, { wch: 25 },
+      { wch: 5 }, { wch: 20 }, { wch: 15 }, { wch: 20 }, { wch: 20 }, { wch: 20 }, { wch: 25 },
       { wch: 25 }, { wch: 12 }, { wch: 35 }, { wch: 20 }, { wch: 15 }, { wch: 15 }
     ];
 
@@ -176,18 +184,25 @@ export default function HRReports() {
     doc.text(`จำนวนรายการที่พบ: ${filteredLeaves.length} รายการ`, 14, 27);
 
     const headers = [
-      ['#', 'รหัสพนักงาน', 'ชื่อ-นามสกุล', 'แผนกงาน', 'ประเภทการลา', 'ช่วงเวลา', 'จำนวนวัน', 'สถานะ']
+      ['#', 'รหัสคำขอลา', 'รหัสพนักงาน', 'ชื่อ', 'นามสกุล', 'แผนกงาน', 'ประเภทการลา', 'ช่วงเวลา', 'จำนวนวัน', 'สถานะ']
     ];
-    const data = filteredLeaves.map((l, index) => [
+    const data = filteredLeaves.map((l, index) => {
+      const empName = l.employeeName || l.userId || 'ไม่ระบุชื่อ';
+      const firstName = l.employee?.firstName || l.user?.firstName || (empName !== 'ไม่ระบุชื่อ' ? empName.split(' ')[0] : 'ไม่ระบุชื่อ');
+      const lastName = l.employee?.lastName || l.user?.lastName || (empName !== 'ไม่ระบุชื่อ' && empName.split(' ').length > 1 ? empName.split(' ').slice(1).join(' ') : '');
+      return [
       index + 1,
+      l.requestCode || '-',
       l.employeeCode || l.employee?.employeeCode || (l.employeeId?.startsWith('EMP-') ? l.employeeId : `EMP-${String(l.employeeId || '').substring(0, 6).toUpperCase()}`),
-      l.employeeName || l.userId || 'ไม่ระบุชื่อ',
+      firstName,
+      lastName,
       l.departmentName || l.department || '-',
       l.leaveTypeName || l.type || '-',
       formatDateDisplay(l.startDate, l.endDate, l),
       formatDurationText(l),
       (l.status || '').toLowerCase().includes('approved') ? 'อนุมัติแล้ว' : (l.status || '').toLowerCase() === 'pending' ? 'รออนุมัติ' : 'ปฏิเสธ'
-    ]);
+    ];
+    });
 
     autoTable(doc, {
       head: headers,
@@ -204,14 +219,15 @@ export default function HRReports() {
         fontSize: 9
       },
       columnStyles: {
-        0: { cellWidth: 10 },
-        1: { cellWidth: 25 },
-        2: { cellWidth: 40 },
-        3: { cellWidth: 45 },
+        0: { cellWidth: 8 },
+        1: { cellWidth: 20 },
+        2: { cellWidth: 20 },
+        3: { cellWidth: 40 },
         4: { cellWidth: 35 },
-        5: { cellWidth: 55 },
-        6: { cellWidth: 20 },
-        7: { cellWidth: 25 },
+        5: { cellWidth: 30 },
+        6: { cellWidth: 45 },
+        7: { cellWidth: 15 },
+        8: { cellWidth: 20 },
       }
     });
 
@@ -326,22 +342,34 @@ export default function HRReports() {
             {/* Start Date Picker */}
             <div>
               <label className="block text-[12px] font-bold text-slate-600 uppercase mb-1.5">ตั้งแต่วันที่</label>
-              <input
-                type="date"
-                value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
-                className="block w-full rounded-xl border border-slate-300 bg-white text-slate-800 py-2.5 px-3 text-xs focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all cursor-pointer"
+              <DatePicker
+                selected={startDate ? new Date(startDate) : null}
+                onChange={(date: Date | null) => {
+                  if (date) {
+                    const d = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
+                    setStartDate(d.toISOString().split('T')[0]);
+                  } else {
+                    setStartDate('');
+                  }
+                }}
+                placeholderText="วว/ดด/ปปปป"
               />
             </div>
 
             {/* End Date Picker */}
             <div>
               <label className="block text-[12px] font-bold text-slate-600 uppercase mb-1.5">ถึงวันที่</label>
-              <input
-                type="date"
-                value={endDate}
-                onChange={(e) => setEndDate(e.target.value)}
-                className="block w-full rounded-xl border border-slate-300 bg-white text-slate-800 py-2.5 px-3 text-xs focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all cursor-pointer"
+              <DatePicker
+                selected={endDate ? new Date(endDate) : null}
+                onChange={(date: Date | null) => {
+                  if (date) {
+                    const d = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
+                    setEndDate(d.toISOString().split('T')[0]);
+                  } else {
+                    setEndDate('');
+                  }
+                }}
+                placeholderText="วว/ดด/ปปปป"
               />
             </div>
 
@@ -364,8 +392,10 @@ export default function HRReports() {
             <table className="w-full text-center border-collapse text-sm">
               <thead className="bg-[#add8e6] text-slate-800 font-bold border-b border-slate-200">
                 <tr>
+                  <th className="py-4 px-5 font-bold whitespace-nowrap text-center">รหัสคำขอลา</th>
                   <th className="py-4 px-5 font-bold whitespace-nowrap text-center">รหัสพนักงาน</th>
-                  <th className="py-4 px-5 font-bold whitespace-nowrap text-left">ชื่อ-นามสกุลพนักงาน</th>
+                  <th className="py-4 px-5 font-bold whitespace-nowrap text-left">ชื่อ</th>
+                  <th className="py-4 px-5 font-bold whitespace-nowrap text-left">นามสกุล</th>
                   <th className="py-4 px-5 font-bold whitespace-nowrap text-center">ประเภทการลา</th>
                   <th className="py-4 px-5 font-bold whitespace-nowrap text-center">วันที่เริ่ม - สิ้นสุด</th>
                   <th className="py-4 px-5 font-bold whitespace-nowrap text-center">รวมวันลา</th>
@@ -377,6 +407,8 @@ export default function HRReports() {
                 {filteredLeaves.map((l) => {
                   const empCode = l.employeeCode || l.employee?.employeeCode || (l.employeeId?.startsWith('EMP-') ? l.employeeId : `EMP-${String(l.employeeId || '').substring(0, 6).toUpperCase()}`);
                   const empName = l.employeeName || l.userId || 'ไม่ระบุชื่อ';
+                  const firstName = l.employee?.firstName || l.user?.firstName || (empName !== 'ไม่ระบุชื่อ' ? empName.split(' ')[0] : 'ไม่ระบุชื่อ');
+                  const lastName = l.employee?.lastName || l.user?.lastName || (empName !== 'ไม่ระบุชื่อ' && empName.split(' ').length > 1 ? empName.split(' ').slice(1).join(' ') : '');
                   const deptName = l.departmentName || l.department || '-';
                   const shortTypeName = (l.leaveTypeName || l.type || '').split(' ')[0];
                   const datesDisplay = formatDateDisplay(l.startDate, l.endDate, l);
@@ -384,12 +416,18 @@ export default function HRReports() {
 
                   return (
                     <tr key={l.id} className="hover:bg-slate-50/80 transition-colors">
+                      <td className="py-4 px-5 text-sm text-blue-600 font-bold whitespace-nowrap text-center">
+                        {l.requestCode || '-'}
+                      </td>
                       <td className="py-4 px-5 font-mono text-xs font-semibold text-slate-500 whitespace-nowrap text-center">
                         {empCode}
                       </td>
                       <td className="py-4 px-5 text-left">
-                        <div className="font-bold text-slate-900">{empName}</div>
+                        <div className="font-bold text-slate-900">{firstName}</div>
                         <div className="text-xs text-slate-500">{deptName}</div>
+                      </td>
+                      <td className="py-4 px-5 text-left">
+                        <div className="font-bold text-slate-900">{lastName}</div>
                       </td>
                       <td className="py-4 px-5 font-medium text-slate-800 whitespace-nowrap text-center">
                         {shortTypeName}

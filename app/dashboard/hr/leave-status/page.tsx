@@ -32,6 +32,30 @@ const getLeaveDetails = (req: any) => {
   return `(${days} วัน)`;
 };
 
+const getStageStatus = (currentStatus: string, stage: 'HR' | 'MANAGER' | 'CEO') => {
+  if (currentStatus === 'CANCELLED' || currentStatus === 'Cancelled') return 'cancelled';
+  if (currentStatus === 'REJECTED') return 'rejected';
+
+  if (stage === 'HR') {
+    if (currentStatus === 'PENDING_VERIFY' || currentStatus === 'PENDING_CANCELLATION') return 'pending';
+    return 'approved';
+  }
+  
+  if (stage === 'MANAGER') {
+    if (currentStatus === 'PENDING_VERIFY') return 'waiting';
+    if (currentStatus === 'PENDING_SUPERVISOR') return 'pending';
+    return 'approved';
+  }
+  
+  if (stage === 'CEO') {
+    if (currentStatus === 'PENDING_EXECUTIVE') return 'pending';
+    if (currentStatus === 'APPROVED') return 'approved';
+    return 'waiting';
+  }
+  
+  return 'waiting';
+};
+
 import { useLeave } from "@/hooks/useLeave";
 
 export default function LeaveStatusPage() {
@@ -79,12 +103,27 @@ export default function LeaveStatusPage() {
             </div>
           ) : (
             <div className="space-y-6">
-              {requests.map((req) => (
-                <div key={req.id} className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8">
+              {requests.map((req) => {
+                const status = req.status || 'PENDING_VERIFY';
+                const hrStage = getStageStatus(status, 'HR');
+                const managerStage = getStageStatus(status, 'MANAGER');
+                const ceoStage = getStageStatus(status, 'CEO');
+                
+                const isNormalLeave = req.leaveType?.isSpecial === false;
+                const showCEO = !isNormalLeave || status === 'PENDING_EXECUTIVE' || ceoStage === 'pending' || ceoStage === 'approved';
+                const isFinalApproved = status === 'APPROVED';
+                const isFinalRejected = status === 'REJECTED';
+                const isCancelled = status === 'CANCELLED';
+                const isCancellationPending = status === 'PENDING_CANCELLATION';
+                const approverComment = req.approverReason || req.approvals?.[req.approvals.length - 1]?.comment;
+                
+                return (
+                  <div key={req.id} className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8">
 
                   {/* Header Box */}
                   <div className="bg-[#F4F5F7] rounded-xl p-5 mb-10">
                     <h3 className="text-[17px] font-bold text-black">{req.type}</h3>
+                    <p className="text-[14px] text-blue-500 font-semibold mt-1">{req.requestCode || '-'}</p>
                     {req.startFormat === 'hourly' || req.leaveMode === 'hourly' ? (
                       <p className="text-[13px] text-gray-500 mt-1 font-medium">
                         {new Date(req.startDate).toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: 'numeric' })} <span className="ml-1 text-blue-600 font-semibold">{getLeaveDetails(req)}</span>
@@ -116,37 +155,93 @@ export default function LeaveStatusPage() {
                       </div>
                     </div>
 
-                    {/* Step 2: CEO Approval */}
+                    {/* Step 2: HR Verification */}
                     <div className="relative mb-10">
-                      <div className={`absolute -left-[31px] md:-left-[43px] w-4 h-4 rounded-full ring-[6px] ring-white z-10 top-0.5 ${req.status === 'Approved' ? 'bg-[#00E676]' :
-                          req.status === 'Rejected' ? 'bg-[#FF0000]' : 'bg-[#29B6F6]'
-                        }`}></div>
-                      <h4 className={`font-bold text-sm ${req.status === 'Pending' ? 'text-black' :
-                          req.status === 'Rejected' ? 'text-red-600' : 'text-gray-800'
-                        }`}>
-                        {req.status === 'Approved' ? 'CEO อนุมัติแล้ว' :
-                          req.status === 'Rejected' ? 'CEO ปฏิเสธคำขอ' : 'รอพิจารณาอนุมัติ'}
+                      <div className={`absolute -left-[31px] md:-left-[43px] w-4 h-4 rounded-full ring-[6px] ring-white z-10 top-0.5 ${
+                        hrStage === 'approved' ? 'bg-[#00E676]' :
+                        isFinalRejected && hrStage === 'pending' ? 'bg-[#FF0000]' : 
+                        hrStage === 'pending' ? 'bg-[#29B6F6]' : 'bg-[#E0E0E0]'
+                      }`}></div>
+                      <h4 className={`font-bold text-sm ${
+                        hrStage === 'approved' ? 'text-green-700' :
+                        isFinalRejected && hrStage === 'pending' ? 'text-red-600' : 
+                        hrStage === 'pending' ? 'text-blue-600' : 'text-gray-400'
+                      }`}>
+                        {isCancellationPending ? 'รอฝ่ายบุคคลตรวจสอบคำขอยกเลิก' : hrStage === 'approved' ? 'ฝ่ายบุคคลตรวจสอบแล้ว' :
+                         isFinalRejected && hrStage === 'pending' ? 'ฝ่ายบุคคลปฏิเสธคำขอ' : 
+                         hrStage === 'pending' ? 'รอฝ่ายบุคคลตรวจสอบ' : 'รอฝ่ายบุคคลตรวจสอบ'}
                       </h4>
-                      {req.approverReason && req.status !== 'Pending' && (
-                        <div className={`text-xs font-medium p-3 rounded-lg mt-3 w-full max-w-3xl ${req.status === 'Approved' ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'
-                          }`}>
-                          หมายเหตุ: {req.approverReason}
+                      {isFinalRejected && hrStage === 'pending' && approverComment && (
+                        <div className="text-xs font-medium p-3 rounded-lg mt-3 w-full max-w-3xl bg-red-50 text-red-700">
+                          หมายเหตุ: {approverComment}
                         </div>
                       )}
                     </div>
 
-                    {/* Step 3: Completed */}
-                    <div className="relative">
-                      <div className={`absolute -left-[31px] md:-left-[43px] w-4 h-4 rounded-full ring-[6px] ring-white z-10 top-0.5 ${(req.status === 'Approved' || req.status === 'Rejected') ? 'bg-[#00E676]' : 'bg-[#E0E0E0]'
+                    {/* Step 3: Manager Approval */}
+                    <div className="relative mb-10">
+                      <div className={`absolute -left-[31px] md:-left-[43px] w-4 h-4 rounded-full ring-[6px] ring-white z-10 top-0.5 ${
+                        managerStage === 'approved' ? 'bg-[#00E676]' :
+                        isFinalRejected && managerStage === 'pending' ? 'bg-[#FF0000]' : 
+                        managerStage === 'pending' ? 'bg-[#29B6F6]' : 'bg-[#E0E0E0]'
+                      }`}></div>
+                      <h4 className={`font-bold text-sm ${
+                        managerStage === 'approved' ? 'text-green-700' :
+                        isFinalRejected && managerStage === 'pending' ? 'text-red-600' : 
+                        managerStage === 'pending' ? 'text-blue-600' : 'text-gray-400'
+                      }`}>
+                        {managerStage === 'approved' ? 'หัวหน้างานอนุมัติแล้ว' :
+                         isFinalRejected && managerStage === 'pending' ? 'หัวหน้างานปฏิเสธคำขอ' : 
+                         'รอหัวหน้างานอนุมัติ'}
+                      </h4>
+                      {isFinalRejected && managerStage === 'pending' && approverComment && (
+                        <div className="text-xs font-medium p-3 rounded-lg mt-3 w-full max-w-3xl bg-red-50 text-red-700">
+                          หมายเหตุ: {approverComment}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Step 4: CEO Approval (if applicable) */}
+                    {showCEO && (
+                      <div className="relative mb-10">
+                        <div className={`absolute -left-[31px] md:-left-[43px] w-4 h-4 rounded-full ring-[6px] ring-white z-10 top-0.5 ${
+                          ceoStage === 'approved' ? 'bg-[#00E676]' :
+                          isFinalRejected && ceoStage === 'pending' ? 'bg-[#FF0000]' : 
+                          ceoStage === 'pending' ? 'bg-[#29B6F6]' : 'bg-[#E0E0E0]'
                         }`}></div>
-                      <h4 className={`font-bold text-sm ${(req.status === 'Approved' || req.status === 'Rejected') ? 'text-black' : 'text-[#D1D5DB]'}`}>
+                        <h4 className={`font-bold text-sm ${
+                          ceoStage === 'approved' ? 'text-green-700' :
+                          isFinalRejected && ceoStage === 'pending' ? 'text-red-600' : 
+                          ceoStage === 'pending' ? 'text-blue-600' : 'text-gray-400'
+                        }`}>
+                          {ceoStage === 'approved' ? 'CEO อนุมัติแล้ว' :
+                           isFinalRejected && ceoStage === 'pending' ? 'CEO ปฏิเสธคำขอ' : 
+                           'รอ CEO อนุมัติ'}
+                        </h4>
+                        {isFinalRejected && ceoStage === 'pending' && approverComment && (
+                          <div className="text-xs font-medium p-3 rounded-lg mt-3 w-full max-w-3xl bg-red-50 text-red-700">
+                            หมายเหตุ: {approverComment}
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Final Step: Completed */}
+                    <div className="relative">
+                      <div className={`absolute -left-[31px] md:-left-[43px] w-4 h-4 rounded-full ring-[6px] ring-white z-10 top-0.5 ${
+                        isFinalApproved || isFinalRejected || isCancelled ? 'bg-[#00E676]' : 'bg-[#E0E0E0]'
+                      }`}></div>
+                      <h4 className={`font-bold text-sm ${
+                        isFinalApproved || isFinalRejected || isCancelled ? 'text-black' : 'text-[#D1D5DB]'
+                      }`}>
                         เสร็จสิ้น (Completed)
                       </h4>
                     </div>
 
                   </div>
                 </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>

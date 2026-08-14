@@ -5,7 +5,8 @@ import { Building2, Briefcase, Plus, Search, MoreVertical, Edit, Trash2, X, User
 import { useDepartmentsQuery, useCreateDepartmentMutation, useUpdateDepartmentMutation, useDeleteDepartmentMutation } from '@/hooks/useDepartment';
 import { usePositionsQuery, useCreatePositionMutation, useUpdatePositionMutation, useDeletePositionMutation } from '@/hooks/usePosition';
 import { useEmployeesQuery } from '@/hooks/useEmployee';
-import { Department, Position, Employee } from '@/types';
+import { useRolesQuery } from '@/hooks/useRoles';
+import { Department, Position, Employee } from '@/lib/types';
 
 // Helper functions for dynamic icons and colors based on name
 const getDepartmentStyle = (name: string) => {
@@ -44,7 +45,7 @@ export default function OrganizationManagementPage() {
 
   // Form states
   const [newDept, setNewDept] = useState({ code: '', name: '', description: '' });
-  const [newPos, setNewPos] = useState({ code: '', name: '', departmentId: '' });
+  const [newPos, setNewPos] = useState({ code: '', name: '', departmentId: '', roleId: '' });
 
   // Modal states for edit/delete
   const [isEditDeptModalOpen, setIsEditDeptModalOpen] = useState(false);
@@ -53,12 +54,13 @@ export default function OrganizationManagementPage() {
   const [itemToDelete, setItemToDelete] = useState<{ id: string, name: string, type: 'department' | 'position' } | null>(null);
 
   const [editDept, setEditDept] = useState({ id: '', name: '', code: '', description: '' });
-  const [editPos, setEditPos] = useState({ id: '', name: '', departmentId: '', code: '' });
+  const [editPos, setEditPos] = useState({ id: '', name: '', departmentId: '', code: '', roleId: '' });
 
   // Fetch real data
   const { data: departments = [], isLoading: isLoadingDept, refetch: refetchDept } = useDepartmentsQuery();
   const { data: positions = [], isLoading: isLoadingPos, refetch: refetchPos } = usePositionsQuery();
   const { data: employees = [], isLoading: isLoadingEmp, refetch: refetchEmp } = useEmployeesQuery();
+  const { data: roles = [] } = useRolesQuery();
 
   // Mutations
   const { mutateAsync: createDepartment } = useCreateDepartmentMutation();
@@ -91,7 +93,7 @@ export default function OrganizationManagementPage() {
         const deptPrefix = String(deptNum).padStart(2, '0').slice(-2);
 
         const deptPositions = positions.filter(p => String(p.departmentId) === String(newPos.departmentId) || (p.department && String(p.department.id) === String(newPos.departmentId)));
-        
+
         let maxPosNum = 0;
         deptPositions.forEach(p => {
           if (p.code && p.code.length >= 3) {
@@ -128,13 +130,15 @@ export default function OrganizationManagementPage() {
     if (!newPos.name || !newPos.departmentId) return;
 
     try {
+      const finalRoleId = checkHasManager(newPos.departmentId) ? undefined : (newPos.roleId || undefined);
       await createPosition({
         name: newPos.name,
         departmentId: newPos.departmentId,
-        code: newPos.code || undefined
+        code: newPos.code || undefined,
+        roleId: finalRoleId
       });
       setIsAddPosModalOpen(false);
-      setNewPos({ code: '', name: '', departmentId: '' });
+      setNewPos({ code: '', name: '', departmentId: '', roleId: '' });
       refetchPos();
     } catch (e) {
       console.error(e);
@@ -156,9 +160,15 @@ export default function OrganizationManagementPage() {
   const handleUpdatePosition = async () => {
     if (!editPos.name || !editPos.id) return;
     try {
+      const finalRoleId = checkHasManager(editPos.departmentId, editPos.id) ? undefined : (editPos.roleId || undefined);
       await updatePosition({
         id: editPos.id,
-        data: { name: editPos.name, departmentId: editPos.departmentId, code: editPos.code }
+        data: {
+          name: editPos.name,
+          departmentId: editPos.departmentId,
+          code: editPos.code,
+          roleId: finalRoleId
+        }
       });
       setIsEditPosModalOpen(false);
       refetchPos();
@@ -235,6 +245,20 @@ export default function OrganizationManagementPage() {
     return positions.filter(pos => pos.departmentId === deptId || pos.departmentName === deptName);
   };
 
+  // Helper to check if a department already has a Manager
+  const checkHasManager = (deptId: string, excludePositionId?: string) => {
+    if (!deptId) return false;
+    const managerRole = roles.find(r => r.name.toLowerCase() === 'manager');
+    if (!managerRole) return false;
+
+    return positions.some(p => {
+      const isSameDept = p.departmentId === deptId || p.department?.id === deptId;
+      if (!isSameDept) return false;
+      if (excludePositionId && p.id === excludePositionId) return false;
+      return p.roleId === managerRole.id || (p.role as any)?.name?.toLowerCase() === 'manager';
+    });
+  };
+
   // Employee list for the selected department modal
   const selectedDeptEmployees = useMemo(() => {
     if (!selectedDept) return [];
@@ -283,8 +307,8 @@ export default function OrganizationManagementPage() {
         <button
           onClick={() => setActiveTab('departments')}
           className={`flex items-center gap-2 px-6 py-2.5 text-sm font-medium rounded-xl transition-all ${activeTab === 'departments'
-              ? 'bg-white dark:bg-slate-900 text-indigo-600 shadow-sm'
-              : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/50 dark:hover:bg-slate-800'
+            ? 'bg-white dark:bg-slate-900 text-indigo-600 shadow-sm'
+            : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/50 dark:hover:bg-slate-800'
             }`}
         >
           <Building2 className="w-4 h-4" />
@@ -293,8 +317,8 @@ export default function OrganizationManagementPage() {
         <button
           onClick={() => setActiveTab('positions')}
           className={`flex items-center gap-2 px-6 py-2.5 text-sm font-medium rounded-xl transition-all ${activeTab === 'positions'
-              ? 'bg-white dark:bg-slate-900 text-indigo-600 shadow-sm'
-              : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/50 dark:hover:bg-slate-800'
+            ? 'bg-white dark:bg-slate-900 text-indigo-600 shadow-sm'
+            : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/50 dark:hover:bg-slate-800'
             }`}
         >
           <Briefcase className="w-4 h-4" />
@@ -430,13 +454,14 @@ export default function OrganizationManagementPage() {
                     <th className="px-6 py-4">รหัส (Code)</th>
                     <th className="px-6 py-4">ชื่อตำแหน่ง (Position)</th>
                     <th className="px-6 py-4">แผนกต้นสังกัด (Department)</th>
+                    <th className="px-6 py-4">สิทธิ์การใช้งาน (Role)</th>
                     <th className="px-6 py-4 text-right">จัดการ</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 dark:divide-slate-800/50">
                   {filteredPositions.length === 0 ? (
                     <tr>
-                      <td colSpan={4} className="px-6 py-10 text-center text-slate-500">
+                      <td colSpan={5} className="px-6 py-10 text-center text-slate-500">
                         ไม่พบข้อมูลตำแหน่ง
                       </td>
                     </tr>
@@ -469,13 +494,22 @@ export default function OrganizationManagementPage() {
                               {pos.departmentName || pos.department?.name || 'ไม่ระบุแผนก'}
                             </span>
                           </td>
+                          <td className="px-6 py-4">
+                            {pos.role ? (
+                              <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-800">
+                                {(pos.role as any).name || pos.role}
+                              </span>
+                            ) : (
+                              <span className="text-slate-400 text-xs italic">ไม่มี</span>
+                            )}
+                          </td>
                           <td className="px-6 py-4 text-right">
                             <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                               <button
                                 className="p-2 text-slate-400 hover:text-blue-600 bg-slate-50 hover:bg-blue-50 dark:bg-slate-800 dark:hover:bg-blue-900/30 rounded-lg transition-colors"
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  setEditPos({ id: pos.id, name: pos.name || pos.title || '', code: pos.code || '', departmentId: pos.departmentId || pos.department?.id || '' });
+                                  setEditPos({ id: pos.id, name: pos.name || pos.title || '', code: pos.code || '', departmentId: pos.departmentId || pos.department?.id || '', roleId: pos.roleId || (pos.role as any)?.id || '' });
                                   setIsEditPosModalOpen(true);
                                 }}
                               >
@@ -693,6 +727,25 @@ export default function OrganizationManagementPage() {
                 </select>
               </div>
               <div>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">สิทธิ์การใช้งาน (Role)</label>
+                {newPos.departmentId && checkHasManager(newPos.departmentId) ? (
+                  <div className="w-full px-4 py-2.5 bg-slate-100 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-500 dark:text-slate-400">
+                    แผนกนี้มี Manager แล้ว (สิทธิ์ User จะถูกใช้เป็นค่าเริ่มต้น)
+                  </div>
+                ) : (
+                  <select
+                    value={newPos.roleId}
+                    onChange={(e) => setNewPos({ ...newPos, roleId: e.target.value })}
+                    className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all cursor-pointer dark:text-white"
+                  >
+                    <option value="">-- ไม่ระบุ (ใช้ค่าเริ่มต้น: User) --</option>
+                    {roles.filter(r => r.name.toLowerCase() === 'manager').map(r => (
+                      <option key={r.id} value={r.id}>{r.name}</option>
+                    ))}
+                  </select>
+                )}
+              </div>
+              <div>
                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">รหัสตำแหน่ง (Code) <span className="text-emerald-500 text-xs">(สร้างอัตโนมัติ)</span></label>
                 <input
                   type="text"
@@ -853,6 +906,27 @@ export default function OrganizationManagementPage() {
                     <option key={d.id} value={d.id}>{d.name}</option>
                   ))}
                 </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                  สิทธิ์การใช้งาน (Role)
+                </label>
+                {editPos.departmentId && checkHasManager(editPos.departmentId, editPos.id) ? (
+                  <div className="w-full px-4 py-2.5 bg-slate-100 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-500 dark:text-slate-400">
+                    แผนกนี้มี Manager แล้ว (สิทธิ์ User จะถูกใช้เป็นค่าเริ่มต้น)
+                  </div>
+                ) : (
+                  <select
+                    value={editPos.roleId}
+                    onChange={(e) => setEditPos({ ...editPos, roleId: e.target.value })}
+                    className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all cursor-pointer dark:text-white"
+                  >
+                    <option value="">-- ไม่ระบุ (ใช้ค่าเริ่มต้น: User) --</option>
+                    {roles.filter(r => r.name.toLowerCase() === 'manager').map(r => (
+                      <option key={r.id} value={r.id}>{r.name}</option>
+                    ))}
+                  </select>
+                )}
               </div>
             </div>
 

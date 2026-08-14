@@ -4,11 +4,13 @@ import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 import { useLeave } from "@/hooks/useLeave";
 import { useLeaveBalance } from "@/hooks/useLeaveBalance";
+import { useLeaveType } from "@/hooks/useLeaveType";
 import { Calendar as CalendarIcon, X, User, Users, Download, Edit3, Trash2, Upload, Check, Clock, Search } from "lucide-react";
 import Swal from "sweetalert2";
-import { ThaiDatePicker, ThaiMonthPicker } from "@/components/ThaiCalendarPicker";
+import { DatePicker } from "@/components/DateAndTime";
 import { LeaveTimePicker } from "@/components/LeaveTimePicker";
 import { uploadApi } from "@/api";
+import { getLeaveStatusBadgeColor, getLeaveStatusText } from "@/lib/utils";
 
 export default function LeaveHistoryPage() {
   const [requests, setRequests] = useState<any[]>([]);
@@ -20,7 +22,6 @@ export default function LeaveHistoryPage() {
   const [viewMode, setViewMode] = useState<"department" | "personal">("department");
   const [filterLeaveType, setFilterLeaveType] = useState<string>("");
   const [searchId, setSearchId] = useState<string>("");
-  const [searchName, setSearchName] = useState<string>("");
 
   const router = useRouter();
   const [showConfirmEdit, setShowConfirmEdit] = useState(false);
@@ -47,6 +48,8 @@ export default function LeaveHistoryPage() {
   const { data: allLeaves = [], refetch: refetchLeaves } = useLeavesQuery();
   const { mutateAsync: deleteLeave } = useDeleteLeaveMutation();
   const { mutateAsync: updateLeave } = useUpdateLeaveMutation();
+  const { useLeaveTypesQuery } = useLeaveType();
+  const { data: leaveTypes = [] } = useLeaveTypesQuery();
 
 
 
@@ -107,18 +110,24 @@ export default function LeaveHistoryPage() {
         if (typeName !== filterLeaveType) return false;
       }
 
-      // Search ID (Emp ID or Leave ID)
+      // Search Query
       if (searchId && searchId.trim() !== "") {
-        const empCode = r.employee?.employeeCode || (r.employee?.id ? `EMP-${String(r.employee.id).substring(0, 5).toUpperCase()}` : `EMP-000`);
-        const leaveId = String(r.id);
         const term = searchId.trim().toLowerCase();
-        if (!empCode.toLowerCase().includes(term) && !leaveId.includes(term)) return false;
-      }
-
-      // Search Name
-      if (searchName && searchName.trim() !== "") {
-        const fullName = r.user?.firstName ? `${r.user.firstName} ${r.user.lastName}`.toLowerCase() : (r.userId || 'unknown').toLowerCase();
-        if (!fullName.includes(searchName.trim().toLowerCase())) return false;
+        const leaveId = String(r.id);
+        
+        if (viewMode === "department") {
+          const empCode = r.employee?.employeeCode || (r.employee?.id ? `EMP-${String(r.employee.id).substring(0, 5).toUpperCase()}` : `EMP-000`);
+          const fullName = r.user?.firstName ? `${r.user.firstName} ${r.user.lastName}`.toLowerCase() : (r.userId || 'unknown').toLowerCase();
+          
+          if (!leaveId.includes(term) && !empCode.toLowerCase().includes(term) && !fullName.includes(term)) {
+            return false;
+          }
+        } else {
+          // personal mode
+          if (!leaveId.includes(term)) {
+            return false;
+          }
+        }
       }
 
       return true;
@@ -130,8 +139,11 @@ export default function LeaveHistoryPage() {
         id: r.id,
         empId: r.employee?.employeeCode || (r.employee?.id ? `EMP-${String(r.employee.id).substring(0, 5).toUpperCase()}` : `EMP-000`),
         name: r.user?.firstName ? `${r.user.firstName} ${r.user.lastName}` : (r.userId || 'Unknown'),
+        firstName: r.user?.firstName || (r.userId || 'Unknown'),
+        lastName: r.user?.lastName || '-',
         department: r.user?.department?.name || r.department || 'ไม่ระบุ',
         positionName: r.user?.position?.name || r.position || 'ไม่ระบุ',
+        requestCode: r.requestCode,
         dateStr: r.startDate.split('T')[0] === r.endDate.split('T')[0] ? formatDate(r.startDate) : `${formatDate(r.startDate)} - ${formatDate(r.endDate)}`,
         type: r.leaveType?.name || r.type,
         days: r.startFormat === 'hourly' ? `${r.leaveHours || Number(((r.totalDays ?? 0) * 8).toFixed(1))} ชั่วโมง` : (r.totalDays === 0.5 ? (r.startFormat === 'morning' ? 'ครึ่งวันเช้า' : r.startFormat === 'afternoon' ? 'ครึ่งวันบ่าย' : '0.5 วัน') : `${r.totalDays ?? r.daysCount ?? 0} วัน`),
@@ -145,7 +157,7 @@ export default function LeaveHistoryPage() {
         }
       };
     }));
-  }, [router, filterType, selectedMonthRaw, selectedDate, viewMode, allLeaves, filterLeaveType, searchId, searchName]);
+  }, [router, filterType, selectedMonthRaw, selectedDate, viewMode, allLeaves, filterLeaveType, searchId]);
 
   const handleDelete = async () => {
     const isApprovedCancel = selectedRequest?.status?.includes('Approved');
@@ -379,55 +391,20 @@ export default function LeaveHistoryPage() {
 =======
               <div className="relative flex items-center h-full">
                 {filterType === "monthly" ? (
-                  <div className="flex items-center h-full bg-white rounded-r-xl">
-                    <div className="relative h-full flex items-center">
-                      <select
-                        value={parseInt(selectedMonthRaw.split('-')[1]) - 1}
-                        onChange={(e) => {
-                          const year = selectedMonthRaw.split('-')[0];
-                          const month = String(parseInt(e.target.value) + 1).padStart(2, '0');
-                          setSelectedMonthRaw(`${year}-${month}`);
-                        }}
-                        className="appearance-none bg-transparent hover:bg-blue-50/50 pl-4 pr-8 py-3 font-extrabold text-[15px] text-gray-800 outline-none focus:ring-2 focus:ring-blue-500/20 transition-colors cursor-pointer"
-                      >
-                        {["มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน", "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"].map((m, i) => (
-                          <option key={i} value={i}>{m}</option>
-                        ))}
-                      </select>
-                      <div className="absolute inset-y-0 right-2 flex items-center pointer-events-none text-blue-600">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6" /></svg>
-                      </div>
-                    </div>
-
-                    <div className="w-[1px] h-6 bg-gray-200 mx-1"></div>
-
-                    <div className="relative h-full flex items-center">
-                      <select
-                        value={parseInt(selectedMonthRaw.split('-')[0])}
-                        onChange={(e) => {
-                          const year = e.target.value;
-                          const month = selectedMonthRaw.split('-')[1];
-                          setSelectedMonthRaw(`${year}-${month}`);
-                        }}
-                        className="appearance-none bg-transparent hover:bg-blue-50/50 pl-3 pr-8 py-3 font-extrabold text-[15px] text-gray-800 outline-none focus:ring-2 focus:ring-blue-500/20 transition-colors cursor-pointer rounded-r-xl"
-                      >
-                        {Array.from({ length: 21 }, (_, i) => new Date().getFullYear() - 10 + i).map(y => (
-                          <option key={y} value={y}>{y + 543}</option>
-                        ))}
-                      </select>
-                      <div className="absolute inset-y-0 right-2 flex items-center pointer-events-none text-blue-600">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6" /></svg>
-                      </div>
-                    </div>
+                  <div className="w-[180px] h-full">
+                    <DatePicker
+                      value={selectedMonthRaw}
+                      onChange={(newMonth: any) => setSelectedMonthRaw(newMonth)}
+                      views={['year', 'month']}
+                      format="MM/BBBB"
+                    />
                   </div>
                 ) : (
                   <div className="w-[180px] h-full">
-                    <ThaiDatePicker
+                    <DatePicker
                       selected={selectedDate}
                       onChange={(date: Date | null) => setSelectedDate(date)}
                       placeholderText="เลือกวันที่"
-                      isPlain={true}
-                      className="w-full h-full bg-transparent border-none text-black text-[15px] font-bold py-3 px-4 focus:outline-none cursor-pointer rounded-r-xl"
                     />
                   </div>
 >>>>>>> PR
@@ -454,40 +431,29 @@ export default function LeaveHistoryPage() {
           </div>
 
           {/* Search & Filter Bar */}
-          <div className="mb-8 grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="relative">
+          <div className="mb-8 flex flex-col md:flex-row items-center justify-between gap-4">
+            <div className="relative w-full md:w-[400px]">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                 <Search className="h-4 w-4 text-gray-400" />
               </div>
               <input
                 type="text"
-                placeholder="ค้นหารหัสใบลา / รหัสพนักงาน"
+                placeholder={viewMode === "department" ? "ค้นหารหัสใบลา, รหัสพนักงาน, ชื่อ, นามสกุล" : "ค้นหารหัสใบลา"}
                 value={searchId}
                 onChange={(e) => setSearchId(e.target.value)}
                 className="w-full pl-10 pr-4 py-2.5 bg-white border border-gray-200 rounded-xl text-[14px] text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-400 shadow-sm transition-all"
               />
             </div>
-            <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <User className="h-4 w-4 text-gray-400" />
-              </div>
-              <input
-                type="text"
-                placeholder="ค้นหาชื่อ-นามสกุล"
-                value={searchName}
-                onChange={(e) => setSearchName(e.target.value)}
-                className="w-full pl-10 pr-4 py-2.5 bg-white border border-gray-200 rounded-xl text-[14px] text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-400 shadow-sm transition-all"
-              />
-            </div>
-            <div className="relative">
+            
+            <div className="relative w-full md:w-[250px] ml-auto">
               <select
                 value={filterLeaveType}
                 onChange={(e) => setFilterLeaveType(e.target.value)}
                 className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-[14px] text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-400 shadow-sm transition-all appearance-none"
               >
                 <option value="">ทุกประเภทการลา</option>
-                {Array.from(new Set(allLeaves.map((r: any) => r.leaveType?.name || r.type))).filter(Boolean).map((type: any) => (
-                  <option key={type} value={type}>{type}</option>
+                {leaveTypes.map((type: any) => (
+                  <option key={type.id} value={type.name}>{type.name}</option>
                 ))}
               </select>
               <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
@@ -511,17 +477,19 @@ export default function LeaveHistoryPage() {
                 <table className="w-full text-sm text-left">
                   <thead className="bg-[#CDE4EB] text-gray-800 text-[15px]">
                     <tr>
+                      <th className={`px-4 py-4 font-bold whitespace-nowrap ${viewMode === "department" ? "w-[12%]" : "w-[15%]"}`}>รหัสการลา</th>
                       {viewMode === "department" && (
                         <>
-                          <th className="px-4 py-4 font-bold whitespace-nowrap w-[12%]">รหัสพนักงาน</th>
-                          <th className="px-4 py-4 font-bold whitespace-nowrap w-[15%]">ชื่อพนักงาน</th>
-                          <th className="px-4 py-4 font-bold w-[20%]">แผนก</th>
+                          <th className="px-4 py-4 font-bold whitespace-nowrap w-[10%]">รหัสพนักงาน</th>
+                          <th className="px-4 py-4 font-bold whitespace-nowrap w-[15%]">ชื่อ</th>
+                          <th className="px-4 py-4 font-bold whitespace-nowrap w-[15%]">นามสกุล</th>
+                          <th className="px-4 py-4 font-bold w-[13%]">แผนก</th>
                         </>
                       )}
-                      <th className={`px-4 py-4 font-bold whitespace-nowrap ${viewMode === "department" ? "w-[18%]" : "w-[20%]"}`}>วันที่ลา</th>
-                      <th className={`px-4 py-4 font-bold ${viewMode === "department" ? "w-[15%]" : "w-[25%]"}`}>ประเภทการลา</th>
-                      <th className={`px-4 py-4 font-bold text-center whitespace-nowrap ${viewMode === "department" ? "w-[10%]" : "w-[10%]"}`}>จำนวนวันลา</th>
-                      {viewMode === "personal" && <th className="px-4 py-4 font-bold w-[25%]">เหตุผล</th>}
+                      <th className={`px-4 py-4 font-bold whitespace-nowrap ${viewMode === "department" ? "w-[15%]" : "w-[20%]"}`}>วันที่ลา</th>
+                      <th className={`px-4 py-4 font-bold ${viewMode === "department" ? "w-[10%]" : "w-[20%]"}`}>ประเภทการลา</th>
+                      <th className={`px-4 py-4 font-bold text-center whitespace-nowrap ${viewMode === "department" ? "w-[10%]" : "w-[15%]"}`}>จำนวนวันลา</th>
+                      {viewMode === "personal" && <th className="px-4 py-4 font-bold w-[20%]">เหตุผล</th>}
                       <th className={`px-4 py-4 font-bold text-center whitespace-nowrap ${viewMode === "department" ? "w-[10%]" : "w-[10%]"}`}>สถานะ</th>
                       {viewMode === "personal" && <th className="px-4 py-4 font-bold text-center whitespace-nowrap w-[10%]">จัดการ</th>}
                     </tr>
@@ -529,10 +497,12 @@ export default function LeaveHistoryPage() {
                   <tbody>
                     {requests.map((req, idx) => (
                       <tr key={req.id || idx} className="border-b border-gray-100 last:border-0 hover:bg-gray-50 transition-colors">
+                        <td className="px-4 py-5 text-blue-500 font-semibold whitespace-nowrap">{req.requestCode || '-'}</td>
                         {viewMode === "department" && (
                           <>
                             <td className="px-4 py-5 text-gray-500 font-medium whitespace-nowrap">{req.empId}</td>
-                            <td className="px-4 py-5 text-black font-medium whitespace-nowrap">{req.name}</td>
+                            <td className="px-4 py-5 text-black font-medium whitespace-nowrap">{req.firstName}</td>
+                            <td className="px-4 py-5 text-black font-medium whitespace-nowrap">{req.lastName}</td>
                             <td className="px-4 py-5 text-black font-medium">{req.department}</td>
                           </>
                         )}
@@ -561,10 +531,8 @@ export default function LeaveHistoryPage() {
                         ) : (
                           <>
                             <td className="px-4 py-5 text-center whitespace-nowrap">
-                              <span className={`inline-block px-5 py-1.5 rounded-full text-xs font-bold text-white shadow-sm min-w-[80px] ${req.status === 'Approved' ? 'bg-[#00E676]' :
-                                req.status === 'Rejected' ? 'bg-[#FF0000]' : 'bg-[#FFA000]'
-                                }`}>
-                                {req.status === 'Approved' ? 'อนุมัติ' : req.status === 'Rejected' ? 'ปฏิเสธ' : 'รออนุมัติ'}
+                              <span className={`inline-block px-5 py-1.5 rounded-full text-xs font-bold text-white shadow-sm min-w-[80px] text-center ${getLeaveStatusBadgeColor(req.status)}`}>
+                                {getLeaveStatusText(req.status)}
                               </span>
                             </td>
                             <td className="px-4 py-5 text-center whitespace-nowrap">
@@ -631,6 +599,7 @@ export default function LeaveHistoryPage() {
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-[14px] text-gray-800 pl-[44px]">
                   <div className="space-y-3">
+                    <p className="flex gap-2 items-center"><span className="font-bold min-w-[80px]">รหัสการลา:</span> <span className="text-blue-500 font-semibold">{selectedRequest.requestCode || '-'}</span></p>
                     <p className="flex gap-2"><span className="font-bold min-w-[80px]">ประเภทการลา:</span> {selectedRequest.type}</p>
                     <p className="flex gap-2">
                       <span className="font-bold min-w-[80px]">ช่วงเวลา:</span>
@@ -730,10 +699,8 @@ export default function LeaveHistoryPage() {
                 <div className="flex flex-col md:flex-row items-stretch gap-4 bg-[#F8F9FA] border border-gray-200 rounded-xl p-4">
                   <div className="w-[120px] flex flex-col justify-center border-r border-gray-200 pr-4">
                     <span className="text-[12px] font-bold text-black mb-2">สถานะ:</span>
-                    <span className={`inline-flex justify-center items-center px-4 py-1.5 rounded-full text-[13px] font-bold text-white shadow-sm ${selectedRequest.status === 'Approved' ? 'bg-[#00E676]' :
-                      selectedRequest.status === 'Rejected' ? 'bg-[#FF0000]' : 'bg-[#FFA000]'
-                      }`}>
-                      {selectedRequest.status === 'Approved' ? 'อนุมัติ' : selectedRequest.status === 'Rejected' ? 'ปฏิเสธ' : 'รอพิจารณา'}
+                    <span className={`inline-flex justify-center items-center px-4 py-1.5 rounded-full text-[13px] font-bold text-white shadow-sm ${getLeaveStatusBadgeColor(selectedRequest.status)}`}>
+                      {getLeaveStatusText(selectedRequest.status)}
                     </span>
                   </div>
                   <div className="flex-1 flex flex-col justify-center">
@@ -741,9 +708,9 @@ export default function LeaveHistoryPage() {
                     <input
                       type="text"
                       readOnly
-                      value={selectedRequest.raw?.approverReason || (selectedRequest.status === 'Pending' ? 'รอการพิจารณา' : 'ไม่มีหมายเหตุเพิ่มเติม')}
-                      className={`w-full border rounded-xl p-2.5 text-[14px] outline-none cursor-default ${selectedRequest.status === 'Rejected' ? 'border-red-200 text-red-600 bg-red-50' :
-                        selectedRequest.status === 'Approved' ? 'border-[#D1F2DF] text-green-600 bg-[#F4FDF8]' : 'border-gray-300 text-gray-500 bg-white'
+                      value={selectedRequest.raw?.approverReason || (selectedRequest.status.startsWith('PENDING') ? 'รอการพิจารณา' : 'ไม่มีหมายเหตุเพิ่มเติม')}
+                      className={`w-full border rounded-xl p-2.5 text-[14px] outline-none cursor-default ${selectedRequest.status === 'REJECTED' ? 'border-red-200 text-red-600 bg-red-50' :
+                        selectedRequest.status === 'APPROVED' ? 'border-[#D1F2DF] text-green-600 bg-[#F4FDF8]' : 'border-gray-300 text-gray-500 bg-white'
                         }`}
                     />
                   </div>
@@ -756,7 +723,7 @@ export default function LeaveHistoryPage() {
             <div className="px-6 py-4 border-t border-gray-100 flex items-center justify-between bg-white">
               <span className="text-[13px] font-medium text-gray-300">วันที่ยื่นคำขอ : {formatDate(selectedRequest.raw?.createdAt || new Date().toISOString())}</span>
 
-              {(selectedRequest.status === 'Pending' || selectedRequest.status === 'Waiting CEO') && viewMode === 'personal' && (
+              {(!selectedRequest.status.includes('APPROVED') && !selectedRequest.status.includes('REJECTED')) && viewMode === 'personal' && (
                 <div className="flex items-center gap-5">
                   <button onClick={handleDelete} className="text-gray-400 hover:text-red-500 font-bold text-[14px] flex items-center gap-1.5 transition-colors">
                     <Trash2 className="w-4 h-4" strokeWidth={2.5} />
@@ -781,7 +748,7 @@ export default function LeaveHistoryPage() {
           <div className="bg-white flex flex-col md:flex-row md:items-center justify-between px-8 py-5 shadow-sm sticky top-0 z-10 gap-4 border-b border-gray-200">
             <div>
               <h1 className="text-xl font-bold text-black tracking-tight">แบบฟอร์มยื่นลา (Leave Request)</h1>
-              <p className="text-[13px] text-gray-500 mt-1 font-medium">กรุณากรอกข้อมูลให้ครบถ้วนเพื่อส่งให้ CEO อนุมัติ</p>
+              <p className="text-[13px] text-gray-500 mt-1 font-medium">กรุณากรอกข้อมูลให้ครบถ้วนเพื่อเข้าสู่กระบวนการพิจารณา</p>
             </div>
             <div className="flex items-center gap-6 text-black self-end md:self-auto">
               <button
@@ -856,6 +823,7 @@ export default function LeaveHistoryPage() {
                       <div className="md:col-span-2 md:w-[calc(50%-1.5rem)]">
                         <label className="block text-[13px] font-bold text-gray-800 mb-2">วันที่ลา</label>
 <<<<<<< HEAD
+<<<<<<< HEAD
                         <DatePicker 
 =======
                         <ThaiDatePicker
@@ -865,13 +833,20 @@ export default function LeaveHistoryPage() {
                             if (date) {
                               const d = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
                               setEditForm({ ...editForm, leaveDate: d.toISOString().split('T')[0] });
+=======
+                        <DatePicker
+                          value={editForm.leaveDate || null}
+                          onChange={(val: any) => {
+                            if (val && typeof val === 'object' && typeof val.format === 'function') {
+                              setEditForm({ ...editForm, leaveDate: val.format('YYYY-MM-DD') });
+                            } else if (typeof val === 'string') {
+                              setEditForm({ ...editForm, leaveDate: val.substring(0, 10) });
+>>>>>>> 278a4765ce02a7aa0ece327b9c5c8574ef37fbaa
                             } else {
                               setEditForm({ ...editForm, leaveDate: '' });
                             }
                           }}
                           placeholderText="วว/ดด/ปปปป"
-                          isPlain={true}
-                          className="w-full border border-gray-300 rounded-md px-3 py-2.5 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 bg-white shadow-sm transition-all text-gray-700"
                         />
                       </div>
                       <div className="md:col-span-2">
@@ -888,6 +863,7 @@ export default function LeaveHistoryPage() {
                       <div className="md:col-span-1">
                         <label className="block text-[13px] font-bold text-gray-800 mb-2">วันที่เริ่มต้น</label>
 <<<<<<< HEAD
+<<<<<<< HEAD
                         <DatePicker 
 =======
                         <ThaiDatePicker
@@ -897,13 +873,20 @@ export default function LeaveHistoryPage() {
                             if (date) {
                               const d = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
                               setEditForm({ ...editForm, startDate: d.toISOString().split('T')[0] });
+=======
+                        <DatePicker
+                          value={editForm.startDate || null}
+                          onChange={(val: any) => {
+                            if (val && typeof val === 'object' && typeof val.format === 'function') {
+                              setEditForm({ ...editForm, startDate: val.format('YYYY-MM-DD') });
+                            } else if (typeof val === 'string') {
+                              setEditForm({ ...editForm, startDate: val.substring(0, 10) });
+>>>>>>> 278a4765ce02a7aa0ece327b9c5c8574ef37fbaa
                             } else {
                               setEditForm({ ...editForm, startDate: '' });
                             }
                           }}
                           placeholderText="วว/ดด/ปปปป"
-                          isPlain={true}
-                          className="w-full border border-gray-300 rounded-md px-3 py-2.5 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 bg-white shadow-sm transition-all text-gray-700"
                         />
                         {editForm.leaveMode === 'half_day' && (
                           <div className="flex items-center gap-4 mt-3">
@@ -921,6 +904,7 @@ export default function LeaveHistoryPage() {
                       <div className="md:col-span-1">
                         <label className="block text-[13px] font-bold text-gray-800 mb-2">วันที่สิ้นสุด</label>
 <<<<<<< HEAD
+<<<<<<< HEAD
                         <DatePicker 
 =======
                         <ThaiDatePicker
@@ -930,14 +914,20 @@ export default function LeaveHistoryPage() {
                             if (date) {
                               const d = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
                               setEditForm({ ...editForm, endDate: d.toISOString().split('T')[0] });
+=======
+                        <DatePicker
+                          value={editForm.endDate || null}
+                          onChange={(val: any) => {
+                            if (val && typeof val === 'object' && typeof val.format === 'function') {
+                              setEditForm({ ...editForm, endDate: val.format('YYYY-MM-DD') });
+                            } else if (typeof val === 'string') {
+                              setEditForm({ ...editForm, endDate: val.substring(0, 10) });
+>>>>>>> 278a4765ce02a7aa0ece327b9c5c8574ef37fbaa
                             } else {
                               setEditForm({ ...editForm, endDate: '' });
                             }
                           }}
                           placeholderText="วว/ดด/ปปปป"
-                          isPlain={true}
-                          className="w-full border border-gray-300 rounded-md px-3 py-2.5 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 bg-white shadow-sm transition-all text-gray-700"
-                          disabled={editForm.leaveMode === 'half_day'}
                         />
                       </div>
                     </>
@@ -1015,7 +1005,7 @@ export default function LeaveHistoryPage() {
                 <h2 className="text-[26px] font-bold text-black mb-4 tracking-tight">ยืนยันการแก้ไขข้อมูล</h2>
 
                 <p className="text-[#6B7280] text-[15px] text-center mb-10 leading-relaxed">
-                  คำลาของคุณจะถูกส่งให้ CEO พิจารณา<br />
+                  คำลาของคุณจะเข้าสู่กระบวนการพิจารณาตามลำดับขั้นตอน<br />
                   สามารถเช็คสถานะได้จากหน้าเช็คสถานะของคุณ
                 </p>
 

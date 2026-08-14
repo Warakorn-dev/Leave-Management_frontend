@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Leave } from '@/types';
+import { Leave } from '@/lib/types';
 
 const API_URL = '/api/leaves';
 
@@ -11,7 +11,8 @@ export const useLeavesQuery = (fetchCompanyLeaves: boolean = false) => {
     setIsLoading(true);
     try {
       const token = typeof window !== 'undefined' ? sessionStorage.getItem('accessToken') : '';
-      const role = typeof window !== 'undefined' ? sessionStorage.getItem('role') : '';
+      const rawRole = typeof window !== 'undefined' ? sessionStorage.getItem('role') : '';
+      const role = rawRole?.toUpperCase() || '';
       const actualUserId = typeof window !== 'undefined' ? sessionStorage.getItem('userId') : '';
       
       const headers = { 'Authorization': `Bearer ${token}` };
@@ -61,7 +62,7 @@ export const useLeavesQuery = (fetchCompanyLeaves: boolean = false) => {
         }
       } else {
         // Fetch department leaves
-        if (role === 'User' || role === 'Employee') {
+        if (role === 'USER' || role === 'EMPLOYEE') {
           const resDept = await fetch('/api/leave/department', { headers });
           if (resDept.ok) {
             const json = await resDept.json();
@@ -69,7 +70,7 @@ export const useLeavesQuery = (fetchCompanyLeaves: boolean = false) => {
             const otherLeaves = mappedDept.filter((l: any) => String(l.userId) !== String(actualUserId) && String(l.employeeId) !== String(actualUserId));
             allLeaves = [...allLeaves, ...otherLeaves];
           }
-        } else if (role === 'Manager') {
+        } else if (role === 'MANAGER') {
           const resDept = await fetch('/api/manager/history', { headers });
           if (resDept.ok) {
             const json = await resDept.json();
@@ -86,7 +87,7 @@ export const useLeavesQuery = (fetchCompanyLeaves: boolean = false) => {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [fetchCompanyLeaves]);
 
   useEffect(() => {
     fetchLeaves();
@@ -236,6 +237,123 @@ export const useDeleteLeaveMutation = () => {
   };
 };
 
+export const useVerifyLeaveMutation = () => {
+  return {
+    mutateAsync: async ({ id, action, comment }: { id: string; action: 'Approve' | 'Reject'; comment?: string }) => {
+      const token = typeof window !== 'undefined' ? sessionStorage.getItem('accessToken') : '';
+      const res = await fetch(`/api/hr/leaves/${id}/verify`, {
+        method: 'PUT',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ action, comment }),
+      });
+      if (!res.ok) {
+        const errorText = await res.text();
+        throw new Error(`Failed to verify leave: ${errorText}`);
+      }
+      return res.json();
+    }
+  };
+};
+
+export const useHrPendingVerifyQuery = () => {
+  const [data, setData] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  const fetchLeaves = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const token = typeof window !== 'undefined' ? sessionStorage.getItem('accessToken') : '';
+      const headers = { 'Authorization': `Bearer ${token}` };
+      const res = await fetch('/api/hr/leaves/pending-verify', { headers });
+      if (res.ok) {
+        const json = await res.json();
+        const mappedData = (json.data ?? json).map((l: any) => ({
+          ...l,
+          userId: l.employee?.user?.id || l.employee?.userId || 'unknown',
+          totalDays: l.totalDays ?? l.durationDays ?? l.daysCount ?? 0,
+          startFormat: l.startFormat || 'full',
+          endFormat: l.endFormat || 'full',
+          leaveType: l.leaveType,
+          approverReason: l.approverReason || l.approvals?.[0]?.comment || null,
+          user: l.employee ? {
+            title: l.employee.title,
+            firstName: l.employee.firstName,
+            lastName: l.employee.lastName,
+            department: l.employee.department,
+            position: l.employee.position,
+            role: l.employee.user?.role?.name || null,
+            avatarUrl: l.employee.user?.avatarUrl || null
+          } : l.user,
+          attachments: l.attachments || []
+        }));
+        setData(mappedData);
+      }
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchLeaves();
+  }, [fetchLeaves]);
+
+  return { data, isLoading, refetch: fetchLeaves };
+};
+
+export const usePendingCancellationQuery = () => {
+  const [data, setData] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  const fetchLeaves = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const token = typeof window !== 'undefined' ? sessionStorage.getItem('accessToken') : '';
+      const headers = { 'Authorization': `Bearer ${token}` };
+      const res = await fetch('/api/hr/leaves/pending-verify', { headers });
+      if (res.ok) {
+        const json = await res.json();
+        const all = (json.data ?? json);
+        const cancellations = all.filter((l: any) => l.status === 'PENDING_CANCELLATION');
+        const mappedData = cancellations.map((l: any) => ({
+          ...l,
+          userId: l.employee?.user?.id || l.employee?.userId || 'unknown',
+          totalDays: l.totalDays ?? l.durationDays ?? l.daysCount ?? 0,
+          startFormat: l.startFormat || 'full',
+          endFormat: l.endFormat || 'full',
+          leaveType: l.leaveType,
+          approverReason: l.approverReason || l.approvals?.[0]?.comment || null,
+          user: l.employee ? {
+            title: l.employee.title,
+            firstName: l.employee.firstName,
+            lastName: l.employee.lastName,
+            department: l.employee.department,
+            position: l.employee.position,
+            role: l.employee.user?.role?.name || null,
+            avatarUrl: l.employee.user?.avatarUrl || null
+          } : l.user,
+          attachments: l.attachments || []
+        }));
+        setData(mappedData);
+      }
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchLeaves();
+  }, [fetchLeaves]);
+
+  return { data, isLoading, refetch: fetchLeaves };
+};
+
 export const useLeave = () => {
   return {
     useLeavesQuery,
@@ -245,7 +363,11 @@ export const useLeave = () => {
     useHolidaysQuery,
     useApproveLeaveMutation,
     useRejectLeaveMutation,
+    useVerifyLeaveMutation,
+    useHrPendingVerifyQuery,
+    usePendingCancellationQuery,
   };
 };
+
 
 

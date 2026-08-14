@@ -6,8 +6,10 @@ import { Calendar as CalendarIcon, X, User, Users, Download, Edit3, Trash2, Uplo
 import { useLeave } from "@/hooks/useLeave";
 import { useLeaveBalance } from "@/hooks/useLeaveBalance";
 import Swal from "sweetalert2";
-import { ThaiDatePicker, ThaiMonthPicker } from "@/components/ThaiCalendarPicker";
+import { DatePicker } from "@/components/DateAndTime";
 import { LeaveTimePicker } from "@/components/LeaveTimePicker";
+import { uploadApi } from "@/api";
+import { getLeaveStatusBadgeColor, getLeaveStatusText } from "@/lib/utils";
 
 const formatDate = (dateString: string) => {
   if (!dateString) return "-";
@@ -97,8 +99,11 @@ export default function LeaveHistoryPage() {
       id: r.id,
       empId: r.employee?.employeeCode || (r.employee?.id ? `EMP-${String(r.employee.id).substring(0, 5).toUpperCase()}` : `EMP-000`),
       name: r.user?.firstName ? `${r.user.firstName} ${r.user.lastName}` : (r.userId || 'Unknown'),
+      firstName: r.user?.firstName || r.employee?.firstName || r.userId || 'Unknown',
+      lastName: r.user?.lastName || r.employee?.lastName || '',
       dateStr: r.startDate.split('T')[0] === r.endDate.split('T')[0] ? formatDate(r.startDate) : `${formatDate(r.startDate)} - ${formatDate(r.endDate)}`,
       type: r.leaveType?.name || r.type,
+      requestCode: r.requestCode,
       days: `${r.totalDays || 1} วัน`,
       reason: r.reason || '-',
       status: r.status,
@@ -265,18 +270,17 @@ export default function LeaveHistoryPage() {
 
               <div className="relative inline-block w-[180px]">
                 {filterType === "monthly" ? (
-                  <ThaiMonthPicker 
+                  <DatePicker 
                     value={selectedMonthRaw} 
-                    onChange={(newMonth) => setSelectedMonthRaw(newMonth)} 
-                    className="w-full h-full bg-transparent border-none text-black text-[15px] font-bold py-3 px-4 focus:outline-none cursor-pointer flex items-center justify-between rounded-r-xl"
+                    onChange={(newMonth: any) => setSelectedMonthRaw(newMonth)} 
+                    views={['year', 'month']}
+                    format="MM/BBBB"
                   />
                 ) : (
-                  <ThaiDatePicker 
+                  <DatePicker 
                     selected={selectedDate}
                     onChange={(date: Date | null) => setSelectedDate(date)}
                     placeholderText="เลือกวันที่"
-                    isPlain={true}
-                    className="w-full h-full bg-transparent border-none text-black text-[15px] font-bold py-3 px-4 focus:outline-none cursor-pointer rounded-r-xl"
                   />
                 )}
               </div>
@@ -315,27 +319,31 @@ export default function LeaveHistoryPage() {
                 <table className="w-full text-sm text-left">
                   <thead className="bg-[#CDE4EB] text-gray-800 text-[15px]">
                     <tr>
+                      <th className={`px-6 py-4 font-bold whitespace-nowrap ${viewMode === "department" ? "w-[12%]" : "w-[15%]"}`}>รหัสการลา</th>
                       {viewMode === "department" && (
                         <>
-                          <th className="px-6 py-4 font-bold whitespace-nowrap">รหัสพนักงาน</th>
-                          <th className="px-6 py-4 font-bold whitespace-nowrap">ชื่อพนักงาน</th>
+                          <th className="px-6 py-4 font-bold whitespace-nowrap w-[12%]">รหัสพนักงาน</th>
+                          <th className="px-6 py-4 font-bold whitespace-nowrap w-[18%]">ชื่อ</th>
+                          <th className="px-6 py-4 font-bold whitespace-nowrap w-[18%]">นามสกุล</th>
                         </>
                       )}
-                      <th className="px-6 py-4 font-bold whitespace-nowrap">วันที่ลา</th>
-                      <th className="px-6 py-4 font-bold whitespace-nowrap">ประเภทการลา</th>
-                      <th className="px-6 py-4 font-bold text-center whitespace-nowrap">จำนวนวันลา</th>
-                      {viewMode === "personal" && <th className="px-6 py-4 font-bold whitespace-nowrap">เหตุผล</th>}
-                      <th className="px-6 py-4 font-bold text-center whitespace-nowrap">สถานะ</th>
-                      {viewMode === "personal" && <th className="px-6 py-4 font-bold text-center whitespace-nowrap">จัดการ</th>}
+                      <th className={`px-6 py-4 font-bold whitespace-nowrap ${viewMode === "department" ? "w-[16%]" : "w-[15%]"}`}>วันที่ลา</th>
+                      <th className={`px-6 py-4 font-bold whitespace-nowrap ${viewMode === "department" ? "w-[15%]" : "w-[15%]"}`}>ประเภทการลา</th>
+                      <th className={`px-6 py-4 font-bold text-center whitespace-nowrap ${viewMode === "department" ? "w-[12%]" : "w-[15%]"}`}>จำนวนวันลา</th>
+                      {viewMode === "personal" && <th className="px-6 py-4 font-bold whitespace-nowrap w-[20%]">เหตุผล</th>}
+                      <th className={`px-6 py-4 font-bold text-center whitespace-nowrap ${viewMode === "department" ? "w-[15%]" : "w-[10%]"}`}>สถานะ</th>
+                      {viewMode === "personal" && <th className="px-6 py-4 font-bold text-center whitespace-nowrap w-[10%]">จัดการ</th>}
                     </tr>
                   </thead>
                   <tbody>
                     {requests.map((req, idx) => (
                       <tr key={req.id || idx} className="border-b border-gray-100 last:border-0 hover:bg-gray-50 transition-colors">
+                        <td className="px-6 py-5 text-blue-500 font-semibold whitespace-nowrap">{req.requestCode || '-'}</td>
                         {viewMode === "department" && (
                           <>
                             <td className="px-6 py-5 text-gray-500 font-medium whitespace-nowrap">{req.empId}</td>
-                            <td className="px-6 py-5 text-black font-medium whitespace-nowrap">{req.name}</td>
+                            <td className="px-6 py-5 text-black font-medium whitespace-nowrap">{req.firstName}</td>
+                            <td className="px-6 py-5 text-black font-medium whitespace-nowrap">{req.lastName}</td>
                           </>
                         )}
                         <td className="px-6 py-5 text-black font-medium whitespace-nowrap">{req.dateStr}</td>
@@ -346,10 +354,8 @@ export default function LeaveHistoryPage() {
                         {viewMode === "department" ? (
                           <td className="px-6 py-5 text-center whitespace-nowrap">
                             <div className="flex flex-col items-center gap-1.5">
-                              <span className={`inline-block px-5 py-1.5 rounded-full text-xs font-bold text-white shadow-sm min-w-[80px] ${req.status?.includes('Approved') ? 'bg-[#00E676]' :
-                                  req.status?.includes('Rejected') ? 'bg-[#FF0000]' : 'bg-[#FFA000]'
-                                }`}>
-                                {req.status?.includes('Approved') ? 'อนุมัติ' : req.status?.includes('Rejected') ? 'ปฏิเสธ' : 'รออนุมัติ'}
+                              <span className={`inline-block px-5 py-1.5 rounded-full text-xs font-bold text-white shadow-sm min-w-[80px] text-center ${getLeaveStatusBadgeColor(req.status)}`}>
+                                {getLeaveStatusText(req.status)}
                               </span>
                               <button
                                 onClick={() => setSelectedRequest(req)}
@@ -363,10 +369,8 @@ export default function LeaveHistoryPage() {
                         ) : (
                           <>
                             <td className="px-6 py-5 text-center whitespace-nowrap">
-                              <span className={`inline-block px-5 py-1.5 rounded-full text-xs font-bold text-white shadow-sm min-w-[80px] ${req.status?.includes('Approved') ? 'bg-[#00E676]' :
-                                  req.status?.includes('Rejected') ? 'bg-[#FF0000]' : 'bg-[#FFA000]'
-                                }`}>
-                                {req.status?.includes('Approved') ? 'อนุมัติ' : req.status?.includes('Rejected') ? 'ปฏิเสธ' : 'รออนุมัติ'}
+                              <span className={`inline-block px-5 py-1.5 rounded-full text-[13px] font-bold text-white shadow-sm min-w-[120px] text-center ${getLeaveStatusBadgeColor(req.status)}`}>
+                                {getLeaveStatusText(req.status)}
                               </span>
                             </td>
                             <td className="px-6 py-5 text-center whitespace-nowrap">
@@ -433,6 +437,7 @@ export default function LeaveHistoryPage() {
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-[14px] text-gray-800 pl-[44px]">
                   <div className="space-y-3">
+                    <p className="flex gap-2 items-center"><span className="font-bold min-w-[80px]">รหัสการลา:</span> <span className="text-blue-500 font-semibold">{selectedRequest.requestCode || '-'}</span></p>
                     <p className="flex gap-2"><span className="font-bold min-w-[80px]">ประเภทการลา:</span> {selectedRequest.type}</p>
                     <p className="flex gap-2">
                       <span className="font-bold min-w-[80px]">ช่วงเวลา:</span> 
@@ -527,10 +532,8 @@ export default function LeaveHistoryPage() {
                 <div className="flex flex-col md:flex-row items-stretch gap-4 bg-[#F8F9FA] border border-gray-200 rounded-xl p-4">
                   <div className="w-[120px] flex flex-col justify-center border-r border-gray-200 pr-4">
                     <span className="text-[12px] font-bold text-black mb-2">สถานะ:</span>
-                    <span className={`inline-flex justify-center items-center px-4 py-1.5 rounded-full text-[13px] font-bold text-white shadow-sm ${selectedRequest.status?.includes('Approved') ? 'bg-[#00E676]' :
-                        selectedRequest.status?.includes('Rejected') ? 'bg-[#FF0000]' : 'bg-[#FFA000]'
-                      }`}>
-                      {selectedRequest.status?.includes('Approved') ? 'อนุมัติ' : selectedRequest.status?.includes('Rejected') ? 'ปฏิเสธ' : 'รออนุมัติ'}
+                    <span className={`inline-flex justify-center items-center px-4 py-1.5 rounded-full text-[13px] font-bold text-white shadow-sm ${getLeaveStatusBadgeColor(selectedRequest.status)}`}>
+                      {getLeaveStatusText(selectedRequest.status)}
                     </span>
                   </div>
                   <div className="flex-1 flex flex-col justify-center">
@@ -539,8 +542,8 @@ export default function LeaveHistoryPage() {
                       type="text"
                       readOnly
                       value={selectedRequest.raw?.approverReason || (selectedRequest.status === 'Pending' || selectedRequest.status === 'Waiting CEO' ? 'ไม่มีหมายเหตุเพิ่มเติม' : 'ไม่มีหมายเหตุเพิ่มเติม')}
-                      className={`w-full border rounded-xl p-2.5 text-[14px] outline-none cursor-default ${selectedRequest.status?.includes('Rejected') ? 'border-red-200 text-red-600 bg-red-50' :
-                          selectedRequest.status?.includes('Approved') ? 'border-[#D1F2DF] text-green-600 bg-[#F4FDF8]' : 'border-gray-300 text-gray-500 bg-white'
+                      className={`w-full border rounded-xl p-2.5 text-[14px] outline-none cursor-default ${selectedRequest.status === 'REJECTED' ? 'border-red-200 text-red-600 bg-red-50' :
+                          selectedRequest.status === 'APPROVED' ? 'border-[#D1F2DF] text-green-600 bg-[#F4FDF8]' : 'border-gray-300 text-gray-500 bg-white'
                         }`}
                     />
                   </div>
@@ -555,7 +558,7 @@ export default function LeaveHistoryPage() {
                 วันที่ยื่นคำขอ : {selectedRequest.raw?.createdAt ? new Date(selectedRequest.raw.createdAt).toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) + ' น.' : '-'}
               </span>
 
-              {(!selectedRequest.status.includes('Approved') && !selectedRequest.status.includes('Rejected')) && (viewMode === "personal" || selectedRequest.name === username) && (
+              {(!selectedRequest.status.includes('APPROVED') && !selectedRequest.status.includes('REJECTED')) && (viewMode === "personal" || selectedRequest.name === username) && (
                 <div className="flex items-center gap-5">
                   <button onClick={handleDelete} className="text-gray-400 hover:text-red-500 font-bold text-[14px] flex items-center gap-1.5 transition-colors">
                     <Trash2 className="w-4 h-4" strokeWidth={2.5} />
@@ -580,7 +583,7 @@ export default function LeaveHistoryPage() {
           <div className="bg-white flex flex-col md:flex-row md:items-center justify-between px-8 py-5 shadow-sm sticky top-0 z-10 gap-4 border-b border-gray-200">
             <div>
               <h1 className="text-xl font-bold text-black tracking-tight">แบบฟอร์มยื่นลา (Leave Request)</h1>
-              <p className="text-[13px] text-gray-500 mt-1 font-medium">กรุณากรอกข้อมูลให้ครบถ้วนเพื่อส่งให้ CEO อนุมัติ</p>
+              <p className="text-[13px] text-gray-500 mt-1 font-medium">กรุณากรอกข้อมูลให้ครบถ้วนเพื่อเข้าสู่กระบวนการพิจารณา</p>
             </div>
             <div className="flex items-center gap-6 text-black self-end md:self-auto">
               <button
@@ -654,19 +657,18 @@ export default function LeaveHistoryPage() {
                     <>
                       <div className="md:col-span-2 md:w-[calc(50%-1.5rem)]">
                         <label className="block text-[13px] font-bold text-gray-800 mb-2">วันที่ลา</label>
-                        <ThaiDatePicker 
-                          selected={editForm.leaveDate ? new Date(editForm.leaveDate) : null}
-                          onChange={(date: Date | null) => {
-                            if (date) {
-                              const d = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
-                              setEditForm({ ...editForm, leaveDate: d.toISOString().split('T')[0] });
+                        <DatePicker 
+                          value={editForm.leaveDate || null}
+                          onChange={(val: any) => {
+                            if (val && typeof val === 'object' && typeof val.format === 'function') {
+                              setEditForm({ ...editForm, leaveDate: val.format('YYYY-MM-DD') });
+                            } else if (typeof val === 'string') {
+                              setEditForm({ ...editForm, leaveDate: val.substring(0, 10) });
                             } else {
                               setEditForm({ ...editForm, leaveDate: '' });
                             }
                           }}
                           placeholderText="วว/ดด/ปปปป"
-                          isPlain={true}
-                          className="w-full border border-gray-300 rounded-md px-3 py-2.5 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 bg-white shadow-sm transition-all text-gray-700"
                         />
                       </div>
                       <div className="md:col-span-2">
@@ -682,19 +684,18 @@ export default function LeaveHistoryPage() {
                     <>
                       <div className="md:col-span-1">
                         <label className="block text-[13px] font-bold text-gray-800 mb-2">วันที่เริ่มต้น</label>
-                        <ThaiDatePicker 
-                          selected={editForm.startDate ? new Date(editForm.startDate) : null}
-                          onChange={(date: Date | null) => {
-                            if (date) {
-                              const d = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
-                              setEditForm({ ...editForm, startDate: d.toISOString().split('T')[0] });
+                        <DatePicker 
+                          value={editForm.startDate || null}
+                          onChange={(val: any) => {
+                            if (val && typeof val === 'object' && typeof val.format === 'function') {
+                              setEditForm({ ...editForm, startDate: val.format('YYYY-MM-DD') });
+                            } else if (typeof val === 'string') {
+                              setEditForm({ ...editForm, startDate: val.substring(0, 10) });
                             } else {
                               setEditForm({ ...editForm, startDate: '' });
                             }
                           }}
                           placeholderText="วว/ดด/ปปปป"
-                          isPlain={true}
-                          className="w-full border border-gray-300 rounded-md px-3 py-2.5 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 bg-white shadow-sm transition-all text-gray-700"
                         />
                         {editForm.leaveMode === 'half_day' && (
                           <div className="flex items-center gap-4 mt-3">
@@ -711,18 +712,18 @@ export default function LeaveHistoryPage() {
                       </div>
                       <div className="md:col-span-1">
                         <label className="block text-[13px] font-bold text-gray-800 mb-2">วันที่สิ้นสุด</label>
-                        <ThaiDatePicker 
-                          selected={editForm.endDate ? new Date(editForm.endDate) : null}
-                          onChange={(date: Date | null) => {
-                            if (date) {
-                              const d = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
-                              setEditForm({ ...editForm, endDate: d.toISOString().split('T')[0] });
+                        <DatePicker 
+                          value={editForm.endDate || null}
+                          onChange={(val: any) => {
+                            if (val && typeof val === 'object' && typeof val.format === 'function') {
+                              setEditForm({ ...editForm, endDate: val.format('YYYY-MM-DD') });
+                            } else if (typeof val === 'string') {
+                              setEditForm({ ...editForm, endDate: val.substring(0, 10) });
                             } else {
                               setEditForm({ ...editForm, endDate: '' });
                             }
                           }}
                           placeholderText="วว/ดด/ปปปป"
-                          className="w-full border border-gray-300 rounded-md px-3 py-2.5 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 bg-white shadow-sm transition-all text-gray-700"
                           disabled={editForm.leaveMode === 'half_day'}
                         />
                       </div>

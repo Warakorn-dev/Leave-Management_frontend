@@ -9,12 +9,12 @@ import Swal from 'sweetalert2';
 import { Calendar as CalendarIcon, X, User, Download, Check, Clock, Eye, Hourglass, ListOrdered, Clock4, CalendarDays, CheckCircle2 } from "lucide-react";
 import { format, parseISO, formatDistanceToNow } from 'date-fns';
 import { th } from 'date-fns/locale';
-import { Leave } from '@/types';
+import { Leave } from '@/lib/types';
 import { leaveApi, employeeApi, ceoApi } from '@/api';
 
 export default function CEOApproval() {
   const { user } = useAuth();
-  
+
   const [leaves, setLeaves] = React.useState<Leave[]>([]);
   const [employees, setEmployees] = React.useState<any[]>([]);
   const [isLoading, setIsLoading] = React.useState(true);
@@ -33,7 +33,7 @@ export default function CEOApproval() {
           const leavesData = (leavesRes as any).data ?? leavesRes;
           setLeaves((leavesData as any).data ?? leavesData);
         }
-        
+
         if (empRes.success || empRes.data || empRes) {
           const empData = (empRes as any).data ?? empRes;
           setEmployees((empData as any).data ?? empData);
@@ -92,17 +92,9 @@ export default function CEOApproval() {
 
   // Summaries
   const pendingCEOLeaves = useMemo(() => {
-    return leaves.filter(l => {
-      if (l.status === 'Waiting CEO') return true;
-      if (l.status === 'Pending') {
-        const employee = employees.find(e => e.id === l.employeeId || e.username === l.userId || (e.firstName + ' ' + e.lastName) === l.userId);
-        const role = employee?.user?.role?.name?.toLowerCase() || employee?.role?.toLowerCase();
-        return role === 'manager' || role === 'hr';
-      }
-      return false;
-    });
-  }, [leaves, employees]);
-  
+    return leaves.filter(l => l.status === 'PENDING_EXECUTIVE');
+  }, [leaves]);
+
   const displayedLeaves = useMemo(() => {
     let filtered = pendingCEOLeaves;
     if (filterMode === 'thisMonth') {
@@ -116,7 +108,7 @@ export default function CEOApproval() {
   }, [pendingCEOLeaves, filterMode]);
 
   const pendingCount = displayedLeaves.length;
-  
+
   const leaveTypesMap = pendingCEOLeaves.reduce((acc, leave) => {
     const typeName = (leave.leaveTypeName || leave.type || '').split(' ')[0]; // get short name like ลาพักร้อน
     if (typeName) {
@@ -129,18 +121,18 @@ export default function CEOApproval() {
     .join(', ') || 'ไม่มี';
 
   const latestApprovedText = useMemo(() => {
-    const approvedLeaves = leaves.filter(l => (l.status || '').toLowerCase() === 'approved');
+    const approvedLeaves = leaves.filter(l => (l.status || '') === 'APPROVED');
     if (approvedLeaves.length === 0) return 'ยังไม่มีการอนุมัติ';
-    
+
     const latest = [...approvedLeaves].sort((a, b) => {
       const dateA = new Date(a.updatedAt || a.createdAt || 0).getTime();
       const dateB = new Date(b.updatedAt || b.createdAt || 0).getTime();
       return dateB - dateA;
     })[0];
-    
+
     const date = new Date(latest.updatedAt || latest.createdAt || new Date());
     if (isNaN(date.getTime())) return 'ไม่ทราบเวลา';
-    
+
     return formatDistanceToNow(date, { addSuffix: true, locale: th });
   }, [leaves]);
 
@@ -165,21 +157,21 @@ export default function CEOApproval() {
       }
 
       if (leave.startFormat === 'hourly' || leave.leaveMode === 'hourly') {
-         let startT = leave.startTime;
-         if (!startT && leave.startDate) {
-           startT = new Date(leave.startDate).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
-         }
-         let endT = leave.endTime;
-         if (!endT && leave.endDate) {
-           endT = new Date(leave.endDate).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
-         }
-         
-         const rawHours = leave.leaveHours ? leave.leaveHours : Number(((leave.totalDays ?? 0) * 8).toFixed(2));
-         const h = Math.floor(rawHours);
-         const m = Math.round((rawHours - h) * 60);
-         const formattedHours = m === 0 ? `${h}` : `${h}.${m.toString().padStart(2, '0')}`;
-         
-         return `${baseStr} (${startT} - ${endT} น.) (${formattedHours} ชม.)`;
+        let startT = leave.startTime;
+        if (!startT && leave.startDate) {
+          startT = new Date(leave.startDate).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
+        }
+        let endT = leave.endTime;
+        if (!endT && leave.endDate) {
+          endT = new Date(leave.endDate).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
+        }
+
+        const rawHours = leave.leaveHours ? leave.leaveHours : Number(((leave.totalDays ?? 0) * 8).toFixed(2));
+        const h = Math.floor(rawHours);
+        const m = Math.round((rawHours - h) * 60);
+        const formattedHours = m === 0 ? `${h}` : `${h}.${m.toString().padStart(2, '0')}`;
+
+        return `${baseStr} (${startT} - ${endT} น.) (${formattedHours} ชม.)`;
       }
       return `${baseStr} (${leave.totalDays || leave.durationDays || 1} วัน)`;
     } catch {
@@ -276,7 +268,7 @@ export default function CEOApproval() {
 
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-        
+
         <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 shadow-sm border border-slate-100 dark:border-slate-800 flex flex-col justify-between h-32">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-2xl bg-purple-50 dark:bg-purple-900/30 flex items-center justify-center text-purple-600 dark:text-purple-400">
@@ -317,13 +309,13 @@ export default function CEOApproval() {
 
       {/* Main Table Card */}
       <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-sm border border-slate-100 dark:border-slate-800 overflow-hidden">
-        
+
         {/* Table Header Section */}
         <div className="p-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-slate-100 dark:border-slate-800">
           <h2 className="text-lg font-bold text-slate-900 dark:text-white">
             คำขอลาที่ค้างอยู่
           </h2>
-          
+
           <div className="relative">
             <select
               value={filterMode}
@@ -349,10 +341,12 @@ export default function CEOApproval() {
             <table className="w-full text-left text-sm whitespace-nowrap">
               <thead className="bg-slate-50/50 dark:bg-slate-800/50 border-b border-slate-100 dark:border-slate-800 text-slate-500 dark:text-slate-400 font-medium">
                 <tr>
-                  <th className="px-6 py-4">พนักงาน</th>
+                  <th className="px-6 py-4">รหัสการลา</th>
+                  <th className="px-6 py-4">ชื่อ</th>
+                  <th className="px-6 py-4">นามสกุล</th>
                   <th className="px-6 py-4">แผนก</th>
                   <th className="px-6 py-4">ประเภทการลา</th>
-                  <th className="px-6 py-4">วันที่</th>
+                  <th className="px-6 py-4">วันที่ลา</th>
                   <th className="px-6 py-4 text-center">สถานะ</th>
                   <th className="px-6 py-4 text-center">การดำเนินการ</th>
                 </tr>
@@ -360,7 +354,7 @@ export default function CEOApproval() {
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800/50">
                 {displayedLeaves.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="px-6 py-12 text-center text-slate-500">
+                    <td colSpan={8} className="px-6 py-12 text-center text-slate-500">
                       ไม่มีคำขอลาที่ค้างอยู่
                     </td>
                   </tr>
@@ -371,11 +365,28 @@ export default function CEOApproval() {
                     const shortDept = dept ? dept.substring(0, 3).toUpperCase() : '-';
                     const empName = leave.employeeName || leave.userId || 'ไม่ระบุชื่อ';
                     const leaveType = leave.leaveTypeName || leave.type || '-';
-                    
+
+                    let firstName = '-';
+                    let lastName = '-';
+                    if (employee && employee.firstName) {
+                      firstName = employee.firstName;
+                      lastName = employee.lastName || '-';
+                    } else {
+                      const nameParts = empName.split(' ');
+                      firstName = nameParts[0] || 'ไม่ระบุชื่อ';
+                      lastName = nameParts.length > 1 ? nameParts.slice(1).join(' ') : '-';
+                    }
+
                     return (
                       <tr key={leave.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
                         <td className="px-6 py-4">
-                          <span className="font-medium text-slate-700 dark:text-slate-200">{empName}</span>
+                          <span className="font-semibold text-blue-500 whitespace-nowrap">{leave.requestCode || '-'}</span>
+                        </td>
+                        <td className="px-6 py-4">
+                          <span className="font-medium text-slate-700 dark:text-slate-200">{firstName}</span>
+                        </td>
+                        <td className="px-6 py-4">
+                          <span className="font-medium text-slate-700 dark:text-slate-200">{lastName}</span>
                         </td>
                         <td className="px-6 py-4 text-slate-600 dark:text-slate-300">{dept}</td>
                         <td className="px-6 py-4 text-slate-600 dark:text-slate-300">{leaveType.split(' ')[0]}</td>
@@ -387,19 +398,19 @@ export default function CEOApproval() {
                         </td>
                         <td className="px-6 py-4">
                           <div className="flex items-center justify-center gap-2">
-                            <button 
+                            <button
                               onClick={() => handleApprove(leave)}
                               className="bg-[#00C853] hover:bg-[#00B04A] text-white text-xs font-semibold px-3.5 py-1.5 rounded-xl transition-all shadow-sm"
                             >
                               อนุมัติ
                             </button>
-                            <button 
+                            <button
                               onClick={() => handleReject(leave)}
                               className="bg-red-100 hover:bg-red-200 text-red-600 dark:bg-red-900/30 dark:hover:bg-red-900/50 dark:text-red-400 text-xs font-semibold px-3.5 py-1.5 rounded-xl transition-all"
                             >
                               ปฏิเสธ
                             </button>
-                            <button 
+                            <button
                               onClick={() => handleViewDetails(leave, employee)}
                               className="flex items-center gap-1.5 text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400 text-xs font-semibold transition-colors bg-slate-100 dark:bg-slate-800 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 px-3 py-1.5 rounded-xl"
                             >
@@ -429,7 +440,7 @@ export default function CEOApproval() {
         const duration = leave.totalDays || leave.durationDays || 0;
         const reason = leave.reason || '-';
         const statusLower = (leave.status || '').toLowerCase();
-        
+
         let statusText = 'รออนุมัติ';
         let statusBadgeClass = 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400';
         let reasonColor = 'border-slate-200 text-slate-500 bg-slate-50';
@@ -448,7 +459,7 @@ export default function CEOApproval() {
         return (
           <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200">
             <div className="bg-white rounded-[24px] w-full max-w-[650px] shadow-2xl flex flex-col max-h-[90vh] animate-in zoom-in-95 duration-200 overflow-hidden relative">
-              
+
               {/* Header */}
               <div className="flex items-center justify-between px-6 py-5">
                 <h2 className="text-[20px] font-bold text-black">รายละเอียดคำขอลา (Leave Request Details)</h2>
@@ -462,7 +473,7 @@ export default function CEOApproval() {
 
               {/* Body */}
               <div className="px-6 pb-6 overflow-y-auto flex-1 space-y-4">
-                
+
                 {/* Employee Info */}
                 <div className="border border-gray-300 rounded-xl p-5 flex gap-4 bg-white">
                   <div className="w-[38px] h-[38px] rounded-full bg-fuchsia-100/50 border border-fuchsia-200 text-fuchsia-500 flex items-center justify-center shrink-0 overflow-hidden">
@@ -491,13 +502,14 @@ export default function CEOApproval() {
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-[14px] text-gray-800 pl-[44px]">
                     <div className="space-y-3">
+                      <p className="flex gap-2"><span className="font-bold min-w-[80px]">รหัสการลา:</span> <span className="text-blue-500 font-semibold">{leave.requestCode || '-'}</span></p>
                       <p className="flex gap-2"><span className="font-bold min-w-[80px]">ประเภทการลา:</span> {leave.type || leave.leaveTypeName || '-'}</p>
                       <p className="flex gap-2"><span className="font-bold min-w-[80px]">ช่วงเวลา:</span> {dates}</p>
                     </div>
                     <div className="space-y-3">
                       <p className="flex items-center gap-2">
                         <span className="w-[26px] h-[26px] bg-green-100 text-green-600 flex items-center justify-center rounded-full shrink-0">
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></svg>
                         </span>
                         <span className="font-bold min-w-[80px]">รูปแบบการลา:</span> {leave.startFormat === 'hourly' ? `รายชั่วโมง (${leave.leaveHours || 1} ชม.)` : leave.startFormat === 'morning' ? 'ครึ่งวันเช้า' : leave.startFormat === 'afternoon' ? 'ครึ่งวันบ่าย' : 'เต็มวัน'}
                       </p>
@@ -507,7 +519,7 @@ export default function CEOApproval() {
                         </span>
                         <span className="font-bold min-w-[80px]">เอกสารแนบ:</span>
                         {leave.attachmentUrl || (leave as any).attachments?.length > 0 || (leave as any).attachment ? (
-                          <button 
+                          <button
                             onClick={() => {
                               const rawPath = leave.attachmentUrl || (leave as any).attachments?.[0]?.filePath || (leave as any).attachment;
                               if (rawPath) {
@@ -545,11 +557,11 @@ export default function CEOApproval() {
                 <div className="mt-4 border-t border-gray-100 pt-4">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-[13px] text-gray-500">
                     <p className="flex gap-2">
-                      <span className="font-bold min-w-[120px]">วันที่ยื่นคำลา:</span> 
+                      <span className="font-bold min-w-[120px]">วันที่ยื่นคำลา:</span>
                       {leave.createdAt ? new Date(leave.createdAt).toLocaleString('th-TH') : '-'}
                     </p>
                     <p className="flex gap-2">
-                      <span className="font-bold min-w-[120px]">อัปเดตล่าสุด:</span> 
+                      <span className="font-bold min-w-[120px]">อัปเดตล่าสุด:</span>
                       {leave.updatedAt ? new Date(leave.updatedAt).toLocaleString('th-TH') : '-'}
                     </p>
                   </div>
@@ -580,7 +592,7 @@ export default function CEOApproval() {
                 </div>
 
               </div>
-              
+
               {/* Footer text */}
               <div className="px-6 py-4 border-t border-gray-100 flex items-center bg-white rounded-b-[24px]">
                 <span className="text-gray-400 text-[13px]">
