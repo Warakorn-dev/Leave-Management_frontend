@@ -87,7 +87,30 @@ export default function LeaveHistoryPage() {
     }
 
     const filtered = targetRequests.filter((r: any) => {
-      // Date filter
+      // 1. Search Query (Overrides other filters if present)
+      if (searchId && searchId.trim() !== "") {
+        const term = searchId.trim().toLowerCase();
+        const leaveId = String(r.id);
+        const requestCode = (r.requestCode || '').toLowerCase();
+
+        if (viewMode === "department") {
+          const empCode = r.employee?.employeeCode || (r.employee?.id ? `EMP-${String(r.employee.id).substring(0, 5).toUpperCase()}` : `EMP-000`);
+          const fullName = r.user?.firstName ? `${r.user.firstName} ${r.user.lastName}`.toLowerCase() : (r.userId || 'unknown').toLowerCase();
+
+          if (requestCode.includes(term) || leaveId.includes(term) || empCode.toLowerCase().includes(term) || fullName.includes(term)) {
+            return true;
+          }
+          return false;
+        } else {
+          // personal mode
+          if (requestCode.includes(term) || leaveId.includes(term)) {
+            return true;
+          }
+          return false;
+        }
+      }
+
+      // 2. Date filter
       let dateMatch = true;
       if (filterType === "monthly") {
         if (fromDate && toDate) {
@@ -107,30 +130,10 @@ export default function LeaveHistoryPage() {
       }
       if (!dateMatch) return false;
 
-      // Leave Type Filter
+      // 3. Leave Type Filter
       if (filterLeaveType && filterLeaveType !== "") {
         const typeName = r.leaveType?.name || r.type || "";
         if (typeName !== filterLeaveType) return false;
-      }
-
-      // Search Query
-      if (searchId && searchId.trim() !== "") {
-        const term = searchId.trim().toLowerCase();
-        const leaveId = String(r.id);
-
-        if (viewMode === "department") {
-          const empCode = r.employee?.employeeCode || (r.employee?.id ? `EMP-${String(r.employee.id).substring(0, 5).toUpperCase()}` : `EMP-000`);
-          const fullName = r.user?.firstName ? `${r.user.firstName} ${r.user.lastName}`.toLowerCase() : (r.userId || 'unknown').toLowerCase();
-
-          if (!leaveId.includes(term) && !empCode.toLowerCase().includes(term) && !fullName.includes(term)) {
-            return false;
-          }
-        } else {
-          // personal mode
-          if (!leaveId.includes(term)) {
-            return false;
-          }
-        }
       }
 
       return true;
@@ -442,7 +445,7 @@ export default function LeaveHistoryPage() {
               </div>
               <input
                 type="text"
-                placeholder={viewMode === "department" ? "ค้นหารหัสใบลา, รหัสพนักงาน, ชื่อ, นามสกุล" : "ค้นหารหัสใบลา"}
+                placeholder={viewMode === "department" ? "ค้นหารหัสการลา, รหัสใบลา, รหัสพนักงาน, ชื่อ, นามสกุล" : "ค้นหารหัสการลา, รหัสใบลา"}
                 value={searchId}
                 onChange={(e) => setSearchId(e.target.value)}
                 className="w-full pl-10 pr-4 py-2.5 bg-white border border-gray-200 rounded-xl text-[14px] text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-400 shadow-sm transition-all"
@@ -766,16 +769,18 @@ export default function LeaveHistoryPage() {
             <div className="px-6 py-4 border-t border-gray-100 flex items-center justify-between bg-white">
               <span className="text-[13px] font-medium text-gray-300">วันที่ยื่นคำขอ : {formatDate(selectedRequest.raw?.createdAt || new Date().toISOString())}</span>
 
-              {(!selectedRequest.status.includes('APPROVED') && !selectedRequest.status.includes('REJECTED')) && viewMode === 'personal' && (
+              {['PENDING_VERIFY'].includes(selectedRequest.status) && viewMode === 'personal' && (
                 <div className="flex items-center gap-5">
                   <button onClick={handleDelete} className="text-gray-400 hover:text-red-500 font-bold text-[14px] flex items-center gap-1.5 transition-colors">
                     <Trash2 className="w-4 h-4" strokeWidth={2.5} />
                     ยกเลิกการลา
                   </button>
-                  <button onClick={handleEditClick} className="text-blue-600 hover:text-blue-700 font-bold text-[14px] flex items-center gap-1.5 transition-colors">
-                    <Edit3 className="w-4 h-4" strokeWidth={2.5} />
-                    แก้ไขข้อมูล
-                  </button>
+                  {!selectedRequest.raw?.isViewedByHr && (
+                    <button onClick={handleEditClick} className="text-blue-600 hover:text-blue-700 font-bold text-[14px] flex items-center gap-1.5 transition-colors">
+                      <Edit3 className="w-4 h-4" strokeWidth={2.5} />
+                      แก้ไขข้อมูล
+                    </button>
+                  )}
                 </div>
               )}
             </div>
