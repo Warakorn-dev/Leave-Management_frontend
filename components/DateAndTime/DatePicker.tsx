@@ -239,6 +239,8 @@ export default function DatePicker({
               disabled={disabled}
               minDate={parsedMinDate}
               maxDate={parsedMaxDate}
+              views={props.views || ['year', 'month', 'day']}
+              openTo={props.openTo || 'day'}
               slots={{
                 day: CustomDay,
               }}
@@ -260,6 +262,8 @@ export default function DatePicker({
             format={format}
             minDate={parsedMinDate}
             maxDate={parsedMaxDate}
+            views={props.views || ['year', 'month', 'day']}
+            openTo={props.openTo || 'day'}
             slots={{
               day: CustomDay,
             }}
@@ -300,6 +304,8 @@ export default function DatePicker({
             format={format}
             minDate={parsedMinDate}
             maxDate={parsedMaxDate}
+            views={props.views || ['year', 'month', 'day']}
+            openTo={props.openTo || 'day'}
             slots={{
               day: CustomDay,
             }}
