@@ -250,13 +250,45 @@ export const useVerifyLeaveMutation = () => {
         body: JSON.stringify({ action, comment }),
       });
       if (!res.ok) {
-        const errorText = await res.text();
-        throw new Error(`Failed to verify leave: ${errorText}`);
+        let errorMsg = 'Failed to verify leave';
+        try {
+          const errJson = await res.json();
+          errorMsg = errJson.message || errorMsg;
+        } catch (e) {
+          errorMsg = await res.text();
+        }
+        throw new Error(errorMsg);
       }
       return res.json();
     }
   };
 };
+
+export const useMarkLeaveViewedMutation = () => {
+  return {
+    mutateAsync: async ({ id, lock = true }: { id: string, lock?: boolean }) => {
+      const token = typeof window !== 'undefined' ? sessionStorage.getItem('accessToken') : '';
+      const res = await fetch(`/api/hr/leaves/${id}/view?lock=${lock}`, {
+        method: 'PATCH',
+        headers: { 
+          'Authorization': `Bearer ${token}`
+        },
+      });
+      if (!res.ok) {
+        let errorMsg = 'Failed to mark leave as viewed';
+        try {
+          const errJson = await res.json();
+          errorMsg = errJson.message || errorMsg;
+        } catch (e) {
+          errorMsg = await res.text();
+        }
+        throw new Error(errorMsg);
+      }
+      return res.json();
+    }
+  };
+};
+
 
 export const useHrPendingVerifyQuery = () => {
   const [data, setData] = useState<any[]>([]);
@@ -267,7 +299,10 @@ export const useHrPendingVerifyQuery = () => {
     try {
       const token = typeof window !== 'undefined' ? sessionStorage.getItem('accessToken') : '';
       const headers = { 'Authorization': `Bearer ${token}` };
-      const res = await fetch('/api/hr/leaves/pending-verify', { headers });
+      const res = await fetch('/api/hr/leaves/pending-verify', { 
+        headers,
+        cache: 'no-store' 
+      });
       if (res.ok) {
         const json = await res.json();
         const mappedData = (json.data ?? json).map((l: any) => ({
@@ -364,6 +399,7 @@ export const useLeave = () => {
     useApproveLeaveMutation,
     useRejectLeaveMutation,
     useVerifyLeaveMutation,
+    useMarkLeaveViewedMutation,
     useHrPendingVerifyQuery,
     usePendingCancellationQuery,
   };

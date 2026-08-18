@@ -33,8 +33,8 @@ export const hrApi = {
     return response.data;
   },
 
-  updateLeaveBalance: async (id: string, remainingDays: number): Promise<ApiResponse<any>> => {
-    const response = await axiosInstance.put(`/hr/leave-balances/${id}`, { remainingDays });
+  updateLeaveBalance: async (id: string, remainingDays?: number, totalDays?: number): Promise<ApiResponse<any>> => {
+    const response = await axiosInstance.put(`/hr/leave-balances/${id}`, { remainingDays, totalDays });
     return response.data;
   },
 

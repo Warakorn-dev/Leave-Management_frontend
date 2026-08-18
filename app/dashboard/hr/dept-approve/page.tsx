@@ -105,7 +105,7 @@ function mapRequest(r: any) {
 
 // ──────────────── component ────────────────
 
-export default function ManagerApprovePage() {
+export default function HRDeptApprovePage() {
   const [rawRequests, setRawRequests] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -211,7 +211,7 @@ export default function ManagerApprovePage() {
 
         {/* Header */}
         <div className="mb-6">
-          <h1 className="text-2xl font-bold text-gray-800 mb-2 tracking-tight">รายการคำขอรออนุมัติ (Manager View)</h1>
+          <h1 className="text-2xl font-bold text-gray-800 mb-2 tracking-tight">รายการคำขอรออนุมัติ (หัวหน้าแผนก HR)</h1>
           <p className="text-sm text-gray-400 font-medium">พิจารณาอนุมัติหรือปฏิเสธคำขอลาของพนักงานในแผนกของคุณ</p>
         </div>
 

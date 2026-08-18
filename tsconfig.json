@@ -1,7 +1,11 @@
 {
   "compilerOptions": {
     "target": "ES2017",
-    "lib": ["dom", "dom.iterable", "esnext"],
+    "lib": [
+      "dom",
+      "dom.iterable",
+      "esnext"
+    ],
     "allowJs": true,
     "skipLibCheck": true,
     "strict": true,
@@ -19,7 +23,9 @@
       }
     ],
     "paths": {
-      "@/*": ["./*"]
+      "@/*": [
+        "./*"
+      ]
     }
   },
   "include": [
@@ -30,5 +36,22 @@
     ".next/dev/types/**/*.ts",
     "**/*.mts"
   ],
-  "exclude": ["node_modules"]
+  "exclude": [
+    "node_modules",
+    "add-leaders.ts",
+    "check*.ts",
+    "fix*.ts",
+    "insert*.ts",
+    "list*.ts",
+    "migrate*.ts",
+    "rename.ts",
+    "script.ts",
+    "seed*.ts",
+    "temp*.ts",
+    "test*.ts",
+    "test",
+    "update*.ts",
+    "prisma",
+    "_backend_src_backup"
+  ]
 }

@@ -250,8 +250,7 @@ export default function RequestLeavePage() {
                     if (orderA !== orderB) return orderA - orderB;
                     return a.leaveType.name.localeCompare(b.leaveType.name, 'th');
                   }).map((b: any) => {
-                    const isUnlimited = b.leaveType.name.includes('ลาป่วย') || b.leaveType.name.includes('คลอดบุตร') || b.leaveType.name.includes('ทำหมัน') || b.leaveType.name.includes('ทหาร');
-                    const isOutOfQuota = b.effectiveRemainingDays <= 0 && !isUnlimited;
+                    const isOutOfQuota = b.effectiveRemainingDays <= 0;
 
                     let isTenureNotMet = false;
                     const requiredTenure = (b.leaveType.name.includes('พักร้อน') || b.leaveType.name.includes('พักผ่อน')) ? 365 : b.leaveType.minTenureDays;
@@ -272,7 +271,8 @@ export default function RequestLeavePage() {
                     } else if (isOutOfQuota) {
                         label += `(หมดโควต้า)`;
                     } else {
-                        label += b.effectiveRemainingDays <= 0 && isUnlimited ? `(ใช้เกินโควต้า)` : `(เหลือ ${b.effectiveRemainingDays} วัน)`;
+                        const pendingStr = b.pendingDays > 0 ? ` + รออนุมัติ ${b.pendingDays} วัน` : '';
+                        label += `(เหลือ ${b.effectiveRemainingDays} วัน${pendingStr})`;
                     }
 
                     return (
