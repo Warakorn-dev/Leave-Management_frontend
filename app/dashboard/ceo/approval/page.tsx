@@ -16,7 +16,7 @@ import {
   Clock,
   AlertCircle,
 } from 'lucide-react';
-import { getLeaveStatusText } from '@/lib/api/utils';
+import { getLeaveStatusText, resolveAssetUrl } from '@/lib/api/utils';
 
 const getToken = () =>
   typeof window !== 'undefined' ? sessionStorage.getItem('accessToken') : '';
@@ -466,7 +466,7 @@ export default function CEOApproval() {
                     <div className="w-10 h-10 rounded-full bg-fuchsia-100 border border-fuchsia-200 text-fuchsia-500 flex items-center justify-center shrink-0 overflow-hidden">
                       {leave.employee?.user?.avatarUrl ? (
                         <img
-                          src={`http://localhost:8000${leave.employee.user.avatarUrl}`}
+                          src={resolveAssetUrl(leave.employee.user.avatarUrl)}
                           alt="Avatar"
                           className="w-full h-full object-cover"
                         />

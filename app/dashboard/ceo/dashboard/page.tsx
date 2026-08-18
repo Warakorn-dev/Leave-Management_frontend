@@ -1,13 +1,5 @@
 'use client';
 
-import { Kanit } from 'next/font/google';
-
-const kanit = Kanit({
-  weight: ['400', '500', '600', '700'],
-  subsets: ['thai', 'latin'],
-  display: 'swap',
-});
-
 import React, { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useDashboardStats } from '@/hooks/useDashboard';
@@ -523,7 +515,7 @@ export default function CEODashboard() {
           <div className="bg-gradient-to-b from-[#111c4e] to-[#243b81] rounded-xl p-8 shadow-xl border-2 border-blue-600 text-white min-h-[400px] flex flex-col">
             <div className="flex items-center justify-between mb-8">
               <h3
-                className={`font-bold text-3xl tracking-wide drop-shadow-md ${kanit.className}`}
+                className="font-sans font-bold text-3xl tracking-wide drop-shadow-md"
               >
                 ประกาศบริษัท
               </h3>
@@ -569,7 +561,7 @@ export default function CEODashboard() {
                     >
                       <div className="flex justify-between items-start mb-2">
                         <h4
-                          className={`font-bold text-xl text-white tracking-wide ${kanit.className}`}
+                          className="font-sans font-bold text-xl text-white tracking-wide"
                         >
                           {ann.title}
                         </h4>
@@ -580,14 +572,14 @@ export default function CEODashboard() {
                         )}
                       </div>
                       <p
-                        className={`text-blue-100 text-[15px] font-medium mb-2 ${kanit.className}`}
+                        className="font-sans text-blue-100 text-[15px] font-medium mb-2"
                       >
                         {ann.subtitle}
                       </p>
                       {ann.attachmentName && (
                         <a
                           href="#"
-                          className={`inline-flex items-center gap-1.5 mb-2 px-2.5 py-1 bg-white/10 hover:bg-white/20 text-[12px] text-blue-100 hover:text-white rounded-md transition-all border border-white/5 ${kanit.className}`}
+                          className="font-sans inline-flex items-center gap-1.5 mb-2 px-2.5 py-1 bg-white/10 hover:bg-white/20 text-[12px] text-blue-100 hover:text-white rounded-md transition-all border border-white/5"
                           onClick={(e) =>
                             previewAttachment(
                               e,

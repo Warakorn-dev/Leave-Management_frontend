@@ -384,7 +384,7 @@ export default function LeaveCalendarPage() {
                           <span className="absolute inset-0 flex items-center justify-center">{getInitials(leave.name)}</span>
                           {leave.avatarUrl && (
                             <img 
-                              src={leave.avatarUrl.startsWith('http') ? leave.avatarUrl : `http://localhost:8000${leave.avatarUrl}`} 
+                              src={leave.avatarUrl.startsWith('http') ? leave.avatarUrl : `/${leave.avatarUrl.replace(/^\/+/, '')}`}
                               alt={leave.name} 
                               className="absolute inset-0 w-full h-full object-cover z-10 bg-indigo-50" 
                               onError={(e) => {

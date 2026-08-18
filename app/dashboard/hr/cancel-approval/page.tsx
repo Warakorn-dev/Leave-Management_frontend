@@ -379,7 +379,7 @@ export default function HrCancelApprovalPage() {
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                     {selectedRequest.attachments.map((att: any, i: number) => {
                       const isData = att.filePath?.startsWith("data:");
-                      const fileSrc = isData ? att.filePath : (att.filePath?.startsWith("http") ? att.filePath : `http://localhost:8000${att.filePath?.startsWith("/") ? "" : "/"}${att.filePath}`);
+                      const fileSrc = isData ? att.filePath : (att.filePath?.startsWith("http") ? att.filePath : `/${att.filePath?.replace(/^\/+/, '')}`);
                       const isImage = att.fileType?.includes("image") || (!isData && att.filePath?.match(/\.(jpeg|jpg|gif|png)$/i));
                       return (
                         <div key={i}

@@ -1,33 +1,20 @@
 FROM node:20-alpine AS builder
-
-# Create app directory
 WORKDIR /app
-
-# A wildcard is used to ensure both package.json AND package-lock.json are copied
+ARG NEXT_PUBLIC_BACKEND_URL
+ENV NEXT_PUBLIC_BACKEND_URL=${NEXT_PUBLIC_BACKEND_URL}
 COPY package*.json ./
-COPY prisma ./prisma/
-
-# Install app dependencies
-RUN npm install
-
-# Copy the rest of the application source code
+RUN npm ci
 COPY . .
-
-# Generate prisma client
-RUN npx prisma generate
-
-# Build the application
 RUN npm run build
 
-FROM node:20-alpine
-
+FROM node:20-alpine AS runner
 WORKDIR /app
+ENV NODE_ENV=production
 
-COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/package*.json ./
-COPY --from=builder /app/dist ./dist
-COPY --from=builder /app/prisma ./prisma
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/.next ./.next
+COPY --from=builder /app/public ./public
 
 EXPOSE 3000
-
-CMD ["npm", "run", "start:prod"]
+CMD ["npm", "run", "start"]

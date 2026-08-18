@@ -394,7 +394,7 @@ export default function ManagerApprovePage() {
                           onClick={() => {
                             const att = selectedRequest.attachments[0];
                             const isData = att.filePath.startsWith("data:");
-                            const fileSrc = isData ? att.filePath : `http://localhost:8000${att.filePath.startsWith("/") ? "" : "/"}${att.filePath}`;
+                            const fileSrc = isData ? att.filePath : `/${att.filePath.replace(/^\/+/, '')}`;
                             const isImage = att.fileType?.includes("image") || att.filePath?.match(/\.(jpeg|jpg|gif|png)$/i);
                             setPreviewAttachment({ url: fileSrc, isImage: Boolean(isImage) });
                           }}

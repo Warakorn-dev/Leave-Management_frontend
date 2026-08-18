@@ -761,7 +761,7 @@ export default function LeaveHistoryPage() {
                                 ? att.filePath
                                 : att.filePath.startsWith('http')
                                   ? att.filePath
-                                  : `http://localhost:8000${att.filePath.startsWith('/') ? '' : '/'}${att.filePath}`;
+                                  : `/${att.filePath.replace(/^\/+/, '')}`;
                               const isImage =
                                 att.fileType.includes('image') ||
                                 (!isData &&
