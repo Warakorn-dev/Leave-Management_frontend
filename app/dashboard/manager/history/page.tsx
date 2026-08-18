@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
-import { Calendar as CalendarIcon, X, User, Users, Download, Edit3, Trash2, Upload, Check, Clock } from "lucide-react";
+import { Calendar as CalendarIcon, X, User, Users, Download, Edit3, Trash2, Upload, Check, Clock, Search } from "lucide-react";
 import { useLeave } from "@/hooks/useLeave";
 import { useLeaveBalance } from "@/hooks/useLeaveBalance";
 import Swal from "sweetalert2";
@@ -29,6 +29,7 @@ export default function LeaveHistoryPage() {
   const [selectedDate, setSelectedDate] = useState<Date | null>(new Date());
   const [selectedRequest, setSelectedRequest] = useState<any>(null);
   const [viewMode, setViewMode] = useState<"department" | "personal">("department");
+  const [searchCode, setSearchCode] = useState("");
   const [editAttachment, setEditAttachment] = useState<File | null>(null);
 
   const router = useRouter();
@@ -76,13 +77,19 @@ export default function LeaveHistoryPage() {
     const storedDept = sessionStorage.getItem("department") || "";
     
     let targetRequests = [];
-    if (viewMode === "personal") {
+    if (searchCode.trim() !== "") {
+      targetRequests = allLeaves.filter((r: any) => String(r.userId) === storedUserId || r.user?.department?.name === storedDept || r.department === storedDept);
+    } else if (viewMode === "personal") {
       targetRequests = allLeaves.filter((r: any) => String(r.userId) === storedUserId);
     } else {
       targetRequests = allLeaves.filter((r: any) => String(r.userId) !== storedUserId && (r.user?.department?.name === storedDept || r.department === storedDept));
     }
 
     const filtered = targetRequests.filter((r: any) => {
+      if (searchCode.trim() !== "") {
+        return r.requestCode?.toLowerCase().includes(searchCode.toLowerCase().trim());
+      }
+      
       if (filterType === "monthly") {
         return r.startDate.startsWith(selectedMonthRaw);
       } else {
@@ -111,7 +118,60 @@ export default function LeaveHistoryPage() {
       department: r.user?.department?.name || r.department,
       positionName: r.user?.position?.name || r.position
     })));
-  }, [filterType, selectedMonthRaw, selectedDate, viewMode, allLeaves]);
+  }, [filterType, selectedMonthRaw, selectedDate, viewMode, allLeaves, searchCode]);
+
+  // Auto-refresh (Polling) ทุกๆ 5 วินาที
+  useEffect(() => {
+    const interval = setInterval(() => {
+      refetchLeaves();
+    }, 5000);
+    return () => clearInterval(interval);
+  }, [refetchLeaves]);
+
+  // ตรวจสอบว่าคำขอที่กำลังเปิดดู หรือ กำลังแก้ไขอยู่ ถูก HR กดดูรายละเอียดหรือดึงไปแล้วหรือไม่
+  useEffect(() => {
+    if (selectedRequest) {
+      const updatedReq = requests.find((r) => r.id === selectedRequest.id);
+      if (updatedReq) {
+        const wasHRPhase = ['PENDING_VERIFY', 'REVIEWING_HR'].includes(selectedRequest.status);
+        const isNowHRPhase = ['PENDING_VERIFY', 'REVIEWING_HR'].includes(updatedReq.status);
+        
+        if (wasHRPhase && !isNowHRPhase) {
+          Swal.fire({
+            icon: 'warning',
+            title: 'ไม่สามารถแก้ไขคำขอได้',
+            text: 'คำขอลานี้ผ่านการตรวจสอบหรืออนุมัติจาก HR เรียบร้อยแล้ว ระบบจะยกเลิกการแก้ไขข้อมูลของคุณ',
+            confirmButtonColor: '#3085d6'
+          });
+          
+          if (isEditing) {
+            setIsEditing(false); // เด้งออกจากหน้าแก้ไข
+          }
+          setSelectedRequest(null); // ปิดหน้าต่าง Modal เพื่อให้ข้อมูลรีเฟรช
+        } else if (updatedReq.status !== selectedRequest.status && !isNowHRPhase) {
+          if (updatedReq.status === 'APPROVED' || updatedReq.status === 'REJECTED') {
+            Swal.fire({
+              icon: 'info',
+              title: 'สถานะคำขอมีการเปลี่ยนแปลง',
+              text: `คำขอลานี้ได้ถูก ${updatedReq.status === 'APPROVED' ? 'อนุมัติ' : 'ปฏิเสธ'} แล้ว`,
+              confirmButtonColor: '#3085d6'
+            });
+            setIsEditing(false);
+            setSelectedRequest(null);
+          }
+        } else if (updatedReq.raw?.isViewedByHr && !selectedRequest.raw?.isViewedByHr) {
+          Swal.fire({
+            icon: 'warning',
+            title: 'ไม่สามารถแก้ไขคำขอได้',
+            text: 'คำขอลานี้กำลังถูกเปิดดูหรือตรวจสอบโดย HR',
+            confirmButtonColor: '#3085d6'
+          });
+          if (isEditing) setIsEditing(false);
+          setSelectedRequest(null);
+        }
+      }
+    }
+  }, [requests, selectedRequest, isEditing]);
 
   const handleDelete = async () => {
     const isApprovedCancel = selectedRequest?.status?.includes('Approved');
@@ -284,6 +344,17 @@ export default function LeaveHistoryPage() {
                   />
                 )}
               </div>
+            </div>
+
+            <div className="flex-1 min-w-[250px] relative">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+              <input
+                type="text"
+                placeholder="ค้นหารหัสการลา..."
+                value={searchCode}
+                onChange={(e) => setSearchCode(e.target.value)}
+                className="w-full bg-white border border-gray-200 rounded-xl pl-12 pr-4 py-2.5 text-[14px] outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-400 transition-all shadow-sm"
+              />
             </div>
 
             <button
@@ -558,16 +629,18 @@ export default function LeaveHistoryPage() {
                 วันที่ยื่นคำขอ : {selectedRequest.raw?.createdAt ? new Date(selectedRequest.raw.createdAt).toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) + ' น.' : '-'}
               </span>
 
-              {(!selectedRequest.status.includes('APPROVED') && !selectedRequest.status.includes('REJECTED')) && (viewMode === "personal" || selectedRequest.name === username) && (
+              {['PENDING_VERIFY', 'REVIEWING_HR'].includes(selectedRequest.status) && (viewMode === "personal" || selectedRequest.name === username) && (
                 <div className="flex items-center gap-5">
                   <button onClick={handleDelete} className="text-gray-400 hover:text-red-500 font-bold text-[14px] flex items-center gap-1.5 transition-colors">
                     <Trash2 className="w-4 h-4" strokeWidth={2.5} />
                     ยกเลิกการลา
                   </button>
-                  <button onClick={handleEditClick} className="text-blue-600 hover:text-blue-700 font-bold text-[14px] flex items-center gap-1.5 transition-colors">
-                    <Edit3 className="w-4 h-4" strokeWidth={2.5} />
-                    แก้ไขข้อมูล
-                  </button>
+                  {['PENDING_VERIFY'].includes(selectedRequest.status) && !selectedRequest.raw?.isViewedByHr && (
+                    <button onClick={handleEditClick} className="text-blue-600 hover:text-blue-700 font-bold text-[14px] flex items-center gap-1.5 transition-colors">
+                      <Edit3 className="w-4 h-4" strokeWidth={2.5} />
+                      แก้ไขข้อมูล
+                    </button>
+                  )}
                 </div>
               )}
             </div>

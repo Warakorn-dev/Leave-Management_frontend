@@ -20,7 +20,7 @@ export default function ManagerRequestPage() {
   const [leaveDate, setLeaveDate] = useState("");
   const [startTime, setStartTime] = useState("");
   const [endTime, setEndTime] = useState("");
-  
+
   const [reason, setReason] = useState("");
   const [username, setUsername] = useState("Manager");
   const [department, setDepartment] = useState("");
@@ -58,7 +58,7 @@ export default function ManagerRequestPage() {
       const startStr = new Date(start.getTime() - start.getTimezoneOffset() * 60000).toISOString().split('T')[0];
       const end = new Date(leave.endDate);
       const endStr = new Date(end.getTime() - end.getTimezoneOffset() * 60000).toISOString().split('T')[0];
-      
+
       return checkDateStr >= startStr && checkDateStr <= endStr;
     });
   };
@@ -77,7 +77,7 @@ export default function ManagerRequestPage() {
         console.error("Failed to fetch user data", error);
       }
     };
-    
+
     fetchUserProfile();
   }, []);
 
@@ -102,12 +102,12 @@ export default function ManagerRequestPage() {
       setShowErrorModal(true);
       return;
     }
-    
+
     if (leaveMode === 'hourly') {
       if (!leaveDate) { setErrorMsg("กรุณาเลือกวันที่ลา"); setShowErrorModal(true); return; }
       if (!startTime) { setErrorMsg("กรุณาเลือกเวลาเริ่มลา"); setShowErrorModal(true); return; }
       if (!endTime) { setErrorMsg("กรุณาเลือกเวลาสิ้นสุด"); setShowErrorModal(true); return; }
-      
+
       const [startH, startM] = startTime.split(':').map(Number);
       const [endH, endM] = endTime.split(':').map(Number);
       let diffMinutes = (endH * 60 + endM) - (startH * 60 + startM);
@@ -119,7 +119,7 @@ export default function ManagerRequestPage() {
       if (!endDate) { setErrorMsg("กรุณาเลือกวันที่สิ้นสุด"); setShowErrorModal(true); return; }
       if (new Date(startDate) > new Date(endDate)) { setErrorMsg("วันที่สิ้นสุดต้องมากกว่าหรือเท่ากับวันที่เริ่มต้น"); setShowErrorModal(true); return; }
     }
-    
+
     if (!reason) {
       setErrorMsg("กรุณากรอกเหตุผลการลา");
       setShowErrorModal(true);
@@ -137,7 +137,7 @@ export default function ManagerRequestPage() {
         leaveMode,
         reason
       };
-      
+
       if (leaveMode === 'hourly') {
         payload.leaveDate = leaveDate;
         payload.startTime = startTime;
@@ -146,14 +146,14 @@ export default function ManagerRequestPage() {
         payload.startDate = startDate;
         payload.endDate = endDate;
         if (leaveMode === 'half_day') {
-           payload.period = period;
+          payload.period = period;
         } else {
-           payload.period = "full";
+          payload.period = "full";
         }
       }
 
       const res = await createLeave(payload);
-      
+
       const leaveRequestId = res?.data?.id || res?.id;
 
       if (leaveRequestId && attachmentFile) {
@@ -161,7 +161,7 @@ export default function ManagerRequestPage() {
           const formData = new FormData();
           formData.append('file', attachmentFile);
           formData.append('leaveRequestId', leaveRequestId);
-          
+
           await uploadApi.uploadFile(formData);
         } catch (uploadErr) {
           console.error("File upload failed:", uploadErr);
@@ -192,7 +192,7 @@ export default function ManagerRequestPage() {
       {/* Main Content Container */}
       <div className="flex-1 p-6 md:p-8">
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8 max-w-[1000px] mx-auto animate-in fade-in slide-in-from-bottom-4 duration-500">
-          
+
           {/* User Info Box */}
           <div className="bg-[#F4F5F7] rounded-xl p-6 flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8">
             <div>
@@ -204,17 +204,17 @@ export default function ManagerRequestPage() {
               <p className="text-[17px] font-bold text-black">{department || "-"} | {position || "-"}</p>
             </div>
             {/* Empty div for flex spacing alignment */}
-            <div className="hidden md:block flex-1"></div> 
+            <div className="hidden md:block flex-1"></div>
           </div>
 
           <form onSubmit={handleSubmit}>
             {/* Grid Form Fields */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-6 mb-6">
-              
+
               {/* Leave Type */}
               <div className="md:col-span-1">
                 <label className="text-[13px] font-semibold text-gray-800 block mb-2">ประเภทการลา</label>
-                <select 
+                <select
                   value={type}
                   onChange={(e) => setType(e.target.value)}
                   className="w-full border border-gray-300 rounded-md px-3 py-2.5 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 bg-white shadow-sm transition-all text-gray-700"
@@ -236,30 +236,31 @@ export default function ManagerRequestPage() {
 
                     let isTenureNotMet = false;
                     const requiredTenure = (b.leaveType.name.includes('พักร้อน') || b.leaveType.name.includes('พักผ่อน')) ? 365 : b.leaveType.minTenureDays;
-                    
+
                     if (requiredTenure > 0 && b.employeeHireDate) {
-                       const hireDate = new Date(b.employeeHireDate);
-                       const diffMs = new Date().getTime() - hireDate.getTime();
-                       const diffDays = diffMs / (1000 * 60 * 60 * 24);
-                       if (diffDays < requiredTenure) {
-                           isTenureNotMet = true;
-                       }
+                      const hireDate = new Date(b.employeeHireDate);
+                      const diffMs = new Date().getTime() - hireDate.getTime();
+                      const diffDays = diffMs / (1000 * 60 * 60 * 24);
+                      if (diffDays < requiredTenure) {
+                        isTenureNotMet = true;
+                      }
                     }
 
                     const isDisabled = isOutOfQuota || isTenureNotMet;
                     let label = `${b.leaveType.name} `;
                     if (isTenureNotMet) {
-                        label += `(อายุงานไม่ครบ ${requiredTenure >= 365 ? (requiredTenure / 365).toFixed(0) + ' ปี' : requiredTenure + ' วัน'})`;
+                      label += `(อายุงานไม่ครบ ${requiredTenure >= 365 ? (requiredTenure / 365).toFixed(0) + ' ปี' : requiredTenure + ' วัน'})`;
                     } else if (isOutOfQuota) {
-                        label += `(หมดโควต้า)`;
+                      label += `(หมดโควต้า)`;
                     } else {
-                        label += `(เหลือ ${b.effectiveRemainingDays} วัน)`;
+                      const pendingStr = b.pendingDays > 0 ? ` + รออนุมัติ ${b.pendingDays} วัน` : '';
+                      label += `(เหลือ ${b.effectiveRemainingDays} วัน${pendingStr})`;
                     }
 
                     return (
-                      <option 
-                        key={b.leaveType.id} 
-                        value={b.leaveType.id} 
+                      <option
+                        key={b.leaveType.id}
+                        value={b.leaveType.id}
                         disabled={isDisabled}
                         className={isDisabled ? "text-gray-400 bg-gray-50 font-medium" : "text-gray-800"}
                       >
@@ -293,7 +294,7 @@ export default function ManagerRequestPage() {
                 <>
                   <div className="md:col-span-2 md:w-[calc(50%-1.5rem)]">
                     <label className="text-[13px] font-semibold text-gray-800 block mb-2">วันที่ลา</label>
-                    <DatePicker 
+                    <DatePicker
                       selected={leaveDate ? new Date(leaveDate) : null}
                       onChange={(date: Date | null) => {
                         if (date) {
@@ -308,11 +309,11 @@ export default function ManagerRequestPage() {
                     />
                   </div>
                   <div className="md:col-span-2">
-                    <LeaveTimePicker 
-                      startTime={startTime} 
-                      endTime={endTime} 
-                      onChangeStartTime={setStartTime} 
-                      onChangeEndTime={setEndTime} 
+                    <LeaveTimePicker
+                      startTime={startTime}
+                      endTime={endTime}
+                      onChangeStartTime={setStartTime}
+                      onChangeEndTime={setEndTime}
                     />
                   </div>
                 </>
@@ -320,7 +321,7 @@ export default function ManagerRequestPage() {
                 <>
                   <div>
                     <label className="text-[13px] font-semibold text-gray-800 block mb-2">วันที่เริ่มต้น</label>
-                    <DatePicker 
+                    <DatePicker
                       value={startDate || null}
                       onChange={(val: any) => {
                         if (val && typeof val === 'object' && typeof val.format === 'function') {
@@ -349,7 +350,7 @@ export default function ManagerRequestPage() {
                   </div>
                   <div>
                     <label className="text-[13px] font-semibold text-gray-800 block mb-2">วันที่สิ้นสุด</label>
-                    <DatePicker 
+                    <DatePicker
                       value={endDate || null}
                       minDate={startDate ? startDate : undefined}
                       onChange={(val: any) => {
@@ -372,12 +373,12 @@ export default function ManagerRequestPage() {
             {/* Reason */}
             <div className="mb-6">
               <label className="text-[13px] font-semibold text-gray-800 block mb-2">เหตุผลการลา</label>
-              <textarea 
-                rows={4} 
+              <textarea
+                rows={4}
                 value={reason}
                 onChange={(e) => setReason(e.target.value)}
-                className="w-full border border-gray-300 rounded-md px-4 py-3 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 placeholder-gray-400 shadow-sm transition-all resize-none text-gray-700" 
-                placeholder="ระบุเหตุผลที่ชัดเจน..." 
+                className="w-full border border-gray-300 rounded-md px-4 py-3 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 placeholder-gray-400 shadow-sm transition-all resize-none text-gray-700"
+                placeholder="ระบุเหตุผลที่ชัดเจน..."
               />
             </div>
 
@@ -388,13 +389,13 @@ export default function ManagerRequestPage() {
                 {attachmentName ? (
                   <div className="text-center z-10">
                     <p className="text-[14px] text-emerald-600 font-bold">✓ {attachmentName}</p>
-                    <button 
-                      type="button" 
+                    <button
+                      type="button"
                       onClick={(e) => {
                         e.stopPropagation();
                         setAttachmentFile(null);
                         setAttachmentName(null);
-                      }} 
+                      }}
                       className="text-red-500 text-xs font-semibold mt-2 underline hover:text-red-700"
                     >
                       ลบไฟล์
@@ -407,18 +408,18 @@ export default function ManagerRequestPage() {
                   </>
                 )}
                 {/* Invisible file input */}
-                <input 
-                  type="file" 
+                <input
+                  type="file"
                   accept=".pdf,.png,.jpg,.jpeg,.doc,.docx"
                   onChange={handleFileChange}
-                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" 
+                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                 />
               </div>
             </div>
 
             {/* Submit Button */}
             <div className="flex justify-end">
-              <button 
+              <button
                 type="button"
                 onClick={handleSubmit}
                 className="bg-[#0000FF] hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-lg transition-all text-sm shadow-md hover:shadow-lg active:scale-95"
@@ -443,13 +444,13 @@ export default function ManagerRequestPage() {
               สามารถเช็คสถานะได้จากหน้าเช็คสถานะของคุณ
             </p>
             <div className="flex items-center justify-center gap-4">
-              <button 
+              <button
                 onClick={() => setShowConfirmModal(false)}
                 className="bg-[#FF0000] hover:bg-red-600 text-white font-bold py-2.5 px-8 rounded-lg transition-colors text-sm shadow-sm"
               >
                 ยกเลิก
               </button>
-              <button 
+              <button
                 onClick={confirmSubmit}
                 disabled={isSubmitting}
                 className={`${isSubmitting ? 'bg-gray-400 cursor-not-allowed' : 'bg-[#00B050] hover:bg-[#009040]'} text-white font-bold py-2.5 px-8 rounded-lg transition-colors text-sm shadow-sm flex items-center justify-center gap-2`}
@@ -472,7 +473,7 @@ export default function ManagerRequestPage() {
             <p className="text-gray-600 text-[15px] mb-6 leading-relaxed">
               {errorMsg}
             </p>
-            <button 
+            <button
               onClick={() => setShowErrorModal(false)}
               className="bg-gray-100 hover:bg-gray-200 text-gray-800 font-bold py-2.5 px-8 rounded-xl transition-colors text-sm w-full"
             >

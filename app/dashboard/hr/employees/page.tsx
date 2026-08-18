@@ -75,13 +75,15 @@ export default function EmployeeManagementPage() {
   const [leaveBalances, setLeaveBalances] = useState<any[]>([]);
   const [leaveTypes, setLeaveTypes] = useState<any[]>([]);
   const [isFetchingBalances, setIsFetchingBalances] = useState(false);
-  const [editedBalances, setEditedBalances] = useState<{ [id: string]: number }>({});
+  const [editedRemainingBalances, setEditedRemainingBalances] = useState<{ [id: string]: number }>({});
+  const [editedTotalBalances, setEditedTotalBalances] = useState<{ [id: string]: number }>({});
 
   const handleOpenBalanceModal = async (emp: any) => {
     setSelectedEmployeeBalances(emp);
     setIsBalanceModalOpen(true);
     setIsFetchingBalances(true);
-    setEditedBalances({});
+    setEditedRemainingBalances({});
+    setEditedTotalBalances({});
     try {
       const [resBalances, resTypes] = await Promise.all([
         hrApi.getEmployeeWithBalances(emp.id),
@@ -105,9 +107,15 @@ export default function EmployeeManagementPage() {
 
   const handleSaveAllBalances = async () => {
     try {
-      const updates = Object.entries(editedBalances).map(([id, val]) => 
-        hrApi.updateLeaveBalance(id, Number(val))
-      );
+      const allIds = new Set([
+        ...Object.keys(editedRemainingBalances),
+        ...Object.keys(editedTotalBalances)
+      ]);
+      const updates = Array.from(allIds).map(id => {
+        const remainingDays = editedRemainingBalances[id];
+        const totalDays = editedTotalBalances[id];
+        return hrApi.updateLeaveBalance(id, remainingDays, totalDays);
+      });
       if (updates.length > 0) {
         await Promise.all(updates);
         Swal.fire({ icon: 'success', title: 'สำเร็จ', text: 'ปรับปรุงยอดวันลาเรียบร้อยแล้ว', timer: 1500, showConfirmButton: false });
@@ -615,11 +623,23 @@ export default function EmployeeManagementPage() {
                       const posName = selectedPos ? selectedPos.title || selectedPos.name || '' : '';
                       const isLeaderOrManager = posName.toLowerCase().includes('leader') || posName.toLowerCase().includes('manager');
                       
+                      const deptName = selectedPos?.department?.name || editingEmployee.departmentName || '';
+                      const isHRDept = deptName.toLowerCase().includes('hr') || deptName.toLowerCase().includes('human resource');
+                      
+                      let roleName = 'Employee';
+                      if (isHRDept) {
+                        roleName = 'HR';
+                      } else if (editingEmployee.roleName === 'CEO') {
+                        roleName = 'CEO';
+                      } else if (isLeaderOrManager) {
+                        roleName = 'Manager';
+                      }
+
                       setEditingEmployee({
                         ...editingEmployee, 
                         positionId: e.target.value,
                         positionName: posName,
-                        roleName: isLeaderOrManager ? 'Manager' : 'Employee',
+                        roleName: roleName,
                         ...(selectedPos?.department && !editingEmployee.departmentId ? {
                           departmentId: String(selectedPos.department.id),
                           departmentName: selectedPos.department.name || ''
@@ -762,35 +782,60 @@ export default function EmployeeManagementPage() {
                         <div>
                           <h4 className="font-bold text-slate-800 text-[17px]">{type.name}</h4>
                           {balance ? (
-                            <p className="text-[14px] text-slate-500 mt-1">ปี: {balance.year} | สิทธิ: {balance.totalDays} | ใช้ไป: {balance.usedDays}</p>
+                            <p className="text-[14px] text-slate-500 mt-1">ปี: {balance.year} | ใช้ไป: {balance.usedDays} วัน</p>
                           ) : (
                             <p className="text-[14px] text-amber-500 mt-1">ยังไม่ได้สร้าง (เริ่มต้น {type.defaultDays} วัน)</p>
                           )}
                         </div>
-                        <div className="flex items-center justify-between border-t border-slate-200 pt-3 mt-1">
+                        <div className="flex flex-col gap-3 border-t border-slate-200 pt-3 mt-1">
                           {balance ? (
-                            <>
-                              <label className="text-[15px] font-bold text-slate-700">คงเหลือ:</label>
-                              <input 
-                                type="number"
-                                step="0.5"
-                                min="0"
-                                max={type.name.includes('พักผ่อน') || type.name.includes('พักร้อน') ? 12 : undefined}
-                                value={editedBalances[balance.id] ?? balance.remainingDays}
-                                onChange={(e) => {
-                                  const val = e.target.value;
-                                  let numVal = val === '' ? balance.remainingDays : Number(val);
-                                  if ((type.name.includes('พักผ่อน') || type.name.includes('พักร้อน')) && numVal > 12) {
-                                    numVal = 12;
-                                  }
-                                  setEditedBalances(prev => ({
-                                    ...prev,
-                                    [balance.id]: numVal
-                                  }));
-                                }}
-                                className="w-24 px-3 py-2 bg-white border border-slate-300 rounded-lg text-center focus:ring-2 focus:ring-blue-500 outline-none font-semibold text-blue-700"
-                              />
-                            </>
+                            <div className="w-full flex flex-col gap-3">
+                              {/* Row 1: Total Days */}
+                              <div className="flex items-center justify-between">
+                                <label className="text-[14px] font-bold text-slate-600">สิทธิวันลา (ทั้งหมด):</label>
+                                <div className="flex items-center gap-2">
+                                  <input 
+                                    type="number"
+                                    step="0.5"
+                                    min="0"
+                                    value={editedTotalBalances[balance.id] ?? balance.totalDays}
+                                    onChange={(e) => {
+                                      const val = e.target.value;
+                                      const numVal = val === '' ? balance.totalDays : Number(val);
+                                      setEditedTotalBalances(prev => ({
+                                        ...prev,
+                                        [balance.id]: numVal
+                                      }));
+                                    }}
+                                    className="w-24 px-3 py-1.5 bg-white border border-slate-300 rounded-lg text-center focus:ring-2 focus:ring-blue-500 outline-none font-semibold text-slate-700 animate-transition"
+                                  />
+                                  <span className="text-xs text-slate-500 font-bold">วัน</span>
+                                </div>
+                              </div>
+                              
+                              {/* Row 2: Remaining Days */}
+                              <div className="flex items-center justify-between border-t border-slate-100 pt-2.5">
+                                <label className="text-[14px] font-bold text-slate-600">วันลาคงเหลือ:</label>
+                                <div className="flex items-center gap-2">
+                                  <input 
+                                    type="number"
+                                    step="0.5"
+                                    min="0"
+                                    value={editedRemainingBalances[balance.id] ?? balance.remainingDays}
+                                    onChange={(e) => {
+                                      const val = e.target.value;
+                                      const numVal = val === '' ? balance.remainingDays : Number(val);
+                                      setEditedRemainingBalances(prev => ({
+                                        ...prev,
+                                        [balance.id]: numVal
+                                      }));
+                                    }}
+                                    className="w-24 px-3 py-1.5 bg-white border border-slate-300 rounded-lg text-center focus:ring-2 focus:ring-blue-500 outline-none font-semibold text-blue-700 animate-transition"
+                                  />
+                                  <span className="text-xs text-slate-500 font-bold">วัน</span>
+                                </div>
+                              </div>
+                            </div>
                           ) : (
                             <span className="text-sm text-slate-400 italic">รอสร้างข้อมูล</span>
                           )}

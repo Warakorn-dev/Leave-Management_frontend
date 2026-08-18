@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { LogOut, PieChart, FileEdit, Activity, BookOpen, Calendar, User, UserCog, Building, Briefcase, ListTodo, FileText, Settings, Menu, ChevronLeft, XCircle } from "lucide-react";
+import { LogOut, PieChart, FileEdit, Activity, BookOpen, Calendar, User, UserCog, Building, Briefcase, ListTodo, FileText, Settings, Menu, ChevronLeft, XCircle, FileCheck } from "lucide-react";
 
 export function HRSidebar({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = usePathname();
@@ -78,6 +78,8 @@ export function HRSidebar({ onNavigate }: { onNavigate?: () => void }) {
     router.push("/login");
   };
 
+  const isLeader = position.toLowerCase().includes('leader') || position.toLowerCase().includes('manager');
+
   const menuItems = [
     { name: "Dashboard", href: "/dashboard/hr/dashboard", icon: PieChart },
     { name: "สร้างคำขอลา", href: "/dashboard/hr/leave-request", icon: FileEdit },
@@ -85,6 +87,7 @@ export function HRSidebar({ onNavigate }: { onNavigate?: () => void }) {
     { name: "ประวัติการลา", href: "/dashboard/hr/leave-history", icon: BookOpen },
     { name: "ตรวจสอบคำขอลา", href: "/dashboard/hr/approval", icon: ListTodo },
     { name: "ตรวจสอบคำขอยกเลิกการลา", href: "/dashboard/hr/cancel-approval", icon: XCircle },
+    ...(isLeader ? [{ name: "อนุมัติการลา (หัวหน้าแผนก)", href: "/dashboard/hr/dept-approve", icon: FileCheck }] : []),
     { name: "ปฏิทินวันลา", href: "/dashboard/hr/calendar", icon: Calendar },
     { name: "จัดการข้อมูลพนักงาน", href: "/dashboard/hr/employees", icon: UserCog },
     { name: "จัดการตำแหน่ง", href: "/dashboard/hr/organization", icon: Building },

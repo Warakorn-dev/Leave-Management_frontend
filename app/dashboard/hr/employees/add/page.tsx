@@ -124,11 +124,21 @@ export default function AddEmployeePage() {
       
       const isLeaderOrManager = posName.toLowerCase().includes('leader') || posName.toLowerCase().includes('manager');
       
+      const deptName = selectedPos?.department?.name || formData.departmentName || '';
+      const isHRDept = deptName.toLowerCase().includes('hr') || deptName.toLowerCase().includes('human resource');
+      
+      let roleName = 'Employee';
+      if (isHRDept) {
+        roleName = 'HR';
+      } else if (isLeaderOrManager) {
+        roleName = 'Manager';
+      }
+
       setFormData(prev => ({
         ...prev,
         positionId: value,
         positionName: posName,
-        roleName: isLeaderOrManager ? 'Manager' : 'Employee',
+        roleName: roleName,
         ...(selectedPos?.department && !prev.departmentId ? {
           departmentId: String(selectedPos.department.id),
           departmentName: selectedPos.department.name || ''

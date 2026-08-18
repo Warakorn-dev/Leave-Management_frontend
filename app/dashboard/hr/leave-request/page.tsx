@@ -284,7 +284,8 @@ export default function RequestLeavePage() {
                     } else if (isOutOfQuota) {
                         label += `(หมดโควต้า)`;
                     } else {
-                        label += `(เหลือ ${b.effectiveRemainingDays} วัน)`;
+                        const pendingStr = b.pendingDays > 0 ? ` + รออนุมัติ ${b.pendingDays} วัน` : '';
+                        label += `(เหลือ ${b.effectiveRemainingDays} วัน${pendingStr})`;
                     }
 
                     return (
