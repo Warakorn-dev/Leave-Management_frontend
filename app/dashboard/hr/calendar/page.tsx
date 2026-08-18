@@ -615,7 +615,7 @@ export default function LeaveCalendarPage() {
                                 profilePic.startsWith('http') ||
                                 profilePic.startsWith('data:')
                                   ? profilePic
-                                  : `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}${profilePic.startsWith('/') ? '' : '/'}${profilePic}`
+                                  : `/${profilePic.replace(/^\/+/, '')}`
                               }
                               alt={empName}
                               className="w-full h-full object-cover"

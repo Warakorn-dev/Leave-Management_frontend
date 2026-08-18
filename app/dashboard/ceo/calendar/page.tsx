@@ -318,7 +318,7 @@ export default function LeaveCalendarPage() {
                         <div className="w-[42px] h-[42px] rounded-full bg-indigo-50 flex items-center justify-center border border-indigo-100 shrink-0 overflow-hidden relative group">
                           {profilePic ? (
                             <img
-                              src={profilePic.startsWith('http') || profilePic.startsWith('data:') ? profilePic : `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}${profilePic.startsWith('/') ? '' : '/'}${profilePic}`}
+                              src={profilePic.startsWith('http') || profilePic.startsWith('data:') ? profilePic : `/${profilePic.replace(/^\/+/, '')}`}
                               alt={empName}
                               className="w-full h-full object-cover"
                               onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.nextElementSibling?.classList.remove('hidden'); }}

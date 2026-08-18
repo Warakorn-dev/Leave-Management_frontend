@@ -34,3 +34,10 @@ export function getLeaveStatusBadgeColor(status: string): string {
     default: return 'bg-gray-400';
   }
 }
+
+/** Resolve backend-served assets through the Next.js proxy in every environment. */
+export function resolveAssetUrl(path?: string | null): string {
+  if (!path) return '';
+  if (/^(data:|blob:|https?:\/\/)/i.test(path)) return path;
+  return `/${path.replace(/^\/+/, '')}`;
+}
