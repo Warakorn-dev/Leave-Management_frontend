@@ -9,9 +9,9 @@ export default function DashboardRoot() {
   useEffect(() => {
     const role = sessionStorage.getItem("role")?.toLowerCase();
     if (role === "user") {
-      router.replace("/dashboard/user");
+      router.replace("/dashboard/user/dashboard");
     } else if (role === "manager") {
-      router.replace("/dashboard/manager");
+      router.replace("/dashboard/manager/dashboard");
     } else if (role === "hr") {
       router.replace("/dashboard/hr/dashboard");
     } else if (role === "ceo") {
