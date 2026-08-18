@@ -42,11 +42,11 @@ export default function DashboardShell({ children }: { children: React.ReactNode
       router.push("/login");
     } else {
       if (storedRole === "manager" && !pathname.startsWith("/dashboard/manager")) {
-        router.push("/dashboard/manager");
+        router.push("/dashboard/manager/dashboard");
         return;
       }
       if (storedRole === "user" && !pathname.startsWith("/dashboard/user")) {
-        router.push("/dashboard/user");
+        router.push("/dashboard/user/dashboard");
         return;
       }
       if (storedRole === "hr" && !pathname.startsWith("/dashboard/hr")) {

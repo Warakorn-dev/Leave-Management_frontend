@@ -94,13 +94,13 @@ export default function LoginPage() {
 
       const lowerRole = user.role.toLowerCase();
       if (lowerRole === "manager") {
-        router.push("/dashboard/manager");
+        router.push("/dashboard/manager/dashboard");
       } else if (lowerRole === "hr") {
         router.push("/dashboard/hr/dashboard");
       } else if (lowerRole === "ceo") {
         router.push("/dashboard/ceo/dashboard");
       } else {
-        router.push("/dashboard/user");
+        router.push("/dashboard/user/dashboard");
       }
     } catch (err: any) {
       if (err.message === 'Invalid credentials') {
