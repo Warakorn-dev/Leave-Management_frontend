@@ -4,18 +4,38 @@ import React, { useState } from 'react';
 import { useDepartment } from '@/hooks/useDepartment';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from '@/components/ui/dialog';
 import { SkeletonTable } from '@/components/ui/skeleton';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import Swal from 'sweetalert2';
-import { Plus, Search, Edit2, Trash2, ChevronLeft, ChevronRight, Building } from 'lucide-react';
-import { Department } from '@/lib/types';
+import {
+  Plus,
+  Search,
+  Edit2,
+  Trash2,
+  ChevronLeft,
+  ChevronRight,
+  Building,
+} from 'lucide-react';
+import { Department } from '@/lib/api/types';
 
 const departmentSchema = z.object({
-  code: z.string().min(2, 'รหัสแผนกต้องมีอย่างน้อย 2 ตัวอักษร (Code must be 2+ chars)').toUpperCase(),
-  name: z.string().min(2, 'ชื่อแผนกต้องมีอย่างน้อย 2 ตัวอักษร (Name must be 2+ chars)'),
+  code: z
+    .string()
+    .min(2, 'รหัสแผนกต้องมีอย่างน้อย 2 ตัวอักษร (Code must be 2+ chars)')
+    .toUpperCase(),
+  name: z
+    .string()
+    .min(2, 'ชื่อแผนกต้องมีอย่างน้อย 2 ตัวอักษร (Name must be 2+ chars)'),
   description: z.string().optional(),
   status: z.enum(['active', 'inactive']),
 });
@@ -23,7 +43,12 @@ const departmentSchema = z.object({
 type DepartmentFormValues = z.infer<typeof departmentSchema>;
 
 export default function HRDepartments() {
-  const { useDepartmentsQuery, useCreateDepartmentMutation, useUpdateDepartmentMutation, useDeleteDepartmentMutation } = useDepartment();
+  const {
+    useDepartmentsQuery,
+    useCreateDepartmentMutation,
+    useUpdateDepartmentMutation,
+    useDeleteDepartmentMutation,
+  } = useDepartment();
   const { data: departments = [], isLoading } = useDepartmentsQuery();
 
   const createMutation = useCreateDepartmentMutation();
@@ -72,14 +97,28 @@ export default function HRDepartments() {
     try {
       if (editingDept) {
         await updateMutation.mutateAsync({ id: editingDept.id, data: values });
-        Swal.fire({ icon: 'success', title: 'อัปเดตแผนกสำเร็จ', timer: 1500, showConfirmButton: false });
+        Swal.fire({
+          icon: 'success',
+          title: 'อัปเดตแผนกสำเร็จ',
+          timer: 1500,
+          showConfirmButton: false,
+        });
       } else {
         await createMutation.mutateAsync(values);
-        Swal.fire({ icon: 'success', title: 'เพิ่มแผนกสำเร็จ', timer: 1500, showConfirmButton: false });
+        Swal.fire({
+          icon: 'success',
+          title: 'เพิ่มแผนกสำเร็จ',
+          timer: 1500,
+          showConfirmButton: false,
+        });
       }
       setDialogOpen(false);
     } catch (err: any) {
-      Swal.fire({ icon: 'error', title: 'เกิดข้อผิดพลาด', text: err.response?.data?.message || 'ไม่สามารถบันทึกข้อมูลได้' });
+      Swal.fire({
+        icon: 'error',
+        title: 'เกิดข้อผิดพลาด',
+        text: err.response?.data?.message || 'ไม่สามารถบันทึกข้อมูลได้',
+      });
     }
   };
 
@@ -93,27 +132,44 @@ export default function HRDepartments() {
       cancelButtonColor: '#64748b',
       confirmButtonText: 'ยืนยันการลบ',
       cancelButtonText: 'ยกเลิก',
-      background: document.documentElement.classList.contains('dark') ? '#1e293b' : '#fff',
-      color: document.documentElement.classList.contains('dark') ? '#fff' : '#000',
+      background: document.documentElement.classList.contains('dark')
+        ? '#1e293b'
+        : '#fff',
+      color: document.documentElement.classList.contains('dark')
+        ? '#fff'
+        : '#000',
     }).then(async (result) => {
       if (result.isConfirmed) {
         try {
           await deleteMutation.mutateAsync(dept.id);
-          Swal.fire({ icon: 'success', title: 'ลบข้อมูลสำเร็จ', timer: 1500, showConfirmButton: false });
+          Swal.fire({
+            icon: 'success',
+            title: 'ลบข้อมูลสำเร็จ',
+            timer: 1500,
+            showConfirmButton: false,
+          });
         } catch (err) {
-          Swal.fire({ icon: 'error', title: 'เกิดข้อผิดพลาด', text: 'ไม่สามารถลบแผนกได้' });
+          Swal.fire({
+            icon: 'error',
+            title: 'เกิดข้อผิดพลาด',
+            text: 'ไม่สามารถลบแผนกได้',
+          });
         }
       }
     });
   };
 
-  const filteredDepts = departments.filter(d => 
-    d.name.toLowerCase().includes(search.toLowerCase()) || 
-    (d.code || '').toLowerCase().includes(search.toLowerCase())
+  const filteredDepts = departments.filter(
+    (d) =>
+      d.name.toLowerCase().includes(search.toLowerCase()) ||
+      (d.code || '').toLowerCase().includes(search.toLowerCase()),
   );
 
   const totalPages = Math.ceil(filteredDepts.length / itemsPerPage);
-  const currentDepts = filteredDepts.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+  const currentDepts = filteredDepts.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage,
+  );
 
   return (
     <div className="space-y-6">
@@ -123,7 +179,8 @@ export default function HRDepartments() {
             แผนกงาน (Departments)
           </h1>
           <p className="text-sm text-slate-500 dark:text-slate-400">
-            บริหารจัดการแผนกโครงสร้างองค์กร และตรวจสอบยอดจำนวนบุคลากรประจำแต่ละแผนก
+            บริหารจัดการแผนกโครงสร้างองค์กร
+            และตรวจสอบยอดจำนวนบุคลากรประจำแต่ละแผนก
           </p>
         </div>
         <button
@@ -141,7 +198,10 @@ export default function HRDepartments() {
           <input
             type="text"
             value={search}
-            onChange={(e) => { setSearch(e.target.value); setCurrentPage(1); }}
+            onChange={(e) => {
+              setSearch(e.target.value);
+              setCurrentPage(1);
+            }}
             placeholder="ค้นหาแผนกงานด้วยชื่อ หรือ รหัสย่อแผนก..."
             className="block w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-hidden focus:ring-2 focus:ring-indigo-500 text-sm transition-all"
           />
@@ -152,7 +212,9 @@ export default function HRDepartments() {
         {isLoading ? (
           <SkeletonTable cols={5} rows={3} />
         ) : filteredDepts.length === 0 ? (
-          <div className="text-center py-12 text-slate-400 dark:text-slate-500 font-medium">ไม่พบข้อมูลแผนกงาน</div>
+          <div className="text-center py-12 text-slate-400 dark:text-slate-500 font-medium">
+            ไม่พบข้อมูลแผนกงาน
+          </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse text-sm">
@@ -168,7 +230,10 @@ export default function HRDepartments() {
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-850">
                 {currentDepts.map((d) => (
-                  <tr key={d.id} className="hover:bg-slate-50/40 dark:hover:bg-slate-900/10 transition-colors">
+                  <tr
+                    key={d.id}
+                    className="hover:bg-slate-50/40 dark:hover:bg-slate-900/10 transition-colors"
+                  >
                     <td className="py-4 px-5 font-mono text-xs font-bold text-indigo-650 dark:text-indigo-400">
                       {d.code}
                     </td>
@@ -182,7 +247,9 @@ export default function HRDepartments() {
                       {d.managerName || 'ยังไม่ได้กำหนด'}
                     </td>
                     <td className="py-4 px-5">
-                      <Badge variant={d.status === 'active' ? 'success' : 'neutral'}>
+                      <Badge
+                        variant={d.status === 'active' ? 'success' : 'neutral'}
+                      >
                         {d.status === 'active' ? 'ใช้งานปกติ' : 'งดใช้งาน'}
                       </Badge>
                     </td>
@@ -210,7 +277,9 @@ export default function HRDepartments() {
         {totalPages > 1 && (
           <div className="px-5 py-4 border-t border-slate-100 dark:border-slate-850 flex items-center justify-between">
             <span className="text-xs font-semibold text-slate-500">
-              Showing {(currentPage - 1) * itemsPerPage + 1} to {Math.min(currentPage * itemsPerPage, filteredDepts.length)} of {filteredDepts.length} departments
+              Showing {(currentPage - 1) * itemsPerPage + 1} to{' '}
+              {Math.min(currentPage * itemsPerPage, filteredDepts.length)} of{' '}
+              {filteredDepts.length} departments
             </span>
             <div className="flex items-center space-x-2">
               <button
@@ -239,35 +308,54 @@ export default function HRDepartments() {
         <DialogContent size="md">
           <form onSubmit={handleSubmit(onSubmit)}>
             <DialogHeader>
-              <DialogTitle>{editingDept ? 'แก้ไขแผนกงาน' : 'เพิ่มแผนกใหม่'}</DialogTitle>
-              <DialogDescription>กรุณาระบุรหัสย่อ ชื่อแผนก และคำอธิบายลักษณะแผนกเพื่อบันทึกข้อมูลโครงสร้างองค์กร</DialogDescription>
+              <DialogTitle>
+                {editingDept ? 'แก้ไขแผนกงาน' : 'เพิ่มแผนกใหม่'}
+              </DialogTitle>
+              <DialogDescription>
+                กรุณาระบุรหัสย่อ ชื่อแผนก
+                และคำอธิบายลักษณะแผนกเพื่อบันทึกข้อมูลโครงสร้างองค์กร
+              </DialogDescription>
             </DialogHeader>
 
             <div className="space-y-4 mt-2">
               <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">รหัสย่อแผนก (Code) *</label>
+                <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">
+                  รหัสย่อแผนก (Code) *
+                </label>
                 <input
                   {...register('code')}
                   type="text"
                   placeholder="ENG"
                   className="block w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 px-3 py-2 text-sm focus:outline-hidden focus:ring-2 focus:ring-indigo-500"
                 />
-                {errors.code && <p className="text-xs text-red-500 mt-1 font-medium">{errors.code.message}</p>}
+                {errors.code && (
+                  <p className="text-xs text-red-500 mt-1 font-medium">
+                    {errors.code.message}
+                  </p>
+                )}
               </div>
 
               <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">ชื่อแผนก (Name) *</label>
+                <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">
+                  ชื่อแผนก (Name) *
+                </label>
                 <input
                   {...register('name')}
                   type="text"
                   placeholder="เช่น Software Development"
                   className="block w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 px-3 py-2 text-sm focus:outline-hidden focus:ring-2 focus:ring-indigo-500"
                 />
-                {errors.name && <p className="text-xs text-red-500 mt-1 font-medium">{errors.name.message}</p>}
+                {errors.name && (
+                  <p className="text-xs text-red-500 mt-1 font-medium">
+                    {errors.name.message}
+                  </p>
+                )}
               </div>
 
               <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">คำอธิบายแผนก (Description)</label>
+                <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">
+                  คำอธิบายแผนก (Description)
+                </label>
                 <textarea
                   {...register('description')}
                   rows={3}
@@ -277,7 +365,9 @@ export default function HRDepartments() {
               </div>
 
               <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">สถานะ (Status) *</label>
+                <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">
+                  สถานะ (Status) *
+                </label>
                 <select
                   {...register('status')}
                   className="block w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 px-3 py-2 text-sm focus:outline-hidden focus:ring-2 focus:ring-indigo-500"
@@ -296,7 +386,10 @@ export default function HRDepartments() {
               >
                 ยกเลิก (Cancel)
               </button>
-              <button type="submit" className="px-4 py-2 text-sm font-semibold rounded-xl text-white bg-indigo-600 hover:bg-indigo-500 cursor-pointer">
+              <button
+                type="submit"
+                className="px-4 py-2 text-sm font-semibold rounded-xl text-white bg-indigo-600 hover:bg-indigo-500 cursor-pointer"
+              >
                 บันทึกข้อมูล (Save)
               </button>
             </DialogFooter>

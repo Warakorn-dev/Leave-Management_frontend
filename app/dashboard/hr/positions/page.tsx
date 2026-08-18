@@ -5,18 +5,38 @@ import { usePosition } from '@/hooks/usePosition';
 import { useDepartment } from '@/hooks/useDepartment';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from '@/components/ui/dialog';
 import { SkeletonTable } from '@/components/ui/skeleton';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import Swal from 'sweetalert2';
-import { Plus, Search, Edit2, Trash2, ChevronLeft, ChevronRight, Briefcase } from 'lucide-react';
-import { Position } from '@/lib/types';
+import {
+  Plus,
+  Search,
+  Edit2,
+  Trash2,
+  ChevronLeft,
+  ChevronRight,
+  Briefcase,
+} from 'lucide-react';
+import { Position } from '@/lib/api/types';
 
 const positionSchema = z.object({
-  code: z.string().min(2, 'รหัสตำแหน่งต้องมีอย่างน้อย 2 ตัวอักษร (Code must be 2+ chars)').toUpperCase(),
-  title: z.string().min(2, 'ชื่อตำแหน่งต้องมีอย่างน้อย 2 ตัวอักษร (Title must be 2+ chars)'),
+  code: z
+    .string()
+    .min(2, 'รหัสตำแหน่งต้องมีอย่างน้อย 2 ตัวอักษร (Code must be 2+ chars)')
+    .toUpperCase(),
+  title: z
+    .string()
+    .min(2, 'ชื่อตำแหน่งต้องมีอย่างน้อย 2 ตัวอักษร (Title must be 2+ chars)'),
   departmentId: z.string().min(1, 'กรุณาเลือกแผนกงาน'),
   description: z.string().optional(),
   status: z.enum(['active', 'inactive']),
@@ -26,7 +46,12 @@ const positionSchema = z.object({
 type PositionFormValues = z.infer<typeof positionSchema>;
 
 export default function HRPositions() {
-  const { usePositionsQuery, useCreatePositionMutation, useUpdatePositionMutation, useDeletePositionMutation } = usePosition();
+  const {
+    usePositionsQuery,
+    useCreatePositionMutation,
+    useUpdatePositionMutation,
+    useDeletePositionMutation,
+  } = usePosition();
   const { useDepartmentsQuery } = useDepartment();
 
   const { data: positions = [], isLoading } = usePositionsQuery();
@@ -80,7 +105,9 @@ export default function HRPositions() {
 
   const onSubmit = async (values: PositionFormValues) => {
     try {
-      const selectedDept = departments.find(d => d.id === values.departmentId);
+      const selectedDept = departments.find(
+        (d) => d.id === values.departmentId,
+      );
       const positionData = {
         ...values,
         name: values.title,
@@ -88,15 +115,32 @@ export default function HRPositions() {
       };
 
       if (editingPos) {
-        await updateMutation.mutateAsync({ id: editingPos.id, data: positionData });
-        Swal.fire({ icon: 'success', title: 'อัปเดตตำแหน่งสำเร็จ', timer: 1500, showConfirmButton: false });
+        await updateMutation.mutateAsync({
+          id: editingPos.id,
+          data: positionData,
+        });
+        Swal.fire({
+          icon: 'success',
+          title: 'อัปเดตตำแหน่งสำเร็จ',
+          timer: 1500,
+          showConfirmButton: false,
+        });
       } else {
         await createMutation.mutateAsync(positionData);
-        Swal.fire({ icon: 'success', title: 'เพิ่มตำแหน่งสำเร็จ', timer: 1500, showConfirmButton: false });
+        Swal.fire({
+          icon: 'success',
+          title: 'เพิ่มตำแหน่งสำเร็จ',
+          timer: 1500,
+          showConfirmButton: false,
+        });
       }
       setDialogOpen(false);
     } catch (err: any) {
-      Swal.fire({ icon: 'error', title: 'เกิดข้อผิดพลาด', text: err.response?.data?.message || 'ไม่สามารถบันทึกข้อมูลได้' });
+      Swal.fire({
+        icon: 'error',
+        title: 'เกิดข้อผิดพลาด',
+        text: err.response?.data?.message || 'ไม่สามารถบันทึกข้อมูลได้',
+      });
     }
   };
 
@@ -110,28 +154,47 @@ export default function HRPositions() {
       cancelButtonColor: '#64748b',
       confirmButtonText: 'ยืนยันการลบ',
       cancelButtonText: 'ยกเลิก',
-      background: document.documentElement.classList.contains('dark') ? '#1e293b' : '#fff',
-      color: document.documentElement.classList.contains('dark') ? '#fff' : '#000',
+      background: document.documentElement.classList.contains('dark')
+        ? '#1e293b'
+        : '#fff',
+      color: document.documentElement.classList.contains('dark')
+        ? '#fff'
+        : '#000',
     }).then(async (result) => {
       if (result.isConfirmed) {
         try {
           await deleteMutation.mutateAsync(pos.id);
-          Swal.fire({ icon: 'success', title: 'ลบข้อมูลสำเร็จ', timer: 1500, showConfirmButton: false });
+          Swal.fire({
+            icon: 'success',
+            title: 'ลบข้อมูลสำเร็จ',
+            timer: 1500,
+            showConfirmButton: false,
+          });
         } catch (err) {
-          Swal.fire({ icon: 'error', title: 'เกิดข้อผิดพลาด', text: 'ไม่สามารถลบตำแหน่งได้' });
+          Swal.fire({
+            icon: 'error',
+            title: 'เกิดข้อผิดพลาด',
+            text: 'ไม่สามารถลบตำแหน่งได้',
+          });
         }
       }
     });
   };
 
-  const filteredPositions = positions.filter(p => 
-    (p.title || p.name || '').toLowerCase().includes(search.toLowerCase()) || 
-    (p.code || '').toLowerCase().includes(search.toLowerCase()) ||
-    (p.departmentName || p.department?.name || '').toLowerCase().includes(search.toLowerCase())
+  const filteredPositions = positions.filter(
+    (p) =>
+      (p.title || p.name || '').toLowerCase().includes(search.toLowerCase()) ||
+      (p.code || '').toLowerCase().includes(search.toLowerCase()) ||
+      (p.departmentName || p.department?.name || '')
+        .toLowerCase()
+        .includes(search.toLowerCase()),
   );
 
   const totalPages = Math.ceil(filteredPositions.length / itemsPerPage);
-  const currentPositions = filteredPositions.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+  const currentPositions = filteredPositions.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage,
+  );
 
   return (
     <div className="space-y-6">
@@ -141,7 +204,8 @@ export default function HRPositions() {
             ตำแหน่งงาน (Positions)
           </h1>
           <p className="text-sm text-slate-500 dark:text-slate-400">
-            บริหารจัดการตำแหน่งหน้าที่และเกรดโครงสร้างองค์กร เชื่อมต่อรายชื่อตามฝ่ายแผนกงาน
+            บริหารจัดการตำแหน่งหน้าที่และเกรดโครงสร้างองค์กร
+            เชื่อมต่อรายชื่อตามฝ่ายแผนกงาน
           </p>
         </div>
         <button
@@ -159,7 +223,10 @@ export default function HRPositions() {
           <input
             type="text"
             value={search}
-            onChange={(e) => { setSearch(e.target.value); setCurrentPage(1); }}
+            onChange={(e) => {
+              setSearch(e.target.value);
+              setCurrentPage(1);
+            }}
             placeholder="ค้นหาตำแหน่งงานด้วย ชื่อตำแหน่ง, รหัสตำแหน่ง หรือ ชื่อแผนก..."
             className="block w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-hidden focus:ring-2 focus:ring-indigo-500 text-sm transition-all"
           />
@@ -170,7 +237,9 @@ export default function HRPositions() {
         {isLoading ? (
           <SkeletonTable cols={5} rows={3} />
         ) : filteredPositions.length === 0 ? (
-          <div className="text-center py-12 text-slate-400 dark:text-slate-500 font-medium">ไม่พบข้อมูลตำแหน่งงาน</div>
+          <div className="text-center py-12 text-slate-400 dark:text-slate-500 font-medium">
+            ไม่พบข้อมูลตำแหน่งงาน
+          </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse text-sm">
@@ -186,7 +255,10 @@ export default function HRPositions() {
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-850">
                 {currentPositions.map((p) => (
-                  <tr key={p.id} className="hover:bg-slate-50/40 dark:hover:bg-slate-900/10 transition-colors">
+                  <tr
+                    key={p.id}
+                    className="hover:bg-slate-50/40 dark:hover:bg-slate-900/10 transition-colors"
+                  >
                     <td className="py-4 px-5 font-mono text-xs font-bold text-indigo-600 dark:text-indigo-400">
                       {p.code}
                     </td>
@@ -197,12 +269,26 @@ export default function HRPositions() {
                       {p.departmentName || p.department?.name || 'ไม่ระบุ'}
                     </td>
                     <td className="py-4 px-5">
-                      <Badge variant={p.role === 'ceo' ? 'warning' : p.role === 'manager' ? 'default' : 'neutral'}>
-                        {p.role === 'ceo' ? 'CEO' : p.role === 'manager' ? 'หัวหน้าแผนก' : 'พนักงานทั่วไป'}
+                      <Badge
+                        variant={
+                          p.role === 'ceo'
+                            ? 'warning'
+                            : p.role === 'manager'
+                              ? 'default'
+                              : 'neutral'
+                        }
+                      >
+                        {p.role === 'ceo'
+                          ? 'CEO'
+                          : p.role === 'manager'
+                            ? 'หัวหน้าแผนก'
+                            : 'พนักงานทั่วไป'}
                       </Badge>
                     </td>
                     <td className="py-4 px-5">
-                      <Badge variant={p.status === 'active' ? 'success' : 'neutral'}>
+                      <Badge
+                        variant={p.status === 'active' ? 'success' : 'neutral'}
+                      >
                         {p.status === 'active' ? 'ใช้งานปกติ' : 'งดใช้งาน'}
                       </Badge>
                     </td>
@@ -230,7 +316,9 @@ export default function HRPositions() {
         {totalPages > 1 && (
           <div className="px-5 py-4 border-t border-slate-100 dark:border-slate-850 flex items-center justify-between">
             <span className="text-xs font-semibold text-slate-500">
-              Showing {(currentPage - 1) * itemsPerPage + 1} to {Math.min(currentPage * itemsPerPage, filteredPositions.length)} of {filteredPositions.length} positions
+              Showing {(currentPage - 1) * itemsPerPage + 1} to{' '}
+              {Math.min(currentPage * itemsPerPage, filteredPositions.length)}{' '}
+              of {filteredPositions.length} positions
             </span>
             <div className="flex items-center space-x-2">
               <button
@@ -259,49 +347,75 @@ export default function HRPositions() {
         <DialogContent size="md">
           <form onSubmit={handleSubmit(onSubmit)}>
             <DialogHeader>
-              <DialogTitle>{editingPos ? 'แก้ไขตำแหน่งงาน' : 'เพิ่มตำแหน่งงานใหม่'}</DialogTitle>
-              <DialogDescription>กรุณาระบุรหัสย่อ ชื่อตำแหน่ง และฝ่ายแผนกงานที่ตำแหน่งสังกัดอยู่</DialogDescription>
+              <DialogTitle>
+                {editingPos ? 'แก้ไขตำแหน่งงาน' : 'เพิ่มตำแหน่งงานใหม่'}
+              </DialogTitle>
+              <DialogDescription>
+                กรุณาระบุรหัสย่อ ชื่อตำแหน่ง และฝ่ายแผนกงานที่ตำแหน่งสังกัดอยู่
+              </DialogDescription>
             </DialogHeader>
 
             <div className="space-y-4 mt-2">
               <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">รหัสตำแหน่ง (Code) *</label>
+                <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">
+                  รหัสตำแหน่ง (Code) *
+                </label>
                 <input
                   {...register('code')}
                   type="text"
                   placeholder="SWE"
                   className="block w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 px-3 py-2 text-sm focus:outline-hidden focus:ring-2 focus:ring-indigo-500"
                 />
-                {errors.code && <p className="text-xs text-red-500 mt-1 font-medium">{errors.code.message}</p>}
+                {errors.code && (
+                  <p className="text-xs text-red-500 mt-1 font-medium">
+                    {errors.code.message}
+                  </p>
+                )}
               </div>
 
               <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">ชื่อตำแหน่ง (Title) *</label>
+                <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">
+                  ชื่อตำแหน่ง (Title) *
+                </label>
                 <input
                   {...register('title')}
                   type="text"
                   placeholder="Software Engineer"
                   className="block w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 px-3 py-2 text-sm focus:outline-hidden focus:ring-2 focus:ring-indigo-500"
                 />
-                {errors.title && <p className="text-xs text-red-500 mt-1 font-medium">{errors.title.message}</p>}
+                {errors.title && (
+                  <p className="text-xs text-red-500 mt-1 font-medium">
+                    {errors.title.message}
+                  </p>
+                )}
               </div>
 
               <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">สังกัดแผนกงาน (Department) *</label>
+                <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">
+                  สังกัดแผนกงาน (Department) *
+                </label>
                 <select
                   {...register('departmentId')}
                   className="block w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 px-3 py-2 text-sm focus:outline-hidden focus:ring-2 focus:ring-indigo-500"
                 >
                   <option value="">-- เลือกแผนก (Select Department) --</option>
-                  {departments.map(d => (
-                    <option key={d.id} value={d.id}>{d.name}</option>
+                  {departments.map((d) => (
+                    <option key={d.id} value={d.id}>
+                      {d.name}
+                    </option>
                   ))}
                 </select>
-                {errors.departmentId && <p className="text-xs text-red-500 mt-1 font-medium">{errors.departmentId.message}</p>}
+                {errors.departmentId && (
+                  <p className="text-xs text-red-500 mt-1 font-medium">
+                    {errors.departmentId.message}
+                  </p>
+                )}
               </div>
 
               <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">ระดับสิทธิ์ (Role) *</label>
+                <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">
+                  ระดับสิทธิ์ (Role) *
+                </label>
                 <select
                   {...register('role')}
                   className="block w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 px-3 py-2 text-sm focus:outline-hidden focus:ring-2 focus:ring-indigo-500"
@@ -310,11 +424,17 @@ export default function HRPositions() {
                   <option value="manager">หัวหน้าแผนก (Manager)</option>
                   <option value="ceo">ผู้บริหารระดับสูง (CEO)</option>
                 </select>
-                {errors.role && <p className="text-xs text-red-500 mt-1 font-medium">{errors.role.message}</p>}
+                {errors.role && (
+                  <p className="text-xs text-red-500 mt-1 font-medium">
+                    {errors.role.message}
+                  </p>
+                )}
               </div>
 
               <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">สถานะ (Status) *</label>
+                <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">
+                  สถานะ (Status) *
+                </label>
                 <select
                   {...register('status')}
                   className="block w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 px-3 py-2 text-sm focus:outline-hidden focus:ring-2 focus:ring-indigo-500"
@@ -333,7 +453,10 @@ export default function HRPositions() {
               >
                 ยกเลิก (Cancel)
               </button>
-              <button type="submit" className="px-4 py-2 text-sm font-semibold rounded-xl text-white bg-indigo-600 hover:bg-indigo-500 cursor-pointer">
+              <button
+                type="submit"
+                className="px-4 py-2 text-sm font-semibold rounded-xl text-white bg-indigo-600 hover:bg-indigo-500 cursor-pointer"
+              >
                 บันทึกข้อมูล (Save)
               </button>
             </DialogFooter>

@@ -88,3 +88,10 @@ export interface Leave {
   updatedAt?: string;
   userId?: string;
 }
+
+export interface ApiResponse<T = any> {
+  success: boolean;
+  message?: string;
+  data: T;
+  statusCode?: number;
+}

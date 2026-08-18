@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { axiosInstance } from '@/api';
+import { axiosInstance } from '@/lib/api';
 
 export interface Role {
   id: string;

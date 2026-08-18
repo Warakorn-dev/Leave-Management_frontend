@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { LeaveType } from '@/lib/types';
+import { LeaveType } from '@/lib/api/types';
 
 const API_URL = '/api/hr/leave-types';
 

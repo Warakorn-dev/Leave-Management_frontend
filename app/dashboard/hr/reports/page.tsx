@@ -137,13 +137,13 @@ export default function HRReports() {
       'ชื่อ': firstName,
       'นามสกุล': lastName,
       'แผนกงาน': l.departmentName || l.department || '-',
+      'วันที่ยื่นคำขอ': new Date(l.createdAt || 0).toLocaleDateString('th-TH'),
       'ประเภทการลา': l.leaveTypeName || l.type || '-',
-      'วันที่ยื่นลา': formatDateDisplay(l.startDate, l.endDate, l),
+      'วันที่ลา': formatDateDisplay(l.startDate, l.endDate, l),
       'ระยะเวลา': formatDurationText(l),
       'เหตุผลการลา': l.reason || '-',
-      'ผู้อนุมัติ': l.approverName || '-',
       'สถานะ': (l.status || '').toLowerCase().includes('approved') ? 'อนุมัติแล้ว' : (l.status || '').toLowerCase() === 'pending' ? 'รออนุมัติ' : 'ปฏิเสธ',
-      'วันที่ยื่นคำขอ': new Date(l.createdAt || 0).toLocaleDateString('th-TH')
+      
     };
     });
 
@@ -178,7 +178,7 @@ export default function HRReports() {
     }
 
     doc.setFontSize(18);
-    doc.text('รายงานสรุปผลการลางานพนักงาน (Company Leave Report)', 14, 15);
+    doc.text('รายงานสรุปผลการลางานพนักงาน บริษัท เอ็นไอดี โปรเกรส เทคโนโลยี จำกัด', 14, 15);
     doc.setFontSize(10);
     doc.text(`สร้างเมื่อวันที่: ${new Date().toLocaleString('th-TH')}`, 14, 22);
     doc.text(`จำนวนรายการที่พบ: ${filteredLeaves.length} รายการ`, 14, 27);

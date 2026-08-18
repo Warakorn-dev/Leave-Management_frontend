@@ -7,7 +7,7 @@ import { useLeave } from "@/hooks/useLeave";
 import { Mail, Bell, Settings, Upload, Check, X } from "lucide-react";
 import { DatePicker } from "@/components/DateAndTime";
 import { LeaveTimePicker } from "@/components/LeaveTimePicker";
-import { userApi, uploadApi } from "@/api";
+import { userApi, uploadApi } from "@/lib/api";
 
 export default function RequestLeavePage() {
   const [type, setType] = useState("");
@@ -177,9 +177,16 @@ export default function RequestLeavePage() {
           formData.append('file', attachmentFile);
           formData.append('leaveRequestId', leaveRequestId);
           await uploadApi.uploadFile(formData);
-        } catch (uploadErr) {
+        } catch (uploadErr: any) {
           console.error("File upload failed:", uploadErr);
-          // Proceed anyway since the leave request was created successfully
+          const uploadMsg = uploadErr?.response?.data?.message 
+            || uploadErr?.message 
+            || 'ไม่สามารถอัปโหลดไฟล์แนบได้';
+          setShowConfirmModal(false);
+          setErrorMsg(`ส่งคำขอลาสำเร็จ แต่อัปโหลดไฟล์แนบไม่สำเร็จ: ${uploadMsg}`);
+          setShowErrorModal(true);
+          setIsSubmitting(false);
+          return;
         }
       }
 
@@ -415,7 +422,7 @@ export default function RequestLeavePage() {
                     <>ลากไฟล์มาวางที่นี่ หรือ <span className="text-blue-600">คลิกเพื่ออัปโหลด</span></>
                   )}
                 </p>
-                <p className="text-[11px] text-gray-400 mt-1.5">รองรับ PDF, PNG, JPG, DOCX ขนาดไม่เกิน 5MB</p>
+                <p className="text-[11px] text-gray-400 mt-1.5">รองรับ PDF, PNG, JPG, DOCX ขนาดไม่เกิน 10MB</p>
                 {/* Invisible file input */}
                 <input 
                   type="file" 
@@ -424,8 +431,8 @@ export default function RequestLeavePage() {
                   onChange={(e) => {
                     if (e.target.files && e.target.files[0]) {
                       const file = e.target.files[0];
-                      if (file.size > 5 * 1024 * 1024) {
-                        setErrorMsg("ขนาดไฟล์ต้องไม่เกิน 5MB");
+                      if (file.size > 10 * 1024 * 1024) {
+                        setErrorMsg("ขนาดไฟล์ต้องไม่เกิน 10MB");
                         setShowErrorModal(true);
                         return;
                       }

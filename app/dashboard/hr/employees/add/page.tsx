@@ -9,7 +9,7 @@ import { usePositionsQuery } from '@/hooks/usePosition';
 import { UserPlus, ArrowLeft, ChevronDown, Eye, EyeOff } from 'lucide-react';
 import Swal from 'sweetalert2';
 import Link from 'next/link';
-import { Employee } from '@/lib/types';
+import { Employee } from '@/lib/api/types';
 import { DatePicker } from '@/components/DateAndTime';
 
 export default function AddEmployeePage() {
@@ -18,7 +18,7 @@ export default function AddEmployeePage() {
   const { useCreateEmployeeMutation, useEmployeesQuery } = useEmployee();
   const { mutate: createEmployee } = useCreateEmployeeMutation();
   const [isLoading, setIsLoading] = useState(false);
-  
+
   const { data: employees = [] } = useEmployeesQuery();
   const [employeeIdError, setEmployeeIdError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -51,11 +51,15 @@ export default function AddEmployeePage() {
     positionName: '',
     roleName: 'Employee',
     joinDate: '',
-    gender: 'Unspecified'
+    gender: 'Unspecified',
   });
 
-  const availablePositions = formData.departmentId 
-    ? positions.filter(p => !p.department?.id || String(p.department?.id) === String(formData.departmentId))
+  const availablePositions = formData.departmentId
+    ? positions.filter(
+        (p) =>
+          !p.department?.id ||
+          String(p.department?.id) === String(formData.departmentId),
+      )
     : positions;
 
   useEffect(() => {
@@ -65,68 +69,81 @@ export default function AddEmployeePage() {
         setEmployeeIdError('');
         return;
       }
-      
+
       try {
         const isDuplicate = employees.some(
-          emp => emp.employeeId?.trim().toLowerCase() === trimmedId
+          (emp) => emp.employeeId?.trim().toLowerCase() === trimmedId,
         );
-        
+
         if (isDuplicate) {
-          setEmployeeIdError('รหัสพนักงานนี้มีอยู่ในระบบแล้ว กรุณาระบุรหัสพนักงานใหม่');
+          setEmployeeIdError(
+            'รหัสพนักงานนี้มีอยู่ในระบบแล้ว กรุณาระบุรหัสพนักงานใหม่',
+          );
         } else {
           setEmployeeIdError('');
         }
       } catch (error) {
-        setEmployeeIdError('ไม่สามารถตรวจสอบรหัสพนักงานได้ กรุณาลองใหม่อีกครั้ง');
+        setEmployeeIdError(
+          'ไม่สามารถตรวจสอบรหัสพนักงานได้ กรุณาลองใหม่อีกครั้ง',
+        );
       }
     };
-    
+
     checkEmployeeId();
   }, [formData.employeeId, employees]);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
+  ) => {
     const { name, value } = e.target;
 
     // เบอร์โทร: ตัวเลขเท่านั้น สูงสุด 10 ตัว
     if (name === 'phone') {
       const digitsOnly = value.replace(/\D/g, '');
       if (digitsOnly.length > 10) return;
-      setFormData(prev => ({ ...prev, phone: digitsOnly }));
+      setFormData((prev) => ({ ...prev, phone: digitsOnly }));
       return;
     }
 
     if (name === 'idCardNumber') {
       const digitsOnly = value.replace(/\D/g, '');
       if (digitsOnly.length > 13) return;
-      setFormData(prev => ({ ...prev, idCardNumber: digitsOnly }));
+      setFormData((prev) => ({ ...prev, idCardNumber: digitsOnly }));
       return;
     }
 
     // ชื่อ/นามสกุล: ห้ามกรอกตัวเลข
     if (name === 'firstName' || name === 'lastName') {
       if (/\d/.test(value)) return;
-      setFormData(prev => ({ ...prev, [name]: value }));
+      setFormData((prev) => ({ ...prev, [name]: value }));
       return;
     }
-    
+
     if (name === 'departmentId') {
-      const selectedDept = departments.find(d => String(d.id) === value);
-      setFormData(prev => ({
+      const selectedDept = departments.find((d) => String(d.id) === value);
+      setFormData((prev) => ({
         ...prev,
         departmentId: value,
         departmentName: selectedDept ? selectedDept.name : '',
         positionId: '',
-        positionName: ''
+        positionName: '',
       }));
     } else if (name === 'positionId') {
-      const selectedPos = positions.find(p => String(p.id) === value);
-      const posName = selectedPos ? selectedPos.title || selectedPos.name || '' : '';
-      
-      const isLeaderOrManager = posName.toLowerCase().includes('leader') || posName.toLowerCase().includes('manager');
-      
-      const deptName = selectedPos?.department?.name || formData.departmentName || '';
-      const isHRDept = deptName.toLowerCase().includes('hr') || deptName.toLowerCase().includes('human resource');
-      
+      const selectedPos = positions.find((p) => String(p.id) === value);
+      const posName = selectedPos
+        ? selectedPos.title || selectedPos.name || ''
+        : '';
+
+      const isLeaderOrManager =
+        posName.toLowerCase().includes('leader') ||
+        posName.toLowerCase().includes('manager');
+
+      const deptName =
+        selectedPos?.department?.name || formData.departmentName || '';
+      const isHRDept =
+        deptName.toLowerCase().includes('hr') ||
+        deptName.toLowerCase().includes('human resource');
+
       let roleName = 'Employee';
       if (isHRDept) {
         roleName = 'HR';
@@ -134,20 +151,22 @@ export default function AddEmployeePage() {
         roleName = 'Manager';
       }
 
-      setFormData(prev => ({
+      setFormData((prev) => ({
         ...prev,
         positionId: value,
         positionName: posName,
         roleName: roleName,
-        ...(selectedPos?.department && !prev.departmentId ? {
-          departmentId: String(selectedPos.department.id),
-          departmentName: selectedPos.department.name || ''
-        } : {})
+        ...(selectedPos?.department && !prev.departmentId
+          ? {
+              departmentId: String(selectedPos.department.id),
+              departmentName: selectedPos.department.name || '',
+            }
+          : {}),
       }));
     } else {
-      setFormData(prev => ({
+      setFormData((prev) => ({
         ...prev,
-        [name]: value
+        [name]: value,
       }));
     }
   };
@@ -156,12 +175,30 @@ export default function AddEmployeePage() {
     e.preventDefault();
 
     if (employeeIdError) {
-      Swal.fire('ข้อผิดพลาด', 'กรุณาแก้ไขรหัสพนักงานให้ถูกต้องก่อนบันทึก', 'error');
+      Swal.fire(
+        'ข้อผิดพลาด',
+        'กรุณาแก้ไขรหัสพนักงานให้ถูกต้องก่อนบันทึก',
+        'error',
+      );
       return;
     }
 
-    if (!formData.employeeId || !formData.title || !formData.firstName || !formData.lastName || !formData.username || !formData.password || !formData.email || !formData.departmentId || !formData.positionId) {
-      Swal.fire('ข้อมูลไม่ครบถ้วน', 'กรุณากรอกข้อมูลที่จำเป็นให้ครบ (รวมถึงแผนกและตำแหน่ง)', 'error');
+    if (
+      !formData.employeeId ||
+      !formData.title ||
+      !formData.firstName ||
+      !formData.lastName ||
+      !formData.username ||
+      !formData.password ||
+      !formData.email ||
+      !formData.departmentId ||
+      !formData.positionId
+    ) {
+      Swal.fire(
+        'ข้อมูลไม่ครบถ้วน',
+        'กรุณากรอกข้อมูลที่จำเป็นให้ครบ (รวมถึงแผนกและตำแหน่ง)',
+        'error',
+      );
       return;
     }
 
@@ -179,7 +216,9 @@ export default function AddEmployeePage() {
       firstNameEN: formData.firstNameEN,
       lastNameEN: formData.lastNameEN,
       idCardNumber: formData.idCardNumber,
-      dateOfBirth: formData.dateOfBirth ? new Date(formData.dateOfBirth).toISOString() : undefined,
+      dateOfBirth: formData.dateOfBirth
+        ? new Date(formData.dateOfBirth).toISOString()
+        : undefined,
       idCardAddress: formData.idCardAddress,
       currentAddress: formData.currentAddress,
       email: formData.email,
@@ -189,19 +228,19 @@ export default function AddEmployeePage() {
       password: formData.password,
       phone: formData.phone,
       hireDate: formData.joinDate,
-      gender: formData.gender
+      gender: formData.gender,
     };
 
     setIsLoading(true);
     createEmployee(empData as any, {
       onSuccess: () => {
         setIsLoading(false);
-        Swal.fire({ 
-          icon: 'success', 
-          title: 'สำเร็จ', 
-          text: 'เพิ่มพนักงานใหม่เรียบร้อยแล้ว', 
-          showConfirmButton: false, 
-          timer: 1500 
+        Swal.fire({
+          icon: 'success',
+          title: 'สำเร็จ',
+          text: 'เพิ่มพนักงานใหม่เรียบร้อยแล้ว',
+          showConfirmButton: false,
+          timer: 1500,
         }).then(() => {
           router.push('/dashboard/hr/employees');
         });
@@ -212,10 +251,13 @@ export default function AddEmployeePage() {
         if (Array.isArray(errorMsg)) {
           errorMsg = errorMsg[0]; // take the first validation error
         } else if (!errorMsg) {
-          errorMsg = err.response?.data?.error || err.message || 'ไม่สามารถเพิ่มพนักงานได้';
+          errorMsg =
+            err.response?.data?.error ||
+            err.message ||
+            'ไม่สามารถเพิ่มพนักงานได้';
         }
         Swal.fire('เกิดข้อผิดพลาด', errorMsg, 'error');
-      }
+      },
     });
   };
 
@@ -223,36 +265,46 @@ export default function AddEmployeePage() {
 
   return (
     <div className="max-w-[1000px] mx-auto min-h-screen pb-12 px-3 sm:px-5 md:px-8 pt-4 md:pt-6">
-      
       {/* Header Section */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 md:mb-8 gap-3">
         <div className="flex items-start gap-3">
-          <Link href="/dashboard/hr/employees" className="mt-1.5 text-slate-400 hover:text-blue-500 transition-colors">
+          <Link
+            href="/dashboard/hr/employees"
+            className="mt-1.5 text-slate-400 hover:text-blue-500 transition-colors"
+          >
             <ArrowLeft className="w-6 h-6 sm:w-8 sm:h-8" strokeWidth={2} />
           </Link>
           <div>
             <h1 className="text-2xl sm:text-[32px] font-bold text-slate-700 leading-tight flex items-center gap-2 sm:gap-3">
-              <UserPlus className="w-6 h-6 sm:w-8 sm:h-8 text-blue-500" strokeWidth={2} />
+              <UserPlus
+                className="w-6 h-6 sm:w-8 sm:h-8 text-blue-500"
+                strokeWidth={2}
+              />
               เพิ่มพนักงานใหม่
             </h1>
-            <p className="text-slate-400 text-sm mt-1">ลงทะเบียนข้อมูลพนักงานและสร้างบัญชีผู้ใช้งานระบบ</p>
+            <p className="text-slate-400 text-sm mt-1">
+              ลงทะเบียนข้อมูลพนักงานและสร้างบัญชีผู้ใช้งานระบบ
+            </p>
           </div>
         </div>
       </div>
 
       {/* Main Content Area */}
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden p-5 sm:p-8 md:p-10">
+      <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden p-5 sm:p-8 md:p-10">
         <form onSubmit={handleSubmit}>
-          
           <div className="mb-6 md:mb-8 border-b border-slate-100 pb-3 md:pb-4">
-            <h2 className="text-base md:text-lg font-semibold text-slate-700">ข้อมูลผู้ใช้งาน (Account Information)</h2>
+            <h2 className="text-base md:text-lg font-semibold text-slate-700">
+              ข้อมูลผู้ใช้งาน (Account Information)
+            </h2>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 md:gap-x-8 gap-y-5 md:gap-y-6 mb-8 md:mb-10">
             <div className="space-y-3">
-              <label className="block text-[#475569] font-medium text-[17px]">ชื่อผู้ใช้งาน (Username) <span className="text-red-500">*</span></label>
-              <input 
-                type="text" 
+              <label className="block text-[#475569] font-medium text-[17px]">
+                ชื่อผู้ใช้งาน (Username) <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
                 name="username"
                 placeholder="เช่น user123"
                 value={formData.username}
@@ -262,11 +314,14 @@ export default function AddEmployeePage() {
                 required
               />
             </div>
-            
+
             <div className="space-y-3">
-              <label className="block text-[#475569] font-medium text-[17px]">รหัสพนักงาน (Employee ID) <span className="text-red-500">*</span></label>
-              <input 
-                type="text" 
+              <label className="block text-[#475569] font-medium text-[17px]">
+                รหัสพนักงาน (Employee ID){' '}
+                <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
                 name="employeeId"
                 placeholder="เช่น EMP-002"
                 value={formData.employeeId}
@@ -280,10 +335,12 @@ export default function AddEmployeePage() {
             </div>
 
             <div className="space-y-3">
-              <label className="block text-[#475569] font-medium text-[17px]">รหัสผ่าน (Password) <span className="text-red-500">*</span></label>
+              <label className="block text-[#475569] font-medium text-[17px]">
+                รหัสผ่าน (Password) <span className="text-red-500">*</span>
+              </label>
               <div className="relative">
-                <input 
-                  type={showPassword ? "text" : "password"}
+                <input
+                  type={showPassword ? 'text' : 'password'}
                   name="password"
                   placeholder="รหัสผ่าน"
                   value={formData.password}
@@ -297,16 +354,23 @@ export default function AddEmployeePage() {
                   onClick={() => setShowPassword(!showPassword)}
                   className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 focus:outline-none"
                 >
-                  {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                  {showPassword ? (
+                    <EyeOff className="w-5 h-5" />
+                  ) : (
+                    <Eye className="w-5 h-5" />
+                  )}
                 </button>
               </div>
             </div>
 
             <div className="space-y-3">
-              <label className="block text-[#475569] font-medium text-[17px]">ยืนยันรหัสผ่าน (Confirm Password) <span className="text-red-500">*</span></label>
+              <label className="block text-[#475569] font-medium text-[17px]">
+                ยืนยันรหัสผ่าน (Confirm Password){' '}
+                <span className="text-red-500">*</span>
+              </label>
               <div className="relative">
-                <input 
-                  type={showConfirmPassword ? "text" : "password"}
+                <input
+                  type={showConfirmPassword ? 'text' : 'password'}
                   name="confirmPassword"
                   placeholder="กรอกรหัสผ่านอีกครั้ง"
                   value={formData.confirmPassword}
@@ -320,24 +384,33 @@ export default function AddEmployeePage() {
                   onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                   className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 focus:outline-none"
                 >
-                  {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                  {showConfirmPassword ? (
+                    <EyeOff className="w-5 h-5" />
+                  ) : (
+                    <Eye className="w-5 h-5" />
+                  )}
                 </button>
               </div>
-              {formData.confirmPassword && formData.password !== formData.confirmPassword && (
-                <p className="text-red-500 text-sm mt-1">รหัสผ่านไม่ตรงกัน</p>
-              )}
+              {formData.confirmPassword &&
+                formData.password !== formData.confirmPassword && (
+                  <p className="text-red-500 text-sm mt-1">รหัสผ่านไม่ตรงกัน</p>
+                )}
             </div>
           </div>
 
           <div className="mb-6 md:mb-8 border-b border-slate-100 pb-3 md:pb-4">
-            <h2 className="text-base md:text-lg font-semibold text-slate-700">ข้อมูลส่วนตัว (Personal Information)</h2>
+            <h2 className="text-base md:text-lg font-semibold text-slate-700">
+              ข้อมูลส่วนตัว (Personal Information)
+            </h2>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 md:gap-x-8 gap-y-5 md:gap-y-6">
             <div className="space-y-3">
-              <label className="block text-[#475569] font-medium text-[17px]">เพศ (Gender)</label>
+              <label className="block text-[#475569] font-medium text-[17px]">
+                เพศ (Gender)
+              </label>
               <div className="relative">
-                <select 
+                <select
                   name="gender"
                   value={formData.gender}
                   onChange={handleChange}
@@ -347,33 +420,45 @@ export default function AddEmployeePage() {
                   <option value="Male">ชาย (Male)</option>
                   <option value="Female">หญิง (Female)</option>
                 </select>
-                <ChevronDown className="absolute right-5 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-700 pointer-events-none" strokeWidth={2.5} />
+                <ChevronDown
+                  className="absolute right-5 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-700 pointer-events-none"
+                  strokeWidth={2.5}
+                />
               </div>
             </div>
 
             <div className="space-y-3">
-              <label className="block text-[#475569] font-medium text-[17px]">คำนำหน้าชื่อ (Title) <span className="text-red-500">*</span></label>
+              <label className="block text-[#475569] font-medium text-[17px]">
+                คำนำหน้าชื่อ (Title) <span className="text-red-500">*</span>
+              </label>
               <div className="relative">
-                <select 
+                <select
                   name="title"
                   value={formData.title}
                   onChange={handleChange}
                   className="w-full bg-[#f8fafc] border border-[#e2e8f0] px-5 py-3.5 rounded-xl text-[15px] text-slate-800 appearance-none focus:outline-none focus:ring-2 focus:ring-blue-100 transition-all cursor-pointer"
                   required
                 >
-                  <option value="" disabled>-- เลือกคำนำหน้า --</option>
+                  <option value="" disabled>
+                    -- เลือกคำนำหน้า --
+                  </option>
                   <option value="นาย ">นาย</option>
                   <option value="นาง ">นาง</option>
                   <option value="นางสาว ">นางสาว</option>
                 </select>
-                <ChevronDown className="absolute right-5 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-700 pointer-events-none" strokeWidth={2.5} />
+                <ChevronDown
+                  className="absolute right-5 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-700 pointer-events-none"
+                  strokeWidth={2.5}
+                />
               </div>
             </div>
 
             <div className="space-y-3">
-              <label className="block text-[#475569] font-medium text-[17px]">ชื่อจริง <span className="text-red-500">*</span></label>
-              <input 
-                type="text" 
+              <label className="block text-[#475569] font-medium text-[17px]">
+                ชื่อจริง <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
                 name="firstName"
                 placeholder="ชื่อจริง"
                 value={formData.firstName}
@@ -382,11 +467,13 @@ export default function AddEmployeePage() {
                 required
               />
             </div>
-            
+
             <div className="space-y-3">
-              <label className="block text-[#475569] font-medium text-[17px]">นามสกุล <span className="text-red-500">*</span></label>
-              <input 
-                type="text" 
+              <label className="block text-[#475569] font-medium text-[17px]">
+                นามสกุล <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
                 name="lastName"
                 placeholder="นามสกุล"
                 value={formData.lastName}
@@ -397,9 +484,11 @@ export default function AddEmployeePage() {
             </div>
 
             <div className="space-y-3">
-              <label className="block text-[#475569] font-medium text-[17px]">ชื่อภาษาอังกฤษ (First Name)</label>
-              <input 
-                type="text" 
+              <label className="block text-[#475569] font-medium text-[17px]">
+                ชื่อภาษาอังกฤษ (First Name)
+              </label>
+              <input
+                type="text"
                 name="firstNameEN"
                 placeholder="First Name"
                 value={formData.firstNameEN}
@@ -409,9 +498,11 @@ export default function AddEmployeePage() {
             </div>
 
             <div className="space-y-3">
-              <label className="block text-[#475569] font-medium text-[17px]">นามสกุลภาษาอังกฤษ (Last Name)</label>
-              <input 
-                type="text" 
+              <label className="block text-[#475569] font-medium text-[17px]">
+                นามสกุลภาษาอังกฤษ (Last Name)
+              </label>
+              <input
+                type="text"
                 name="lastNameEN"
                 placeholder="Last Name"
                 value={formData.lastNameEN}
@@ -421,9 +512,11 @@ export default function AddEmployeePage() {
             </div>
 
             <div className="space-y-3">
-              <label className="block text-[#475569] font-medium text-[17px]">เลขบัตรประชาชน (ID Card Number)</label>
-              <input 
-                type="text" 
+              <label className="block text-[#475569] font-medium text-[17px]">
+                เลขบัตรประชาชน (ID Card Number)
+              </label>
+              <input
+                type="text"
                 name="idCardNumber"
                 placeholder="เลข 13 หลัก"
                 value={formData.idCardNumber}
@@ -434,12 +527,19 @@ export default function AddEmployeePage() {
             </div>
 
             <div className="space-y-3">
-              <label className="block text-[#475569] font-medium text-[17px]">วันเกิด (Date of Birth)</label>
-              <DatePicker 
-                selected={formData.dateOfBirth ? new Date(formData.dateOfBirth) : null}
+              <label className="block text-[#475569] font-medium text-[17px]">
+                วันเกิด (Date of Birth)
+              </label>
+              <DatePicker
+                selected={
+                  formData.dateOfBirth ? new Date(formData.dateOfBirth) : null
+                }
                 onChange={(date: Date | null) => {
                   handleChange({
-                    target: { name: 'dateOfBirth', value: date ? date.toLocaleDateString('en-CA') : '' }
+                    target: {
+                      name: 'dateOfBirth',
+                      value: date ? date.toLocaleDateString('en-CA') : '',
+                    },
                   } as any);
                 }}
                 placeholderText="วว/ดด/ปปปป"
@@ -449,8 +549,10 @@ export default function AddEmployeePage() {
             </div>
 
             <div className="space-y-3">
-              <label className="block text-[#475569] font-medium text-[17px]">ที่อยู่ตามบัตรประชาชน (ID Card Address)</label>
-              <textarea 
+              <label className="block text-[#475569] font-medium text-[17px]">
+                ที่อยู่ตามบัตรประชาชน (ID Card Address)
+              </label>
+              <textarea
                 name="idCardAddress"
                 placeholder="กรอกที่อยู่ตามบัตรประชาชน"
                 value={formData.idCardAddress}
@@ -461,8 +563,10 @@ export default function AddEmployeePage() {
             </div>
 
             <div className="space-y-3">
-              <label className="block text-[#475569] font-medium text-[17px]">ที่อยู่ปัจจุบัน (Current Address)</label>
-              <textarea 
+              <label className="block text-[#475569] font-medium text-[17px]">
+                ที่อยู่ปัจจุบัน (Current Address)
+              </label>
+              <textarea
                 name="currentAddress"
                 placeholder="กรอกที่อยู่ปัจจุบัน"
                 value={formData.currentAddress}
@@ -472,51 +576,68 @@ export default function AddEmployeePage() {
               ></textarea>
             </div>
 
-
             <div className="space-y-3">
-              <label className="block text-[#475569] font-medium text-[17px]">แผนก (Department)</label>
+              <label className="block text-[#475569] font-medium text-[17px]">
+                แผนก (Department)
+              </label>
               <div className="relative">
-                <select 
+                <select
                   name="departmentId"
                   value={formData.departmentId}
                   onChange={handleChange}
                   className="w-full bg-[#f8fafc] border border-[#e2e8f0] px-5 py-3.5 rounded-xl text-[15px] text-slate-800 appearance-none focus:outline-none focus:ring-2 focus:ring-blue-100 transition-all cursor-pointer"
                   required
                 >
-                  <option value="" disabled>-- กรุณาเลือกแผนก --</option>
+                  <option value="" disabled>
+                    -- กรุณาเลือกแผนก --
+                  </option>
                   {departments.map((dept: any) => (
-                    <option key={dept.id} value={dept.id}>{dept.name}</option>
+                    <option key={dept.id} value={dept.id}>
+                      {dept.name}
+                    </option>
                   ))}
                 </select>
-                <ChevronDown className="absolute right-5 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-700 pointer-events-none" strokeWidth={2.5} />
+                <ChevronDown
+                  className="absolute right-5 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-700 pointer-events-none"
+                  strokeWidth={2.5}
+                />
               </div>
             </div>
 
             <div className="space-y-3">
-              <label className="block text-[#475569] font-medium text-[17px]">ตำแหน่ง (Position)</label>
+              <label className="block text-[#475569] font-medium text-[17px]">
+                ตำแหน่ง (Position)
+              </label>
               <div className="relative">
-                <select 
+                <select
                   name="positionId"
                   value={formData.positionId}
                   onChange={handleChange}
                   className="w-full bg-[#f8fafc] border border-[#e2e8f0] px-5 py-3.5 rounded-xl text-[15px] text-slate-800 appearance-none focus:outline-none focus:ring-2 focus:ring-blue-100 transition-all cursor-pointer"
                   required
                 >
-                  <option value="" disabled>-- กรุณาเลือกตำแหน่ง --</option>
+                  <option value="" disabled>
+                    -- กรุณาเลือกตำแหน่ง --
+                  </option>
                   {availablePositions.map((pos: any) => (
-                    <option key={pos.id} value={pos.id}>{pos.title || pos.name}</option>
+                    <option key={pos.id} value={pos.id}>
+                      {pos.title || pos.name}
+                    </option>
                   ))}
                 </select>
-                <ChevronDown className="absolute right-5 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-700 pointer-events-none" strokeWidth={2.5} />
+                <ChevronDown
+                  className="absolute right-5 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-700 pointer-events-none"
+                  strokeWidth={2.5}
+                />
               </div>
             </div>
 
-
-
             <div className="space-y-3">
-              <label className="block text-[#475569] font-medium text-[17px]">อีเมล (Email) <span className="text-red-500">*</span></label>
-              <input 
-                type="email" 
+              <label className="block text-[#475569] font-medium text-[17px]">
+                อีเมล (Email) <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="email"
                 name="email"
                 placeholder="example@nid.co.th"
                 value={formData.email}
@@ -526,12 +647,14 @@ export default function AddEmployeePage() {
                 required
               />
             </div>
-            
+
             <div className="space-y-3">
-              <label className="block text-[#475569] font-medium text-[17px]">เบอร์โทรศัพท์ (Phone Number)</label>
+              <label className="block text-[#475569] font-medium text-[17px]">
+                เบอร์โทรศัพท์ (Phone Number)
+              </label>
               <div className="relative">
-                <input 
-                  type="tel" 
+                <input
+                  type="tel"
                   name="phone"
                   placeholder="0981234567"
                   value={formData.phone}
@@ -543,16 +666,18 @@ export default function AddEmployeePage() {
                     formData.phone && formData.phone.length < 10
                       ? 'border-red-400 focus:ring-red-100'
                       : formData.phone.length === 10
-                      ? 'border-green-400 focus:ring-green-100'
-                      : 'border-[#e2e8f0] focus:ring-blue-100'
+                        ? 'border-green-400 focus:ring-green-100'
+                        : 'border-[#e2e8f0] focus:ring-blue-100'
                   }`}
                 />
                 {formData.phone.length > 0 && (
-                  <span className={`absolute right-4 top-1/2 -translate-y-1/2 text-xs font-semibold px-1.5 py-0.5 rounded-md ${
-                    formData.phone.length === 10
-                      ? 'text-green-600 bg-green-50'
-                      : 'text-red-500 bg-red-50'
-                  }`}>
+                  <span
+                    className={`absolute right-4 top-1/2 -translate-y-1/2 text-xs font-semibold px-1.5 py-0.5 rounded-md ${
+                      formData.phone.length === 10
+                        ? 'text-green-600 bg-green-50'
+                        : 'text-red-500 bg-red-50'
+                    }`}
+                  >
                     {formData.phone.length}/10
                   </span>
                 )}
@@ -560,12 +685,19 @@ export default function AddEmployeePage() {
             </div>
 
             <div className="space-y-3 md:col-span-2 md:w-1/2 md:pr-4">
-              <label className="block text-[#475569] font-medium text-[17px]">วันที่เริ่มทำงาน (Start Date)</label>
-              <DatePicker 
-                selected={formData.joinDate ? new Date(formData.joinDate) : null}
+              <label className="block text-[#475569] font-medium text-[17px]">
+                วันที่เริ่มทำงาน (Start Date)
+              </label>
+              <DatePicker
+                selected={
+                  formData.joinDate ? new Date(formData.joinDate) : null
+                }
                 onChange={(date: Date | null) => {
                   handleChange({
-                    target: { name: 'joinDate', value: date ? date.toLocaleDateString('en-CA') : '' }
+                    target: {
+                      name: 'joinDate',
+                      value: date ? date.toLocaleDateString('en-CA') : '',
+                    },
                   } as any);
                 }}
                 placeholderText="วว/ดด/ปปปป"
@@ -574,13 +706,13 @@ export default function AddEmployeePage() {
           </div>
 
           <div className="flex flex-col sm:flex-row justify-end items-stretch sm:items-center gap-3 mt-10 md:mt-12 pt-5 md:pt-6 border-t border-slate-100">
-            <Link 
+            <Link
               href="/dashboard/hr/employees"
               className="px-6 sm:px-8 py-3 sm:py-3.5 bg-[#f8fafc] border border-[#e2e8f0] hover:bg-[#f1f5f9] text-[#0f172a] rounded-xl font-medium text-base md:text-[17px] transition-colors cursor-pointer text-center"
             >
               ยกเลิก
             </Link>
-            <button 
+            <button
               type="submit"
               disabled={isLoading || !!employeeIdError}
               className={`px-8 sm:px-10 py-3 sm:py-3.5 ${employeeIdError ? 'bg-slate-400 cursor-not-allowed' : 'bg-[#2563eb] hover:bg-[#1d4ed8] cursor-pointer'} text-white rounded-xl font-medium text-base md:text-[17px] shadow-md shadow-blue-500/20 transition-all disabled:opacity-70 flex items-center justify-center gap-2`}
@@ -588,7 +720,6 @@ export default function AddEmployeePage() {
               {isLoading ? 'กำลังบันทึก...' : 'บันทึกข้อมูล'}
             </button>
           </div>
-
         </form>
       </div>
     </div>

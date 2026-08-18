@@ -1,4 +1,4 @@
-import { cn } from "@/lib/utils"
+import { cn } from '@/lib/api/utils';
 
 function Skeleton({
   className,
@@ -6,13 +6,22 @@ function Skeleton({
 }: React.HTMLAttributes<HTMLDivElement>) {
   return (
     <div
-      className={cn("animate-pulse rounded-md bg-slate-200 dark:bg-slate-800", className)}
+      className={cn(
+        'animate-pulse rounded-md bg-slate-200 dark:bg-slate-800',
+        className,
+      )}
       {...props}
     />
-  )
+  );
 }
 
-function SkeletonTable({ rows = 3, cols = 4 }: { rows?: number, cols?: number }) {
+function SkeletonTable({
+  rows = 3,
+  cols = 4,
+}: {
+  rows?: number;
+  cols?: number;
+}) {
   return (
     <div className="w-full space-y-4">
       {Array.from({ length: rows }).map((_, i) => (
@@ -23,7 +32,7 @@ function SkeletonTable({ rows = 3, cols = 4 }: { rows?: number, cols?: number })
         </div>
       ))}
     </div>
-  )
+  );
 }
 
-export { Skeleton, SkeletonTable }
+export { Skeleton, SkeletonTable };

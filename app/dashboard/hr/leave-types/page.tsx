@@ -4,18 +4,40 @@ import React, { useState } from 'react';
 import { useLeaveType } from '@/hooks/useLeaveType';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from '@/components/ui/dialog';
 import { SkeletonTable } from '@/components/ui/skeleton';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import Swal from 'sweetalert2';
-import { Plus, Search, Edit2, Trash2, ChevronLeft, ChevronRight, FileText } from 'lucide-react';
-import { LeaveType } from '@/lib/types';
+import {
+  Plus,
+  Search,
+  Edit2,
+  Trash2,
+  ChevronLeft,
+  ChevronRight,
+  FileText,
+} from 'lucide-react';
+import { LeaveType } from '@/lib/api/types';
 
 const leaveTypeSchema = z.object({
-  name: z.string().min(2, 'ชื่อประเภทการลาต้องมีอย่างน้อย 2 ตัวอักษร (Name must be 2+ chars)'),
-  defaultDays: z.number().min(1, 'โควตาต้องมีอย่างน้อย 1 วัน (Max days must be at least 1)'),
+  name: z
+    .string()
+    .min(
+      2,
+      'ชื่อประเภทการลาต้องมีอย่างน้อย 2 ตัวอักษร (Name must be 2+ chars)',
+    ),
+  defaultDays: z
+    .number()
+    .min(1, 'โควตาต้องมีอย่างน้อย 1 วัน (Max days must be at least 1)'),
   requiresCertificate: z.boolean(),
   isSpecial: z.boolean(),
   advanceNoticeDays: z.number().min(0, 'จำนวนวันแจ้งล่วงหน้าต้องไม่ติดลบ'),
@@ -25,7 +47,12 @@ const leaveTypeSchema = z.object({
 type LeaveTypeFormValues = z.infer<typeof leaveTypeSchema>;
 
 export default function HRLeaveTypes() {
-  const { useLeaveTypesQuery, useCreateLeaveTypeMutation, useUpdateLeaveTypeMutation, useDeleteLeaveTypeMutation } = useLeaveType();
+  const {
+    useLeaveTypesQuery,
+    useCreateLeaveTypeMutation,
+    useUpdateLeaveTypeMutation,
+    useDeleteLeaveTypeMutation,
+  } = useLeaveType();
   const { data: leaveTypes = [], isLoading } = useLeaveTypesQuery();
 
   const createMutation = useCreateLeaveTypeMutation();
@@ -78,14 +105,28 @@ export default function HRLeaveTypes() {
     try {
       if (editingLt) {
         await updateMutation.mutateAsync({ id: editingLt.id, data: values });
-        Swal.fire({ icon: 'success', title: 'อัปเดตประเภทการลาสำเร็จ', timer: 1500, showConfirmButton: false });
+        Swal.fire({
+          icon: 'success',
+          title: 'อัปเดตประเภทการลาสำเร็จ',
+          timer: 1500,
+          showConfirmButton: false,
+        });
       } else {
         await createMutation.mutateAsync(values);
-        Swal.fire({ icon: 'success', title: 'เพิ่มประเภทการลาสำเร็จ', timer: 1500, showConfirmButton: false });
+        Swal.fire({
+          icon: 'success',
+          title: 'เพิ่มประเภทการลาสำเร็จ',
+          timer: 1500,
+          showConfirmButton: false,
+        });
       }
       setDialogOpen(false);
     } catch (err: any) {
-      Swal.fire({ icon: 'error', title: 'เกิดข้อผิดพลาด', text: err.response?.data?.message || 'ไม่สามารถบันทึกข้อมูลได้' });
+      Swal.fire({
+        icon: 'error',
+        title: 'เกิดข้อผิดพลาด',
+        text: err.response?.data?.message || 'ไม่สามารถบันทึกข้อมูลได้',
+      });
     }
   };
 
@@ -99,27 +140,43 @@ export default function HRLeaveTypes() {
       cancelButtonColor: '#64748b',
       confirmButtonText: 'ยืนยันการลบ',
       cancelButtonText: 'ยกเลิก',
-      background: document.documentElement.classList.contains('dark') ? '#1e293b' : '#fff',
-      color: document.documentElement.classList.contains('dark') ? '#fff' : '#000',
+      background: document.documentElement.classList.contains('dark')
+        ? '#1e293b'
+        : '#fff',
+      color: document.documentElement.classList.contains('dark')
+        ? '#fff'
+        : '#000',
     }).then(async (result) => {
       if (result.isConfirmed) {
         try {
           await deleteMutation.mutateAsync(lt.id);
-          Swal.fire({ icon: 'success', title: 'ลบข้อมูลสำเร็จ', timer: 1500, showConfirmButton: false });
+          Swal.fire({
+            icon: 'success',
+            title: 'ลบข้อมูลสำเร็จ',
+            timer: 1500,
+            showConfirmButton: false,
+          });
         } catch (err) {
-          Swal.fire({ icon: 'error', title: 'เกิดข้อผิดพลาด', text: 'ไม่สามารถลบประเภทการลาได้' });
+          Swal.fire({
+            icon: 'error',
+            title: 'เกิดข้อผิดพลาด',
+            text: 'ไม่สามารถลบประเภทการลาได้',
+          });
         }
       }
     });
   };
 
-  const filteredLts = leaveTypes.filter(lt => {
+  const filteredLts = leaveTypes.filter((lt) => {
     const query = search.toLowerCase();
     return lt.name.toLowerCase().includes(query) || lt.code.includes(query);
   });
 
   const totalPages = Math.ceil(filteredLts.length / itemsPerPage);
-  const currentLts = filteredLts.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+  const currentLts = filteredLts.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage,
+  );
 
   return (
     <div className="space-y-6">
@@ -133,7 +190,8 @@ export default function HRLeaveTypes() {
               ประเภทการลา (Leave Policies)
             </h1>
             <p className="text-sm text-slate-500 dark:text-slate-400 mt-1.5">
-              ตั้งเกณฑ์โควตาการลาประจำปีของพนักงาน กำหนดการบังคับแนบหลักฐานสำหรับแต่ละประเภท
+              ตั้งเกณฑ์โควตาการลาประจำปีของพนักงาน
+              กำหนดการบังคับแนบหลักฐานสำหรับแต่ละประเภท
             </p>
           </div>
         </div>
@@ -152,7 +210,10 @@ export default function HRLeaveTypes() {
           <input
             type="text"
             value={search}
-            onChange={(e) => { setSearch(e.target.value); setCurrentPage(1); }}
+            onChange={(e) => {
+              setSearch(e.target.value);
+              setCurrentPage(1);
+            }}
             placeholder="ค้นหาประเภทการลาด้วยชื่อ หรือ รหัสย่อการลา..."
             className="block w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-hidden focus:ring-2 focus:ring-indigo-500 text-sm transition-all"
           />
@@ -167,8 +228,13 @@ export default function HRLeaveTypes() {
             <div className="w-20 h-20 bg-indigo-50 rounded-full flex items-center justify-center mb-4">
               <FileText className="w-10 h-10 text-indigo-400" />
             </div>
-            <h3 className="text-lg font-bold text-slate-800 mb-2">ยังไม่มีข้อมูลประเภทการลา</h3>
-            <p className="text-sm text-slate-500 mb-6 max-w-sm">คุณยังไม่ได้เพิ่มประเภทการลาใดๆ ในระบบ กรุณาคลิกที่ปุ่ม "เพิ่มประเภทการลา" ด้านบนเพื่อเริ่มต้น</p>
+            <h3 className="text-lg font-bold text-slate-800 mb-2">
+              ยังไม่มีข้อมูลประเภทการลา
+            </h3>
+            <p className="text-sm text-slate-500 mb-6 max-w-sm">
+              คุณยังไม่ได้เพิ่มประเภทการลาใดๆ ในระบบ กรุณาคลิกที่ปุ่ม
+              "เพิ่มประเภทการลา" ด้านบนเพื่อเริ่มต้น
+            </p>
             <button
               onClick={handleAddOpen}
               className="inline-flex items-center space-x-2 px-6 py-2.5 rounded-xl text-sm font-semibold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 transition-colors cursor-pointer"
@@ -182,19 +248,36 @@ export default function HRLeaveTypes() {
             <table className="w-full text-left border-collapse text-sm">
               <thead>
                 <tr className="border-b border-slate-200 text-slate-500 font-bold uppercase text-[11px] tracking-wider bg-slate-50">
-                  <th className="py-4 px-6 rounded-tl-xl hidden md:table-cell">รหัส</th>
-                  <th className="py-4 px-6 hidden md:table-cell">ประเภทการลา</th>
-                  <th className="py-4 px-6 md:hidden rounded-tl-xl">ข้อมูลประเภทการลา</th>
-                  <th className="py-4 px-6 hidden sm:table-cell">โควตาสูงสุด / ปี</th>
-                  <th className="py-4 px-6 hidden md:table-cell">แจ้งล่วงหน้า (วัน)</th>
-                  <th className="py-4 px-6 hidden lg:table-cell">อายุงานขั้นต่ำ (วัน)</th>
-                  <th className="py-4 px-6 hidden sm:table-cell">เงื่อนไขพิเศษ</th>
+                  <th className="py-4 px-6 rounded-tl-xl hidden md:table-cell">
+                    รหัส
+                  </th>
+                  <th className="py-4 px-6 hidden md:table-cell">
+                    ประเภทการลา
+                  </th>
+                  <th className="py-4 px-6 md:hidden rounded-tl-xl">
+                    ข้อมูลประเภทการลา
+                  </th>
+                  <th className="py-4 px-6 hidden sm:table-cell">
+                    โควตาสูงสุด / ปี
+                  </th>
+                  <th className="py-4 px-6 hidden md:table-cell">
+                    แจ้งล่วงหน้า (วัน)
+                  </th>
+                  <th className="py-4 px-6 hidden lg:table-cell">
+                    อายุงานขั้นต่ำ (วัน)
+                  </th>
+                  <th className="py-4 px-6 hidden sm:table-cell">
+                    เงื่อนไขพิเศษ
+                  </th>
                   <th className="py-4 px-6 text-right rounded-tr-xl">จัดการ</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-850">
                 {currentLts.map((lt) => (
-                  <tr key={lt.id} className="hover:bg-slate-50/40 dark:hover:bg-slate-900/10 transition-colors">
+                  <tr
+                    key={lt.id}
+                    className="hover:bg-slate-50/40 dark:hover:bg-slate-900/10 transition-colors"
+                  >
                     {/* Desktop View Column */}
                     <td className="py-4 px-6 font-mono font-bold text-indigo-600 hidden md:table-cell">
                       {lt.code}
@@ -205,11 +288,23 @@ export default function HRLeaveTypes() {
 
                     {/* Mobile View Column */}
                     <td className="py-4 px-6 md:hidden">
-                      <div className="font-bold text-slate-800">{lt.code} - {lt.name}</div>
+                      <div className="font-bold text-slate-800">
+                        {lt.code} - {lt.name}
+                      </div>
                       <div className="text-xs text-slate-500 mt-1 flex flex-wrap gap-1">
-                        <span className="inline-block bg-blue-50 text-blue-600 px-2 py-0.5 rounded">{lt.defaultDays} วัน</span>
-                        {lt.requiresCertificate && <span className="inline-block bg-amber-50 text-amber-600 px-2 py-0.5 rounded">แนบใบรับรอง</span>}
-                        {lt.isSpecial && <span className="inline-block bg-rose-50 text-rose-600 px-2 py-0.5 rounded">อนุมัติพิเศษ</span>}
+                        <span className="inline-block bg-blue-50 text-blue-600 px-2 py-0.5 rounded">
+                          {lt.defaultDays} วัน
+                        </span>
+                        {lt.requiresCertificate && (
+                          <span className="inline-block bg-amber-50 text-amber-600 px-2 py-0.5 rounded">
+                            แนบใบรับรอง
+                          </span>
+                        )}
+                        {lt.isSpecial && (
+                          <span className="inline-block bg-rose-50 text-rose-600 px-2 py-0.5 rounded">
+                            อนุมัติพิเศษ
+                          </span>
+                        )}
                       </div>
                     </td>
 
@@ -221,10 +316,12 @@ export default function HRLeaveTypes() {
                         <span className="text-xs text-slate-500">วัน</span>
                       </div>
                     </td>
-                    
+
                     <td className="py-4 px-6 hidden md:table-cell">
                       <div className="text-sm text-slate-600 font-medium">
-                        {lt.advanceNoticeDays > 0 ? `${lt.advanceNoticeDays} วัน` : '-'}
+                        {lt.advanceNoticeDays > 0
+                          ? `${lt.advanceNoticeDays} วัน`
+                          : '-'}
                       </div>
                     </td>
 
@@ -277,7 +374,9 @@ export default function HRLeaveTypes() {
         {totalPages > 1 && (
           <div className="px-5 py-4 border-t border-slate-100 dark:border-slate-850 flex items-center justify-between">
             <span className="text-xs font-semibold text-slate-500">
-              Showing {(currentPage - 1) * itemsPerPage + 1} to {Math.min(currentPage * itemsPerPage, filteredLts.length)} of {filteredLts.length} types
+              Showing {(currentPage - 1) * itemsPerPage + 1} to{' '}
+              {Math.min(currentPage * itemsPerPage, filteredLts.length)} of{' '}
+              {filteredLts.length} types
             </span>
             <div className="flex items-center space-x-2">
               <button
@@ -306,54 +405,83 @@ export default function HRLeaveTypes() {
         <DialogContent size="md">
           <form onSubmit={handleSubmit(onSubmit)}>
             <DialogHeader>
-              <DialogTitle>{editingLt ? 'แก้ไขประเภทการลา' : 'เพิ่มประเภทการลาใหม่'}</DialogTitle>
-              <DialogDescription>ตั้งเกณฑ์การลา ข้อกำหนดในการยื่นแนบไฟล์ใบรับรองแพทย์หรือหลักฐานการลา</DialogDescription>
+              <DialogTitle>
+                {editingLt ? 'แก้ไขประเภทการลา' : 'เพิ่มประเภทการลาใหม่'}
+              </DialogTitle>
+              <DialogDescription>
+                ตั้งเกณฑ์การลา
+                ข้อกำหนดในการยื่นแนบไฟล์ใบรับรองแพทย์หรือหลักฐานการลา
+              </DialogDescription>
             </DialogHeader>
 
             <div className="space-y-4 mt-2">
               <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">ชื่อประเภทการลา *</label>
+                <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">
+                  ชื่อประเภทการลา *
+                </label>
                 <input
                   {...register('name')}
                   type="text"
                   placeholder="Annual Leave (ลาพักร้อน)"
                   className="block w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 px-3 py-2 text-sm focus:outline-hidden focus:ring-2 focus:ring-indigo-500"
                 />
-                {errors.name && <p className="text-xs text-red-500 mt-1 font-medium">{errors.name.message}</p>}
+                {errors.name && (
+                  <p className="text-xs text-red-500 mt-1 font-medium">
+                    {errors.name.message}
+                  </p>
+                )}
               </div>
 
               <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">จำนวนวันลาสะสมสูงสุด / ปี *</label>
+                <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">
+                  จำนวนวันลาสะสมสูงสุด / ปี *
+                </label>
                 <input
                   {...register('defaultDays', { valueAsNumber: true })}
                   type="number"
                   placeholder="12"
                   className="block w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 px-3 py-2 text-sm focus:outline-hidden focus:ring-2 focus:ring-indigo-500"
                 />
-                {errors.defaultDays && <p className="text-xs text-red-500 mt-1 font-medium">{errors.defaultDays.message}</p>}
+                {errors.defaultDays && (
+                  <p className="text-xs text-red-500 mt-1 font-medium">
+                    {errors.defaultDays.message}
+                  </p>
+                )}
               </div>
-              
+
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">แจ้งล่วงหน้า (วัน)</label>
+                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">
+                    แจ้งล่วงหน้า (วัน)
+                  </label>
                   <input
                     {...register('advanceNoticeDays', { valueAsNumber: true })}
                     type="number"
                     placeholder="0"
                     className="block w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 px-3 py-2 text-sm focus:outline-hidden focus:ring-2 focus:ring-indigo-500"
                   />
-                  {errors.advanceNoticeDays && <p className="text-xs text-red-500 mt-1 font-medium">{errors.advanceNoticeDays.message}</p>}
+                  {errors.advanceNoticeDays && (
+                    <p className="text-xs text-red-500 mt-1 font-medium">
+                      {errors.advanceNoticeDays.message}
+                    </p>
+                  )}
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">อายุงานขั้นต่ำ (วัน)</label>
+                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">
+                    อายุงานขั้นต่ำ (วัน)
+                  </label>
                   <input
                     {...register('minTenureDays', { valueAsNumber: true })}
                     type="number"
                     placeholder="0"
                     className="block w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 px-3 py-2 text-sm focus:outline-hidden focus:ring-2 focus:ring-indigo-500"
                   />
-                  {errors.minTenureDays && <p className="text-xs text-red-500 mt-1 font-medium">{errors.minTenureDays.message}</p>}
+                  {errors.minTenureDays && (
+                    <p className="text-xs text-red-500 mt-1 font-medium">
+                      {errors.minTenureDays.message}
+                    </p>
+                  )}
                 </div>
               </div>
 
@@ -365,7 +493,10 @@ export default function HRLeaveTypes() {
                     id="requiresCertificate"
                     className="w-4.5 h-4.5 rounded border-slate-350 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
                   />
-                  <label htmlFor="requiresCertificate" className="text-sm font-semibold text-slate-700 dark:text-slate-300 cursor-pointer">
+                  <label
+                    htmlFor="requiresCertificate"
+                    className="text-sm font-semibold text-slate-700 dark:text-slate-300 cursor-pointer"
+                  >
                     บังคับแนบเอกสารหลักฐาน (Requires Certificate)
                   </label>
                 </div>
@@ -377,9 +508,14 @@ export default function HRLeaveTypes() {
                     id="isSpecial"
                     className="w-4.5 h-4.5 rounded border-slate-350 text-rose-600 focus:ring-rose-500 cursor-pointer"
                   />
-                  <label htmlFor="isSpecial" className="text-sm font-semibold text-slate-700 dark:text-slate-300 cursor-pointer flex items-center gap-2">
+                  <label
+                    htmlFor="isSpecial"
+                    className="text-sm font-semibold text-slate-700 dark:text-slate-300 cursor-pointer flex items-center gap-2"
+                  >
                     ต้องให้ผู้บริหารสูงสุดอนุมัติ (Special Leave)
-                    <Badge className="bg-rose-100 text-rose-700 hover:bg-rose-100 text-[10px] py-0">CEO</Badge>
+                    <Badge className="bg-rose-100 text-rose-700 hover:bg-rose-100 text-[10px] py-0">
+                      CEO
+                    </Badge>
                   </label>
                 </div>
               </div>
@@ -393,7 +529,10 @@ export default function HRLeaveTypes() {
               >
                 ยกเลิก (Cancel)
               </button>
-              <button type="submit" className="px-4 py-2 text-sm font-semibold rounded-xl text-white bg-indigo-600 hover:bg-indigo-500 cursor-pointer">
+              <button
+                type="submit"
+                className="px-4 py-2 text-sm font-semibold rounded-xl text-white bg-indigo-600 hover:bg-indigo-500 cursor-pointer"
+              >
                 บันทึกข้อมูล (Save)
               </button>
             </DialogFooter>

@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { dashboardApi, hrApi, notificationApi, axiosInstance } from '@/api';
+import { dashboardApi, hrApi, notificationApi, axiosInstance } from '@/lib/api';
 
 export const useDashboardStats = (year?: number, type: 'personal' | 'team' = 'personal') => {
   const [data, setData] = useState<any>(null);

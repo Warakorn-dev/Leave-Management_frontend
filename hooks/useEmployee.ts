@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Employee } from '@/lib/types';
-import { employeeApi, authApi, hrApi } from '@/api';
+import { Employee } from '@/lib/api/types';
+import { employeeApi, authApi, hrApi } from '@/lib/api';
 
 export const useEmployeesQuery = () => {
   const [data, setData] = useState<Employee[]>([]);

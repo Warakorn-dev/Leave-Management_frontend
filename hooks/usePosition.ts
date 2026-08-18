@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Position } from '@/lib/types';
+import { Position } from '@/lib/api/types';
 
-import { axiosInstance } from '@/api';
+import { axiosInstance } from '@/lib/api';
 
 export const usePositionsQuery = () => {
   const [data, setData] = useState<Position[]>([]);

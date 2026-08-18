@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Department } from '@/lib/types';
+import { Department } from '@/lib/api/types';
 
-import { axiosInstance } from '@/api';
+import { axiosInstance } from '@/lib/api';
 
 // Export individual hooks for better React Hook compliance if needed
 export const useDepartmentsQuery = () => {

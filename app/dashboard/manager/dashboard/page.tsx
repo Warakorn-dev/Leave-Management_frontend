@@ -1,15 +1,18 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { fetchDashboardStats } from '@/lib/api/store';
+import { Button } from '@/components/ui/button';
 import {
   Users,
-  User,
-  UserX,
-  XCircle,
-  ChevronDown,
   CheckCircle2,
   Clock,
+  CalendarDays,
+  ChevronDown,
   Paperclip,
+  Calendar,
+  XCircle,
 } from 'lucide-react';
 import { previewAttachment } from '@/lib/api/attachmentPreview';
 import {
@@ -22,48 +25,51 @@ import {
   ResponsiveContainer,
 } from 'recharts';
 import Link from 'next/link';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 
-import { useLeave } from '@/hooks/useLeave';
-import { useEmployee } from '@/hooks/useEmployee';
+interface DashboardData {
+  stats: {
+    remaining: number;
+    pending: number;
+    approved: number;
+    rejected: number;
+  };
+  monthlyStats: { month: string; value: number }[];
+  announcements: {
+    id: string;
+    title: string;
+    subtitle: string;
+    isImportant?: boolean;
+  }[];
+  activities: {
+    id: string;
+    title: string;
+    time: string;
+    type: 'leave' | 'approve' | 'system';
+  }[];
+}
+
 import { useDashboardStats } from '@/hooks/useDashboard';
 
-export default function TeamDashboard() {
+export default function ManagerPersonalDashboard() {
   const [username, setUsername] = useState('ชื่อ xxxxx xxxx');
-  const [department, setDepartment] = useState('');
-
   const [currentYear] = useState(new Date().getFullYear());
   const [targetYear, setTargetYear] = useState(currentYear);
   const [announcementYear, setAnnouncementYear] = useState(currentYear);
-  const { data, isLoading } = useDashboardStats(targetYear, 'team');
+  const { data, isLoading } = useDashboardStats(targetYear);
 
   useEffect(() => {
-    const storedUsername =
-      sessionStorage.getItem('fullName') || sessionStorage.getItem('username');
-    if (storedUsername) setUsername(storedUsername);
-
-    const storedDept = sessionStorage.getItem('department') || '';
-    if (storedDept) setDepartment(storedDept);
+    const storedUsername = sessionStorage.getItem('username');
+    if (storedUsername && storedUsername !== 'Manager') {
+      setUsername(sessionStorage.getItem('fullName') || storedUsername);
+    }
   }, []);
 
-  if (isLoading)
+  if (isLoading || !data)
     return (
       <div className="p-8 text-black flex justify-center">
         กำลังโหลดข้อมูล...
       </div>
     );
-
-  const stats = data?.stats || {
-    totalEmployees: 0,
-    leavesToday: 0,
-    remainingEmployees: 0,
-    leaveQuotaToday: 1,
-  };
-
-  const chartData = data?.monthlyStats || [];
-  const announcements = data?.announcements || [];
-  const topActivities = data?.activities || [];
 
   return (
     <div className="p-6 md:p-8 w-full space-y-6 text-black min-h-full bg-[#F8F9FA]">
@@ -74,18 +80,18 @@ export default function TeamDashboard() {
             สวัสดี, {username}
           </h1>
           <p className="text-[#9EA1FF] text-[13px] font-medium mb-4">
-            ยินดีต้อนรับสู่ Dashboard ของแผนกคุณ
+            ยินดีต้อนรับสู่ Dashboard ของคุณ
           </p>
           <div className="flex bg-[#1E295E] p-1 rounded-xl w-fit">
-            <button className="px-4 py-2 rounded-lg text-sm font-medium transition-colors bg-white text-[#0B1547]">
-              ภาพรวมแผนก
-            </button>
             <Link
-              href="/dashboard/manager"
+              href="/dashboard/manager/team"
               className="px-4 py-2 rounded-lg text-sm font-medium transition-colors text-slate-300 hover:text-white"
             >
-              ข้อมูลส่วนตัว
+              ภาพรวมแผนก
             </Link>
+            <button className="px-4 py-2 rounded-lg text-sm font-medium transition-colors bg-white text-[#0B1547]">
+              ข้อมูลส่วนตัว
+            </button>
           </div>
         </div>
 
@@ -111,90 +117,69 @@ export default function TeamDashboard() {
 
       {/* Stats Grid */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-5">
-        {/* Total Employees */}
-        <Card className="rounded-2xl border border-gray-200 shadow-sm bg-white hover:shadow-md transition-shadow">
-          <CardContent className="p-5 flex flex-col items-start h-full justify-center">
-            <div className="flex items-center gap-3 mb-2">
-              <div className="w-8 h-8 rounded-full bg-blue-50 flex items-center justify-center">
-                <Users className="w-4 h-4 text-blue-600" />
-              </div>
-              <p className="text-[13px] font-extrabold text-gray-700">
-                พนักงานทั้งหมด
-              </p>
-            </div>
-            <div className="flex items-baseline gap-1.5 mt-2 pl-1">
-              <span className="text-[40px] font-black text-gray-800 leading-none tracking-tighter">
-                {stats.totalEmployees}
-              </span>
-              <span className="text-[13px] font-bold text-gray-600">คน</span>
-            </div>
-          </CardContent>
-        </Card>
+        {/* Remaining */}
+        <div className="bg-white dark:bg-slate-900 rounded-3xl p-5 shadow-sm border border-slate-100 dark:border-slate-800 flex flex-col items-center justify-center text-center space-y-3">
+          <div className="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center text-white shadow-md">
+            <Calendar className="w-5 h-5" />
+          </div>
+          <p className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+            วันลาพักผ่อน คงเหลือ
+          </p>
+          <div className="flex items-baseline space-x-1 mt-1">
+            <span className="text-3xl font-extrabold text-slate-900 dark:text-white">
+              {data?.remainingVacation ?? 0}
+            </span>
+            <span className="text-xs font-bold text-slate-600">วัน</span>
+          </div>
+        </div>
 
-        {/* Leaves Today */}
-        <Card className="rounded-2xl border border-gray-200 shadow-sm bg-white hover:shadow-md transition-shadow">
-          <CardContent className="p-5 flex flex-col items-start h-full justify-center">
-            <div className="flex items-center gap-3 mb-2">
-              <div className="w-8 h-8 rounded-full bg-purple-50 flex items-center justify-center">
-                <UserX className="w-4 h-4 text-purple-600" />
-              </div>
-              <p className="text-[13px] font-extrabold text-gray-700">
-                จำนวนการลาวันนี้
-              </p>
-            </div>
-            <div className="flex items-baseline gap-1.5 mt-2 pl-1">
-              <span className="text-[40px] font-black text-gray-800 leading-none tracking-tighter">
-                {stats.leavesToday}
-              </span>
-              <span className="text-[13px] font-bold text-gray-600">คน</span>
-            </div>
-          </CardContent>
-        </Card>
+        {/* Pending */}
+        <div className="bg-white dark:bg-slate-900 rounded-3xl p-5 shadow-sm border border-slate-100 dark:border-slate-800 flex flex-col items-center justify-center text-center space-y-3">
+          <div className="w-10 h-10 rounded-xl bg-amber-50 dark:bg-amber-950/30 flex items-center justify-center text-amber-400">
+            <Clock className="w-5 h-5" />
+          </div>
+          <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 mt-2">
+            รายการรออนุมัติ
+          </p>
+          <div className="flex items-baseline space-x-1">
+            <span className="text-3xl font-extrabold text-slate-900 dark:text-white">
+              {data?.pendingApprovals ?? 0}
+            </span>
+            <span className="text-xs font-bold text-slate-600">รายการ</span>
+          </div>
+        </div>
 
-        {/* Remaining Employees */}
-        <Card className="rounded-2xl border border-gray-200 shadow-sm bg-white hover:shadow-md transition-shadow">
-          <CardContent className="p-5 flex flex-col items-start h-full justify-center">
-            <div className="flex items-center gap-3 mb-2">
-              <div className="w-8 h-8 rounded-full bg-indigo-50 flex items-center justify-center">
-                <User className="w-4 h-4 text-indigo-600" />
-              </div>
-              <p className="text-[13px] font-extrabold text-gray-700">
-                พนักงานคงเหลือ
-              </p>
-            </div>
-            <div className="flex items-baseline gap-1.5 mt-2 pl-1">
-              <span className="text-[40px] font-black text-gray-800 leading-none tracking-tighter">
-                {stats.remainingEmployees}
-              </span>
-              <span className="text-[13px] font-bold text-gray-600">คน</span>
-            </div>
-          </CardContent>
-        </Card>
+        {/* Approved */}
+        <div className="bg-white dark:bg-slate-900 rounded-3xl p-5 shadow-sm border border-slate-100 dark:border-slate-800 flex flex-col items-center justify-center text-center space-y-3">
+          <div className="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-950/30 flex items-center justify-center text-emerald-500">
+            <CheckCircle2 className="w-5 h-5" />
+          </div>
+          <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 mt-2">
+            อนุมัติแล้วปีนี้
+          </p>
+          <div className="flex items-baseline space-x-1">
+            <span className="text-3xl font-extrabold text-slate-900 dark:text-white">
+              {data?.approvedThisYear ?? 0}
+            </span>
+            <span className="text-xs font-bold text-slate-600">รายการ</span>
+          </div>
+        </div>
 
-        {/* Pending Approvals */}
-        <Card
-          className="rounded-2xl border border-gray-200 shadow-sm bg-white hover:shadow-md transition-shadow cursor-pointer"
-          onClick={() => (window.location.href = '/dashboard/manager/approve')}
-        >
-          <CardContent className="p-5 flex flex-col items-start h-full justify-center">
-            <div className="flex items-center gap-3 mb-2">
-              <div className="w-8 h-8 rounded-full bg-amber-50 flex items-center justify-center">
-                <Clock className="w-4 h-4 text-amber-500" />
-              </div>
-              <p className="text-[13px] font-extrabold text-gray-700">
-                รออนุมัติ
-              </p>
-            </div>
-            <div className="flex items-baseline gap-1.5 mt-2 pl-1">
-              <span className="text-[40px] font-black text-gray-800 leading-none tracking-tighter">
-                {stats.pendingApprovals || 0}
-              </span>
-              <span className="text-[13px] font-bold text-gray-600">
-                รายการ
-              </span>
-            </div>
-          </CardContent>
-        </Card>
+        {/* Rejected */}
+        <div className="bg-white dark:bg-slate-900 rounded-3xl p-5 shadow-sm border border-slate-100 dark:border-slate-800 flex flex-col items-center justify-center text-center space-y-3">
+          <div className="w-10 h-10 rounded-xl bg-red-50 dark:bg-red-950/30 flex items-center justify-center text-red-500">
+            <XCircle className="w-5 h-5" />
+          </div>
+          <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 mt-2">
+            ถูกปฏิเสธ
+          </p>
+          <div className="flex items-baseline space-x-1">
+            <span className="text-3xl font-extrabold text-slate-900 dark:text-white">
+              {data?.rejectedRequests ?? 0}
+            </span>
+            <span className="text-xs font-bold text-slate-600">รายการ</span>
+          </div>
+        </div>
       </div>
 
       {/* Bottom Grid */}
@@ -228,7 +213,7 @@ export default function TeamDashboard() {
           <CardContent className="flex-1 px-6 pb-6 pt-4 h-64">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart
-                data={chartData}
+                data={data?.chartData || []}
                 margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
               >
                 <CartesianGrid
@@ -237,7 +222,7 @@ export default function TeamDashboard() {
                   stroke="#E2E8F0"
                 />
                 <XAxis
-                  dataKey="month"
+                  dataKey="name"
                   axisLine={false}
                   tickLine={false}
                   tick={{ fontSize: 12, fill: '#64748B' }}
@@ -295,8 +280,8 @@ export default function TeamDashboard() {
             </div>
           </CardHeader>
           <CardContent className="px-5 pb-6 space-y-3 overflow-y-auto custom-scrollbar">
-            {announcements &&
-              [...announcements]
+            {data.announcements &&
+              [...data.announcements]
                 .filter(
                   (ann: any) =>
                     new Date(ann.createdAt).getFullYear() === announcementYear,
@@ -384,9 +369,12 @@ export default function TeamDashboard() {
           </CardHeader>
           <CardContent className="px-6 pb-6 overflow-y-auto custom-scrollbar">
             <div className="relative pl-5 space-y-7 mt-2">
+              {/* Vertical line connecting timeline items */}
               <div className="absolute left-[7px] top-2 bottom-4 w-px bg-gray-200"></div>
-              {topActivities.map((act: any, i: number) => (
+
+              {data.activities?.map((act: any, i: number) => (
                 <div key={i} className="relative">
+                  {/* Timeline dot */}
                   <div
                     className={`absolute -left-[26px] top-1 w-3 h-3 rounded-full shadow-sm ${
                       act.type === 'leave'
@@ -396,6 +384,7 @@ export default function TeamDashboard() {
                           : 'bg-[#2196F3]'
                     }`}
                   ></div>
+
                   <h4 className="text-[12px] font-extrabold text-gray-800 leading-tight">
                     {act.title}
                   </h4>

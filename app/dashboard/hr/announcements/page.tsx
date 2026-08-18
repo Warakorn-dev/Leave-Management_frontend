@@ -1,19 +1,19 @@
-"use client";
+'use client';
 
 import React, { useState, useEffect } from 'react';
-import { 
-  FileText, 
-  Search, 
+import {
+  FileText,
+  Search,
   Plus,
   Trash2,
   Edit,
   AlertCircle,
-  Paperclip
+  Paperclip,
 } from 'lucide-react';
 import Swal from 'sweetalert2';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
-import { previewAttachment } from "@/lib/attachmentPreview";
-import { hrApi } from '@/api';
+import { previewAttachment } from '@/lib/api/attachmentPreview';
+import { hrApi } from '@/lib/api';
 
 interface Announcement {
   id: string;
@@ -42,7 +42,7 @@ export default function AnnouncementManagementPage() {
     subtitle: '',
     isImportant: false,
     attachmentData: '',
-    attachmentName: ''
+    attachmentName: '',
   });
 
   const fetchAnnouncements = async () => {
@@ -50,11 +50,15 @@ export default function AnnouncementManagementPage() {
     try {
       const res = await hrApi.getAnnouncements(100); // Fetch up to 100 for HR
       const data = res.data;
-      if ((data as any).success || Array.isArray((data as any).data) || Array.isArray(data)) {
+      if (
+        (data as any).success ||
+        Array.isArray((data as any).data) ||
+        Array.isArray(data)
+      ) {
         setAnnouncements((data as any).data || data);
       }
     } catch (error) {
-      console.error("Failed to fetch announcements", error);
+      console.error('Failed to fetch announcements', error);
     } finally {
       setIsLoading(false);
     }
@@ -64,27 +68,37 @@ export default function AnnouncementManagementPage() {
     fetchAnnouncements();
   }, []);
 
-  const filteredAnnouncements = announcements.filter((ann) => 
-    ann.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    ann.subtitle.toLowerCase().includes(searchTerm.toLowerCase())
-  ).sort((a, b) => {
-    if (a.isImportant === b.isImportant) return 0;
-    return a.isImportant ? -1 : 1;
-  });
+  const filteredAnnouncements = announcements
+    .filter(
+      (ann) =>
+        ann.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        ann.subtitle.toLowerCase().includes(searchTerm.toLowerCase()),
+    )
+    .sort((a, b) => {
+      if (a.isImportant === b.isImportant) return 0;
+      return a.isImportant ? -1 : 1;
+    });
 
   const handleOpenCreateModal = () => {
-    setFormData({ id: '', title: '', subtitle: '', isImportant: false, attachmentData: '', attachmentName: '' });
+    setFormData({
+      id: '',
+      title: '',
+      subtitle: '',
+      isImportant: false,
+      attachmentData: '',
+      attachmentName: '',
+    });
     setIsCreateModalOpen(true);
   };
 
   const handleOpenEditModal = (ann: Announcement) => {
-    setFormData({ 
-      id: ann.id, 
-      title: ann.title, 
-      subtitle: ann.subtitle, 
+    setFormData({
+      id: ann.id,
+      title: ann.title,
+      subtitle: ann.subtitle,
       isImportant: ann.isImportant,
       attachmentData: ann.attachmentData || '',
-      attachmentName: ann.attachmentName || ''
+      attachmentName: ann.attachmentName || '',
     });
     setIsEditModalOpen(true);
   };
@@ -97,7 +111,7 @@ export default function AnnouncementManagementPage() {
         subtitle: formData.subtitle,
         isImportant: formData.isImportant,
         attachmentData: formData.attachmentData,
-        attachmentName: formData.attachmentName
+        attachmentName: formData.attachmentName,
       });
       const data = res.data;
       if ((data as any).success || data) {
@@ -107,7 +121,7 @@ export default function AnnouncementManagementPage() {
           icon: 'success',
           title: 'เพิ่มประกาศสำเร็จ',
           showConfirmButton: false,
-          timer: 1500
+          timer: 1500,
         });
       } else {
         Swal.fire('ข้อผิดพลาด', 'ไม่สามารถเพิ่มประกาศได้', 'error');
@@ -125,7 +139,7 @@ export default function AnnouncementManagementPage() {
         subtitle: formData.subtitle,
         isImportant: formData.isImportant,
         attachmentData: formData.attachmentData,
-        attachmentName: formData.attachmentName
+        attachmentName: formData.attachmentName,
       });
       const data = res.data;
       if ((data as any).success || data) {
@@ -135,7 +149,7 @@ export default function AnnouncementManagementPage() {
           icon: 'success',
           title: 'แก้ไขประกาศสำเร็จ',
           showConfirmButton: false,
-          timer: 1500
+          timer: 1500,
         });
       } else {
         Swal.fire('ข้อผิดพลาด', 'ไม่สามารถแก้ไขประกาศได้', 'error');
@@ -150,10 +164,10 @@ export default function AnnouncementManagementPage() {
     if (file) {
       const reader = new FileReader();
       reader.onloadend = () => {
-        setFormData(prev => ({
+        setFormData((prev) => ({
           ...prev,
           attachmentData: reader.result as string,
-          attachmentName: file.name
+          attachmentName: file.name,
         }));
       };
       reader.readAsDataURL(file);
@@ -179,12 +193,14 @@ export default function AnnouncementManagementPage() {
       cancelButtonText: 'ยกเลิก',
       customClass: {
         popup: 'rounded-[24px] p-6 pb-8 w-full max-w-[480px]',
-        confirmButton: 'bg-[#ff3b30] hover:bg-[#ff2d20] text-white px-10 py-3.5 rounded-[12px] font-medium text-[17px] transition-colors',
-        cancelButton: 'bg-[#f8fafc] hover:bg-[#f1f5f9] text-[#0f172a] border border-[#e2e8f0] px-10 py-3.5 rounded-[12px] font-medium text-[17px] transition-colors mr-3',
-        actions: 'w-full flex justify-center mt-8'
+        confirmButton:
+          'bg-[#ff3b30] hover:bg-[#ff2d20] text-white px-10 py-3.5 rounded-[12px] font-medium text-[17px] transition-colors',
+        cancelButton:
+          'bg-[#f8fafc] hover:bg-[#f1f5f9] text-[#0f172a] border border-[#e2e8f0] px-10 py-3.5 rounded-[12px] font-medium text-[17px] transition-colors mr-3',
+        actions: 'w-full flex justify-center mt-8',
       },
       buttonsStyling: false,
-      reverseButtons: true
+      reverseButtons: true,
     }).then(async (result) => {
       if (result.isConfirmed) {
         try {
@@ -197,8 +213,9 @@ export default function AnnouncementManagementPage() {
               icon: 'success',
               confirmButtonText: 'ตกลง',
               customClass: {
-                confirmButton: 'bg-blue-600 hover:bg-blue-700 text-white px-8 py-2.5 rounded-[12px] font-medium'
-              }
+                confirmButton:
+                  'bg-blue-600 hover:bg-blue-700 text-white px-8 py-2.5 rounded-[12px] font-medium',
+              },
             });
             fetchAnnouncements();
           } else {
@@ -222,13 +239,15 @@ export default function AnnouncementManagementPage() {
                 <FileText className="w-6 h-6 text-blue-600" />
               </div>
               <div>
-                <h1 className="text-2xl font-bold text-slate-800">จัดการประกาศบริษัท</h1>
+                <h1 className="text-2xl font-bold text-slate-800">
+                  จัดการประกาศบริษัท
+                </h1>
                 <p className="text-sm text-slate-500 mt-1">
                   เพิ่ม, แก้ไข, และลบประกาศสำหรับพนักงานทุกคน
                 </p>
               </div>
             </div>
-            
+
             <button
               onClick={handleOpenCreateModal}
               className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-lg transition-colors font-medium shadow-sm hover:shadow-md"
@@ -261,16 +280,27 @@ export default function AnnouncementManagementPage() {
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="bg-slate-50/80 border-b border-slate-200">
-                  <th className="py-4 px-6 text-xs font-bold text-slate-500 uppercase tracking-wider w-[40%]">ประกาศ</th>
-                  <th className="py-4 px-6 text-xs font-bold text-slate-500 uppercase tracking-wider w-[20%]">ความสำคัญ</th>
-                  <th className="py-4 px-6 text-xs font-bold text-slate-500 uppercase tracking-wider w-[20%]">วันที่อัปเดต</th>
-                  <th className="py-4 px-6 text-xs font-bold text-slate-500 uppercase tracking-wider text-right w-[20%]">จัดการ</th>
+                  <th className="py-4 px-6 text-xs font-bold text-slate-500 uppercase tracking-wider w-[40%]">
+                    ประกาศ
+                  </th>
+                  <th className="py-4 px-6 text-xs font-bold text-slate-500 uppercase tracking-wider w-[20%]">
+                    ความสำคัญ
+                  </th>
+                  <th className="py-4 px-6 text-xs font-bold text-slate-500 uppercase tracking-wider w-[20%]">
+                    วันที่อัปเดต
+                  </th>
+                  <th className="py-4 px-6 text-xs font-bold text-slate-500 uppercase tracking-wider text-right w-[20%]">
+                    จัดการ
+                  </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {isLoading ? (
                   <tr>
-                    <td colSpan={4} className="py-12 text-center text-slate-500">
+                    <td
+                      colSpan={4}
+                      className="py-12 text-center text-slate-500"
+                    >
                       กำลังโหลดข้อมูล...
                     </td>
                   </tr>
@@ -279,25 +309,42 @@ export default function AnnouncementManagementPage() {
                     <td colSpan={4} className="py-12 text-center">
                       <div className="flex flex-col items-center justify-center">
                         <FileText className="w-12 h-12 text-slate-300 mb-3" />
-                        <p className="text-slate-500 font-medium">ไม่พบข้อมูลประกาศ</p>
+                        <p className="text-slate-500 font-medium">
+                          ไม่พบข้อมูลประกาศ
+                        </p>
                       </div>
                     </td>
                   </tr>
                 ) : (
                   filteredAnnouncements.map((ann) => (
-                    <tr key={ann.id} className="hover:bg-slate-50/50 transition-colors group">
+                    <tr
+                      key={ann.id}
+                      className="hover:bg-slate-50/50 transition-colors group"
+                    >
                       <td className="py-4 px-6">
                         <div>
-                          <p className="font-bold text-slate-800 line-clamp-1">{ann.title}</p>
-                          <p className="text-sm text-slate-500 mt-0.5 line-clamp-1">{ann.subtitle}</p>
+                          <p className="font-bold text-slate-800 line-clamp-1">
+                            {ann.title}
+                          </p>
+                          <p className="text-sm text-slate-500 mt-0.5 line-clamp-1">
+                            {ann.subtitle}
+                          </p>
                           {ann.attachmentName && (
-                            <a 
-                              href="#" 
+                            <a
+                              href="#"
                               className="inline-flex items-center gap-1.5 mt-2 px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-xs text-slate-600 rounded-md transition-all border border-slate-200"
-                              onClick={(e) => previewAttachment(e, ann.attachmentData || '', ann.attachmentName || '')}
+                              onClick={(e) =>
+                                previewAttachment(
+                                  e,
+                                  ann.attachmentData || '',
+                                  ann.attachmentName || '',
+                                )
+                              }
                             >
                               <Paperclip className="w-3 h-3" />
-                              <span className="truncate max-w-[200px]">{ann.attachmentName}</span>
+                              <span className="truncate max-w-[200px]">
+                                {ann.attachmentName}
+                              </span>
                             </a>
                           )}
                         </div>
@@ -319,7 +366,7 @@ export default function AnnouncementManagementPage() {
                           {new Date(ann.updatedAt).toLocaleDateString('th-TH', {
                             year: 'numeric',
                             month: 'short',
-                            day: 'numeric'
+                            day: 'numeric',
                           })}
                         </p>
                       </td>
@@ -354,30 +401,42 @@ export default function AnnouncementManagementPage() {
       <Dialog open={isCreateModalOpen} onOpenChange={setIsCreateModalOpen}>
         <DialogContent className="sm:max-w-[500px] p-0 overflow-hidden bg-white rounded-3xl border-0 shadow-2xl">
           <div className="px-8 py-6 border-b border-slate-100">
-            <h2 className="text-xl font-bold text-slate-800">สร้างประกาศใหม่</h2>
-            <p className="text-sm text-slate-500 mt-1">เพิ่มประกาศเพื่อแจ้งให้พนักงานทราบ</p>
+            <h2 className="text-xl font-bold text-slate-800">
+              สร้างประกาศใหม่
+            </h2>
+            <p className="text-sm text-slate-500 mt-1">
+              เพิ่มประกาศเพื่อแจ้งให้พนักงานทราบ
+            </p>
           </div>
-          
+
           <form onSubmit={handleCreate} className="px-8 py-6">
             <div className="space-y-5">
               <div>
-                <label className="block text-sm font-bold text-slate-700 mb-1.5">หัวข้อประกาศ <span className="text-red-500">*</span></label>
+                <label className="block text-sm font-bold text-slate-700 mb-1.5">
+                  หัวข้อประกาศ <span className="text-red-500">*</span>
+                </label>
                 <input
                   type="text"
                   required
                   value={formData.title}
-                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, title: e.target.value })
+                  }
                   placeholder="เช่น ประกาศวันหยุดพิเศษ"
                   className="w-full bg-slate-50 border-0 rounded-xl px-4 py-3 text-sm font-medium text-slate-700 outline-none ring-1 ring-slate-200 focus:ring-2 focus:ring-blue-500/20"
                 />
               </div>
-              
+
               <div>
-                <label className="block text-sm font-bold text-slate-700 mb-1.5">รายละเอียด <span className="text-red-500">*</span></label>
+                <label className="block text-sm font-bold text-slate-700 mb-1.5">
+                  รายละเอียด <span className="text-red-500">*</span>
+                </label>
                 <textarea
                   required
                   value={formData.subtitle}
-                  onChange={(e) => setFormData({ ...formData, subtitle: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, subtitle: e.target.value })
+                  }
                   placeholder="รายละเอียดเนื้อหาประกาศ..."
                   rows={4}
                   className="w-full bg-slate-50 border-0 rounded-xl px-4 py-3 text-sm font-medium text-slate-700 outline-none ring-1 ring-slate-200 focus:ring-2 focus:ring-blue-500/20 resize-none"
@@ -389,16 +448,24 @@ export default function AnnouncementManagementPage() {
                   type="checkbox"
                   id="create-is-important"
                   checked={formData.isImportant}
-                  onChange={(e) => setFormData({ ...formData, isImportant: e.target.checked })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, isImportant: e.target.checked })
+                  }
                   className="w-5 h-5 rounded border-slate-300 text-blue-600 focus:ring-blue-600 cursor-pointer"
                 />
-                <label htmlFor="create-is-important" className="text-sm font-medium text-slate-700 cursor-pointer select-none">
-                  ทำเครื่องหมายว่าเป็น <span className="text-rose-600 font-bold">ประกาศสำคัญ</span>
+                <label
+                  htmlFor="create-is-important"
+                  className="text-sm font-medium text-slate-700 cursor-pointer select-none"
+                >
+                  ทำเครื่องหมายว่าเป็น{' '}
+                  <span className="text-rose-600 font-bold">ประกาศสำคัญ</span>
                 </label>
               </div>
 
               <div>
-                <label className="block text-sm font-bold text-slate-700 mb-1.5">แนบไฟล์ (ไม่บังคับ)</label>
+                <label className="block text-sm font-bold text-slate-700 mb-1.5">
+                  แนบไฟล์ (ไม่บังคับ)
+                </label>
                 <div className="flex items-center gap-3">
                   <input
                     type="file"
@@ -407,18 +474,26 @@ export default function AnnouncementManagementPage() {
                     onChange={handleFileChange}
                     accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg"
                   />
-                  <label 
-                    htmlFor="create-file-upload" 
+                  <label
+                    htmlFor="create-file-upload"
                     className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-medium rounded-lg cursor-pointer transition-colors border border-slate-300"
                   >
                     เลือกไฟล์
                   </label>
                   {formData.attachmentName && (
                     <div className="flex items-center gap-2 text-sm text-slate-600 bg-blue-50 px-3 py-1.5 rounded-lg border border-blue-100">
-                      <span className="truncate max-w-[200px]">{formData.attachmentName}</span>
-                      <button 
-                        type="button" 
-                        onClick={() => setFormData({ ...formData, attachmentData: '', attachmentName: '' })}
+                      <span className="truncate max-w-[200px]">
+                        {formData.attachmentName}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setFormData({
+                            ...formData,
+                            attachmentData: '',
+                            attachmentName: '',
+                          })
+                        }
                         className="text-red-500 hover:text-red-700"
                       >
                         <Trash2 className="w-4 h-4" />
@@ -453,29 +528,39 @@ export default function AnnouncementManagementPage() {
         <DialogContent className="sm:max-w-[500px] p-0 overflow-hidden bg-white rounded-3xl border-0 shadow-2xl">
           <div className="px-8 py-6 border-b border-slate-100">
             <h2 className="text-xl font-bold text-slate-800">แก้ไขประกาศ</h2>
-            <p className="text-sm text-slate-500 mt-1">อัปเดตข้อมูลและรายละเอียดประกาศ</p>
+            <p className="text-sm text-slate-500 mt-1">
+              อัปเดตข้อมูลและรายละเอียดประกาศ
+            </p>
           </div>
-          
+
           <form onSubmit={handleUpdate} className="px-8 py-6">
             <div className="space-y-5">
               <div>
-                <label className="block text-sm font-bold text-slate-700 mb-1.5">หัวข้อประกาศ <span className="text-red-500">*</span></label>
+                <label className="block text-sm font-bold text-slate-700 mb-1.5">
+                  หัวข้อประกาศ <span className="text-red-500">*</span>
+                </label>
                 <input
                   type="text"
                   required
                   value={formData.title}
-                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, title: e.target.value })
+                  }
                   placeholder="เช่น ประกาศวันหยุดพิเศษ"
                   className="w-full bg-slate-50 border-0 rounded-xl px-4 py-3 text-sm font-medium text-slate-700 outline-none ring-1 ring-slate-200 focus:ring-2 focus:ring-blue-500/20"
                 />
               </div>
-              
+
               <div>
-                <label className="block text-sm font-bold text-slate-700 mb-1.5">รายละเอียด <span className="text-red-500">*</span></label>
+                <label className="block text-sm font-bold text-slate-700 mb-1.5">
+                  รายละเอียด <span className="text-red-500">*</span>
+                </label>
                 <textarea
                   required
                   value={formData.subtitle}
-                  onChange={(e) => setFormData({ ...formData, subtitle: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, subtitle: e.target.value })
+                  }
                   placeholder="รายละเอียดเนื้อหาประกาศ..."
                   rows={4}
                   className="w-full bg-slate-50 border-0 rounded-xl px-4 py-3 text-sm font-medium text-slate-700 outline-none ring-1 ring-slate-200 focus:ring-2 focus:ring-blue-500/20 resize-none"
@@ -487,16 +572,24 @@ export default function AnnouncementManagementPage() {
                   type="checkbox"
                   id="edit-is-important"
                   checked={formData.isImportant}
-                  onChange={(e) => setFormData({ ...formData, isImportant: e.target.checked })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, isImportant: e.target.checked })
+                  }
                   className="w-5 h-5 rounded border-slate-300 text-blue-600 focus:ring-blue-600 cursor-pointer"
                 />
-                <label htmlFor="edit-is-important" className="text-sm font-medium text-slate-700 cursor-pointer select-none">
-                  ทำเครื่องหมายว่าเป็น <span className="text-rose-600 font-bold">ประกาศสำคัญ</span>
+                <label
+                  htmlFor="edit-is-important"
+                  className="text-sm font-medium text-slate-700 cursor-pointer select-none"
+                >
+                  ทำเครื่องหมายว่าเป็น{' '}
+                  <span className="text-rose-600 font-bold">ประกาศสำคัญ</span>
                 </label>
               </div>
 
               <div>
-                <label className="block text-sm font-bold text-slate-700 mb-1.5">แนบไฟล์ (ไม่บังคับ)</label>
+                <label className="block text-sm font-bold text-slate-700 mb-1.5">
+                  แนบไฟล์ (ไม่บังคับ)
+                </label>
                 <div className="flex items-center gap-3">
                   <input
                     type="file"
@@ -505,18 +598,26 @@ export default function AnnouncementManagementPage() {
                     onChange={handleFileChange}
                     accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg"
                   />
-                  <label 
-                    htmlFor="edit-file-upload" 
+                  <label
+                    htmlFor="edit-file-upload"
                     className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-medium rounded-lg cursor-pointer transition-colors border border-slate-300"
                   >
                     เลือกไฟล์
                   </label>
                   {formData.attachmentName && (
                     <div className="flex items-center gap-2 text-sm text-slate-600 bg-blue-50 px-3 py-1.5 rounded-lg border border-blue-100">
-                      <span className="truncate max-w-[200px]">{formData.attachmentName}</span>
-                      <button 
-                        type="button" 
-                        onClick={() => setFormData({ ...formData, attachmentData: '', attachmentName: '' })}
+                      <span className="truncate max-w-[200px]">
+                        {formData.attachmentName}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setFormData({
+                            ...formData,
+                            attachmentData: '',
+                            attachmentName: '',
+                          })
+                        }
                         className="text-red-500 hover:text-red-700"
                       >
                         <Trash2 className="w-4 h-4" />

@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Leave } from '@/lib/types';
+import { Leave } from '@/lib/api/types';
 
 const API_URL = '/api/leaves';
 
