@@ -112,9 +112,18 @@ export default function AddEmployeePage() {
       return;
     }
 
-    // ชื่อ/นามสกุล: ห้ามกรอกตัวเลข
+    // ชื่อ/นามสกุล: เฉพาะภาษาไทยและเว้นวรรค
     if (name === 'firstName' || name === 'lastName') {
-      if (/\d/.test(value)) return;
+      const thaiOnly = /^[ก-๙\s]*$/;
+      if (!thaiOnly.test(value)) return;
+      setFormData((prev) => ({ ...prev, [name]: value }));
+      return;
+    }
+
+    // ชื่อภาษาอังกฤษ/นามสกุลภาษาอังกฤษ: เฉพาะภาษาอังกฤษและเว้นวรรค
+    if (name === 'firstNameEN' || name === 'lastNameEN') {
+      const englishOnly = /^[A-Za-z\s]*$/;
+      if (!englishOnly.test(value)) return;
       setFormData((prev) => ({ ...prev, [name]: value }));
       return;
     }
@@ -656,7 +665,7 @@ export default function AddEmployeePage() {
                 <input
                   type="tel"
                   name="phone"
-                  placeholder="0981234567"
+                  placeholder="0xxxxxxxx"
                   value={formData.phone}
                   onChange={handleChange}
                   maxLength={10}

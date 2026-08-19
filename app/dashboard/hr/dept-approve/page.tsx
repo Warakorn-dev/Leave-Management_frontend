@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { Calendar as CalendarIcon, X, User, Check, Clock, AlertCircle } from "lucide-react";
 import Swal from "sweetalert2";
+import { ActionButton } from "@/components/ui/action-button";
 
 const getToken = () =>
   typeof window !== "undefined" ? sessionStorage.getItem("accessToken") : "";
@@ -301,24 +302,9 @@ export default function HRDeptApprovePage() {
                       </td>
                       <td className="py-6 px-6 text-right whitespace-nowrap">
                         <div className="flex items-center justify-end gap-2 pr-2">
-                          <button
-                            onClick={() => setSelectedRequest(req)}
-                            className="bg-[#FFA000] hover:bg-[#F57C00] text-black text-[11px] font-bold py-1.5 px-3 rounded shadow-sm transition-colors"
-                          >
-                            รายละเอียด
-                          </button>
-                          <button
-                            onClick={() => handleApproveClick(req)}
-                            className="bg-[#00C853] hover:bg-[#00B04A] text-white text-[11px] font-bold py-1.5 px-3 rounded shadow-sm transition-colors"
-                          >
-                            อนุมัติ
-                          </button>
-                          <button
-                            onClick={() => handleRejectClick(req)}
-                            className="bg-[#FF0000] hover:bg-[#E50000] text-white text-[11px] font-bold py-1.5 px-3 rounded shadow-sm transition-colors"
-                          >
-                            ปฏิเสธ
-                          </button>
+                          <ActionButton action="view" size="sm" onClick={() => setSelectedRequest(req)}>รายละเอียด</ActionButton>
+                          <ActionButton action="approve" size="sm" icon={Check} onClick={() => handleApproveClick(req)}>อนุมัติ</ActionButton>
+                          <ActionButton action="reject" size="sm" icon={X} onClick={() => handleRejectClick(req)}>ปฏิเสธ</ActionButton>
                         </div>
                       </td>
                     </tr>
@@ -440,18 +426,8 @@ export default function HRDeptApprovePage() {
                 ยื่นเมื่อ: {selectedRequest.createdAt ? new Date(selectedRequest.createdAt).toLocaleDateString("th-TH", { day: "numeric", month: "short", year: "numeric" }) : "-"}
               </span>
               <div className="flex items-center gap-3">
-                <button
-                  onClick={() => handleApproveClick(selectedRequest, approverReason)}
-                  className="bg-[#00E676] hover:bg-[#00C853] text-white text-[13px] font-bold py-2 px-6 rounded-lg shadow-sm transition-colors"
-                >
-                  อนุมัติ
-                </button>
-                <button
-                  onClick={() => handleRejectClick(selectedRequest, approverReason)}
-                  className="bg-[#FF0000] hover:bg-[#E50000] text-white text-[13px] font-bold py-2 px-6 rounded-lg shadow-sm transition-colors"
-                >
-                  ปฏิเสธ
-                </button>
+                <ActionButton action="approve" icon={Check} onClick={() => handleApproveClick(selectedRequest, approverReason)}>อนุมัติ</ActionButton>
+                <ActionButton action="reject" icon={X} onClick={() => handleRejectClick(selectedRequest, approverReason)}>ปฏิเสธ</ActionButton>
               </div>
             </div>
           </div>

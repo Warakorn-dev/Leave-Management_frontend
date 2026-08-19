@@ -22,6 +22,7 @@ import { Dialog, DialogContent } from '@/components/ui/dialog';
 import Link from 'next/link';
 import { DatePicker } from '@/components/DateAndTime';
 import { hrApi } from '@/lib/api';
+import { ActionButton, IconButton } from '@/components/ui/action-button';
 
 export default function EmployeeManagementPage() {
   const { user } = useAuth();
@@ -311,6 +312,12 @@ export default function EmployeeManagementPage() {
       gender?: string;
       phone?: string;
       roleName?: string;
+      firstNameEN?: string;
+      lastNameEN?: string;
+      idCardNumber?: string;
+      dateOfBirth?: string;
+      idCardAddress?: string;
+      currentAddress?: string;
     } = {
       employeeCode: editingEmployee.employeeId,
       username: editingEmployee.username,
@@ -323,6 +330,12 @@ export default function EmployeeManagementPage() {
       roleName: editingEmployee.roleName,
       hireDate: editingEmployee.joinDate,
       gender: editingEmployee.gender,
+      firstNameEN: editingEmployee.firstNameEN,
+      lastNameEN: editingEmployee.lastNameEN,
+      idCardNumber: editingEmployee.idCardNumber,
+      dateOfBirth: editingEmployee.dateOfBirth,
+      idCardAddress: editingEmployee.idCardAddress,
+      currentAddress: editingEmployee.currentAddress,
     };
 
     console.log('Sending empData:', empData);
@@ -341,13 +354,17 @@ export default function EmployeeManagementPage() {
           setIsEditModalOpen(false);
           refetch();
         },
-        onError: (err) => {
-          console.error('Update failed:', err);
-          Swal.fire(
-            'ข้อผิดพลาด',
-            err?.message || 'ไม่สามารถอัปเดตข้อมูลได้',
-            'error',
-          );
+        onError: (err: any) => {
+          let errorMsg = 'ไม่สามารถอัปเดตข้อมูลได้';
+          if (err?.isAxiosError && err.response) {
+            console.error('Status:', err.response.status);
+            console.error('Data:', err.response.data);
+            errorMsg = err.response.data?.message || err.response.statusText || errorMsg;
+          } else {
+            console.error('Update failed:', err);
+            errorMsg = err?.message || errorMsg;
+          }
+          Swal.fire('ข้อผิดพลาด', errorMsg, 'error');
         },
       },
     );
@@ -531,48 +548,10 @@ export default function EmployeeManagementPage() {
 
                     <td className="py-4 px-6">
                       <div className="flex items-center justify-center gap-2">
-                        <button
-                          onClick={() => handleToggleStatus(emp)}
-                          title={
-                            emp.status === 'active'
-                              ? 'ระงับการใช้งาน'
-                              : 'เปิดการใช้งาน'
-                          }
-                          className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors ${
-                            emp.status === 'active'
-                              ? 'bg-slate-100 text-slate-500 hover:bg-orange-100 hover:text-orange-600'
-                              : 'bg-red-100 text-red-600 hover:bg-green-100 hover:text-green-600'
-                          }`}
-                        >
-                          <Power className="w-4 h-4" strokeWidth={2} />
-                        </button>
-                        <button
-                          onClick={() => handleEditClick(emp)}
-                          title="แก้ไข"
-                          className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 hover:bg-blue-100 hover:text-blue-600 transition-colors"
-                        >
-                          <SquarePen className="w-4 h-4" strokeWidth={2} />
-                        </button>
-                        <button
-                          onClick={() => handleOpenBalanceModal(emp)}
-                          title="ปรับปรุงยอดวันลา"
-                          className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 hover:bg-amber-100 hover:text-amber-600 transition-colors"
-                        >
-                          <Wallet className="w-4 h-4" strokeWidth={2} />
-                        </button>
-                        <button
-                          onClick={() =>
-                            handleDelete(
-                              emp.id,
-                              `${emp.firstName} ${emp.lastName}`,
-                              emp.departmentName || '',
-                            )
-                          }
-                          title="ลบพนักงาน"
-                          className="p-1.5 bg-red-50 text-red-500 hover:bg-red-100 rounded-lg transition-colors cursor-pointer border border-red-100"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
+                        <IconButton action="view" icon={Power} label={emp.status === 'active' ? 'ระงับการใช้งาน' : 'เปิดการใช้งาน'} size="icon-sm" onClick={() => handleToggleStatus(emp)} />
+                        <IconButton action="edit" icon={SquarePen} label="แก้ไขพนักงาน" size="icon-sm" onClick={() => handleEditClick(emp)} />
+                        <IconButton action="view" icon={Wallet} label="ปรับปรุงยอดวันลา" size="icon-sm" onClick={() => handleOpenBalanceModal(emp)} />
+                        <IconButton action="delete" icon={Trash2} label="ลบพนักงาน" size="icon-sm" onClick={() => handleDelete(emp.id, `${emp.firstName} ${emp.lastName}`, emp.departmentName || '')} />
                       </div>
                     </td>
                   </tr>
@@ -949,18 +928,8 @@ export default function EmployeeManagementPage() {
 
             {/* Footer Buttons */}
             <div className="flex justify-end items-center gap-4 mt-16 pb-2">
-              <button
-                onClick={() => setIsEditModalOpen(false)}
-                className="px-8 py-3.5 bg-[#f8fafc] border border-[#e2e8f0] hover:bg-[#f1f5f9] text-[#0f172a] rounded-xl font-medium text-[17px] transition-colors cursor-pointer"
-              >
-                ยกเลิก
-              </button>
-              <button
-                onClick={handleUpdateEmployee}
-                className="px-8 py-3.5 bg-[#2563eb] hover:bg-[#1d4ed8] text-white rounded-xl font-medium text-[17px] shadow-md shadow-blue-500/20 transition-all cursor-pointer"
-              >
-                บันทึกการแก้ไข
-              </button>
+              <ActionButton action="cancel" onClick={() => setIsEditModalOpen(false)}>ยกเลิก</ActionButton>
+              <ActionButton action="save" onClick={handleUpdateEmployee}>บันทึกการแก้ไข</ActionButton>
             </div>
           </div>
         </DialogContent>
@@ -1172,18 +1141,8 @@ export default function EmployeeManagementPage() {
             )}
 
             <div className="flex justify-end items-center gap-4 mt-8 pb-2">
-              <button
-                onClick={() => setIsBalanceModalOpen(false)}
-                className="px-8 py-3.5 bg-[#f8fafc] border border-[#e2e8f0] hover:bg-[#f1f5f9] text-[#0f172a] rounded-xl font-medium text-[17px] transition-colors cursor-pointer"
-              >
-                ยกเลิก
-              </button>
-              <button
-                onClick={handleSaveAllBalances}
-                className="px-8 py-3.5 bg-[#2563eb] hover:bg-[#1d4ed8] text-white rounded-xl font-medium text-[17px] shadow-md shadow-blue-500/20 transition-all cursor-pointer"
-              >
-                บันทึกการแก้ไข
-              </button>
+              <ActionButton action="cancel" onClick={() => setIsBalanceModalOpen(false)}>ยกเลิก</ActionButton>
+              <ActionButton action="save" onClick={handleSaveAllBalances}>บันทึกการแก้ไข</ActionButton>
             </div>
           </div>
         </DialogContent>

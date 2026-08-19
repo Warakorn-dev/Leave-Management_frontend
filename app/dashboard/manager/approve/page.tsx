@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { Calendar as CalendarIcon, X, User, Check, Clock, AlertCircle } from "lucide-react";
 import Swal from "sweetalert2";
+import { ActionButton } from "@/components/ui/action-button";
 
 const getToken = () =>
   typeof window !== "undefined" ? sessionStorage.getItem("accessToken") : "";
@@ -301,24 +302,9 @@ export default function ManagerApprovePage() {
                       </td>
                       <td className="py-6 px-6 text-right whitespace-nowrap">
                         <div className="flex items-center justify-end gap-2 pr-2">
-                          <button
-                            onClick={() => setSelectedRequest(req)}
-                            className="bg-[#FFA000] hover:bg-[#F57C00] text-black text-[11px] font-bold py-1.5 px-3 rounded shadow-sm transition-colors"
-                          >
-                            รายละเอียด
-                          </button>
-                          <button
-                            onClick={() => handleApproveClick(req)}
-                            className="bg-[#00C853] hover:bg-[#00B04A] text-white text-[11px] font-bold py-1.5 px-3 rounded shadow-sm transition-colors"
-                          >
-                            อนุมัติ
-                          </button>
-                          <button
-                            onClick={() => handleRejectClick(req)}
-                            className="bg-[#FF0000] hover:bg-[#E50000] text-white text-[11px] font-bold py-1.5 px-3 rounded shadow-sm transition-colors"
-                          >
-                            ปฏิเสธ
-                          </button>
+                          <ActionButton action="view" size="sm" onClick={() => setSelectedRequest(req)}>รายละเอียด</ActionButton>
+                          <ActionButton action="approve" size="sm" icon={Check} onClick={() => handleApproveClick(req)}>อนุมัติ</ActionButton>
+                          <ActionButton action="reject" size="sm" icon={X} onClick={() => handleRejectClick(req)}>ปฏิเสธ</ActionButton>
                         </div>
                       </td>
                     </tr>
@@ -338,8 +324,8 @@ export default function ManagerApprovePage() {
             {/* Modal Header */}
             <div className="flex items-center justify-between px-6 py-5">
               <h2 className="text-[20px] font-bold text-black">รายละเอียดคำขอลา</h2>
-              <button onClick={() => setSelectedRequest(null)} className="w-8 h-8 flex items-center justify-center text-white bg-red-500 rounded-full hover:bg-red-600 transition-colors">
-                <X className="w-5 h-5" strokeWidth={3} />
+              <button type="button" onClick={() => setSelectedRequest(null)} aria-label="ปิดรายละเอียดคำขอลา" className="w-9 h-9 flex items-center justify-center text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600">
+                <X className="w-5 h-5" strokeWidth={2.5} />
               </button>
             </div>
 
@@ -440,18 +426,8 @@ export default function ManagerApprovePage() {
                 ยื่นเมื่อ: {selectedRequest.createdAt ? new Date(selectedRequest.createdAt).toLocaleDateString("th-TH", { day: "numeric", month: "short", year: "numeric" }) : "-"}
               </span>
               <div className="flex items-center gap-3">
-                <button
-                  onClick={() => handleApproveClick(selectedRequest, approverReason)}
-                  className="bg-[#00E676] hover:bg-[#00C853] text-white text-[13px] font-bold py-2 px-6 rounded-lg shadow-sm transition-colors"
-                >
-                  อนุมัติ
-                </button>
-                <button
-                  onClick={() => handleRejectClick(selectedRequest, approverReason)}
-                  className="bg-[#FF0000] hover:bg-[#E50000] text-white text-[13px] font-bold py-2 px-6 rounded-lg shadow-sm transition-colors"
-                >
-                  ปฏิเสธ
-                </button>
+                <ActionButton action="approve" icon={Check} onClick={() => handleApproveClick(selectedRequest, approverReason)}>อนุมัติ</ActionButton>
+                <ActionButton action="reject" icon={X} onClick={() => handleRejectClick(selectedRequest, approverReason)}>ปฏิเสธ</ActionButton>
               </div>
             </div>
           </div>
@@ -464,7 +440,7 @@ export default function ManagerApprovePage() {
           <div className="bg-white rounded-[24px] w-full max-w-4xl shadow-2xl flex flex-col max-h-[90vh] overflow-hidden border-2 border-blue-500" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 bg-[#FAFAFA]">
               <h2 className="text-[16px] font-bold text-black">ไฟล์เอกสารแนบ</h2>
-              <button onClick={() => setPreviewAttachment(null)} className="w-8 h-8 flex items-center justify-center text-white bg-red-500 rounded-full hover:bg-red-600 transition-colors">
+              <button type="button" onClick={() => setPreviewAttachment(null)} aria-label="ปิดตัวอย่างเอกสาร" className="w-9 h-9 flex items-center justify-center text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600">
                 <X className="w-5 h-5" strokeWidth={3} />
               </button>
             </div>

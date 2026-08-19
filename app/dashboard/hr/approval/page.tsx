@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useLeave } from "@/hooks/useLeave";
 import { useAuth } from "@/context/AuthContext";
 import { Calendar as CalendarIcon, X, User, Check, Clock, Eye } from "lucide-react";
+import { ActionButton } from "@/components/ui/action-button";
 
 export default function HrApprovePage() {
   const [requests, setRequests] = useState<any[]>([]);
@@ -479,14 +480,8 @@ export default function HrApprovePage() {
                     className="flex-1 border border-gray-300 rounded-xl p-3 text-[14px] outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-black"
                   />
                   <div className="flex gap-2">
-                    <button onClick={onModalApprove} className="flex-1 sm:flex-none bg-[#00C853] hover:bg-[#00B04A] text-white px-5 py-3 rounded-xl font-bold text-[14px] shadow-sm transition-colors flex items-center justify-center gap-1.5">
-                      <Check className="w-[18px] h-[18px]" strokeWidth={3} />
-                      ผ่านการตรวจสอบ
-                    </button>
-                    <button onClick={onModalReject} className="flex-1 sm:flex-none bg-[#FF0000] hover:bg-[#E50000] text-white px-5 py-3 rounded-xl font-bold text-[14px] shadow-sm transition-colors flex items-center justify-center gap-1.5">
-                      <X className="w-[18px] h-[18px]" strokeWidth={3} />
-                      ปฏิเสธคำขอ
-                    </button>
+                    <ActionButton action="approve" icon={Check} className="flex-1 sm:flex-none" onClick={onModalApprove}>ผ่านการตรวจสอบ</ActionButton>
+                    <ActionButton action="reject" icon={X} className="flex-1 sm:flex-none" onClick={onModalReject}>ปฏิเสธคำขอ</ActionButton>
                   </div>
                 </div>
               </div>
@@ -510,12 +505,8 @@ export default function HrApprovePage() {
               <p className="text-gray-700 text-sm font-medium mb-1">คุณต้องการให้คำขอลานี้ผ่านการตรวจสอบเบื้องต้น ใช่หรือไม่?</p>
               <p className="text-[13px] text-gray-500 mb-6">รหัสคำขอ: {requests.find(r => r.id === confirmData.id)?.requestCode}</p>
               <div className="flex justify-end gap-3">
-                <button onClick={() => { setShowConfirmModal(false); setConfirmData(null); }} className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-sm font-bold transition-colors">
-                  ยกเลิก
-                </button>
-                <button onClick={executeApprove} className="px-4 py-2 bg-[#00C853] hover:bg-[#00B04A] text-white rounded-lg text-sm font-bold transition-colors">
-                  ยืนยันการทำรายการ
-                </button>
+                <ActionButton action="cancel" onClick={() => { setShowConfirmModal(false); setConfirmData(null); }}>ยกเลิก</ActionButton>
+                <ActionButton action="approve" icon={Check} onClick={executeApprove}>ยืนยันการทำรายการ</ActionButton>
               </div>
             </div>
           </div>
@@ -547,12 +538,8 @@ export default function HrApprovePage() {
                 />
               </div>
               <div className="flex justify-end gap-3">
-                <button onClick={() => { setShowRejectModal(false); setRejectData(null); setRejectReasonInput(""); }} className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-sm font-bold transition-colors">
-                  ยกเลิก
-                </button>
-                <button onClick={executeReject} className="px-4 py-2 bg-[#FF0000] hover:bg-[#E50000] text-white rounded-lg text-sm font-bold transition-colors">
-                  ยืนยันปฏิเสธ
-                </button>
+                <ActionButton action="cancel" onClick={() => { setShowRejectModal(false); setRejectData(null); setRejectReasonInput(""); }}>ยกเลิก</ActionButton>
+                <ActionButton action="reject" icon={X} onClick={executeReject}>ยืนยันปฏิเสธ</ActionButton>
               </div>
             </div>
           </div>

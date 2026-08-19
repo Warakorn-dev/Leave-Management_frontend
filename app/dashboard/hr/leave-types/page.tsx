@@ -27,6 +27,7 @@ import {
   FileText,
 } from 'lucide-react';
 import { LeaveType } from '@/lib/api/types';
+import { ActionButton, IconButton } from '@/components/ui/action-button';
 
 const leaveTypeSchema = z.object({
   name: z
@@ -349,20 +350,8 @@ export default function HRLeaveTypes() {
                       </div>
                     </td>
                     <td className="py-4 px-6 text-right space-x-2">
-                      <button
-                        onClick={() => handleEditOpen(lt)}
-                        className="inline-flex p-2 rounded-lg bg-slate-50 border border-slate-200 hover:bg-indigo-50 hover:border-indigo-200 text-slate-500 hover:text-indigo-600 cursor-pointer transition-all shadow-sm"
-                        title="แก้ไข"
-                      >
-                        <Edit2 className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={() => handleDelete(lt)}
-                        className="inline-flex p-2 rounded-lg bg-slate-50 border border-slate-200 hover:bg-rose-50 hover:border-rose-200 text-slate-500 hover:text-rose-600 cursor-pointer transition-all shadow-sm"
-                        title="ลบ"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
+                      <IconButton action="edit" icon={Edit2} label="แก้ไขประเภทการลา" size="icon-sm" onClick={() => handleEditOpen(lt)} />
+                      <IconButton action="delete" icon={Trash2} label="ลบประเภทการลา" size="icon-sm" onClick={() => handleDelete(lt)} />
                     </td>
                   </tr>
                 ))}
@@ -522,19 +511,8 @@ export default function HRLeaveTypes() {
             </div>
 
             <DialogFooter>
-              <button
-                type="button"
-                onClick={() => setDialogOpen(false)}
-                className="px-4 py-2 text-sm font-semibold rounded-xl border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-850 text-slate-655 dark:text-slate-350 cursor-pointer"
-              >
-                ยกเลิก (Cancel)
-              </button>
-              <button
-                type="submit"
-                className="px-4 py-2 text-sm font-semibold rounded-xl text-white bg-indigo-600 hover:bg-indigo-500 cursor-pointer"
-              >
-                บันทึกข้อมูล (Save)
-              </button>
+              <ActionButton action="cancel" onClick={() => setDialogOpen(false)}>ยกเลิก</ActionButton>
+              <ActionButton action="save" type="submit">บันทึกข้อมูล</ActionButton>
             </DialogFooter>
           </form>
         </DialogContent>

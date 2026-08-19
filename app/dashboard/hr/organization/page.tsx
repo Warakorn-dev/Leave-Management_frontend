@@ -39,6 +39,7 @@ import {
 import { useEmployeesQuery } from '@/hooks/useEmployee';
 import { useRolesQuery } from '@/hooks/useRoles';
 import { Department, Position, Employee } from '@/lib/api/types';
+import { ActionButton, IconButton } from '@/components/ui/action-button';
 
 // Helper functions for dynamic icons and colors based on name
 const getDepartmentStyle = (name: string) => {
@@ -886,12 +887,7 @@ export default function OrganizationManagementPage() {
                   </p>
                 </div>
               </div>
-              <button
-                onClick={() => setIsAddDeptModalOpen(false)}
-                className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:hover:bg-slate-800 dark:hover:text-slate-300 rounded-full transition-colors"
-              >
-                <X className="w-6 h-6" />
-              </button>
+              <IconButton action="view" icon={X} label="ปิดหน้าต่างเพิ่มแผนก" onClick={() => setIsAddDeptModalOpen(false)} />
             </div>
 
             <div className="p-6 space-y-4">
@@ -928,19 +924,8 @@ export default function OrganizationManagementPage() {
             </div>
 
             <div className="p-6 border-t border-slate-100 dark:border-slate-800 flex justify-end gap-3 bg-slate-50/50 dark:bg-slate-800/30 rounded-b-3xl">
-              <button
-                onClick={() => setIsAddDeptModalOpen(false)}
-                className="px-5 py-2.5 text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-colors"
-              >
-                ยกเลิก
-              </button>
-              <button
-                onClick={handleCreateDepartment}
-                disabled={!newDept.name}
-                className="px-5 py-2.5 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-400 rounded-xl shadow-sm shadow-indigo-500/30 transition-all"
-              >
-                บันทึกแผนกใหม่
-              </button>
+              <ActionButton action="cancel" onClick={() => setIsAddDeptModalOpen(false)}>ยกเลิก</ActionButton>
+              <ActionButton action="save" onClick={handleCreateDepartment} disabled={!newDept.name}>บันทึกแผนกใหม่</ActionButton>
             </div>
           </div>
         </div>
@@ -969,12 +954,7 @@ export default function OrganizationManagementPage() {
                   </p>
                 </div>
               </div>
-              <button
-                onClick={() => setIsAddPosModalOpen(false)}
-                className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:hover:bg-slate-800 dark:hover:text-slate-300 rounded-full transition-colors"
-              >
-                <X className="w-6 h-6" />
-              </button>
+              <IconButton action="view" icon={X} label="ปิดหน้าต่างเพิ่มตำแหน่ง" onClick={() => setIsAddPosModalOpen(false)} />
             </div>
 
             <div className="p-6 space-y-4">
@@ -1065,19 +1045,8 @@ export default function OrganizationManagementPage() {
             </div>
 
             <div className="p-6 border-t border-slate-100 dark:border-slate-800 flex justify-end gap-3 bg-slate-50/50 dark:bg-slate-800/30 rounded-b-3xl">
-              <button
-                onClick={() => setIsAddPosModalOpen(false)}
-                className="px-5 py-2.5 text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-colors"
-              >
-                ยกเลิก
-              </button>
-              <button
-                onClick={handleCreatePosition}
-                disabled={!newPos.name || !newPos.departmentId}
-                className="px-5 py-2.5 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-400 rounded-xl shadow-sm shadow-indigo-500/30 transition-all"
-              >
-                บันทึกตำแหน่งใหม่
-              </button>
+              <ActionButton action="cancel" onClick={() => setIsAddPosModalOpen(false)}>ยกเลิก</ActionButton>
+              <ActionButton action="save" onClick={handleCreatePosition} disabled={!newPos.name || !newPos.departmentId}>บันทึกตำแหน่งใหม่</ActionButton>
             </div>
           </div>
         </div>
@@ -1141,19 +1110,8 @@ export default function OrganizationManagementPage() {
             </div>
 
             <div className="p-6 border-t border-slate-100 dark:border-slate-800 flex justify-end gap-3 bg-slate-50/50 dark:bg-slate-800/30 rounded-b-3xl">
-              <button
-                onClick={() => setIsEditDeptModalOpen(false)}
-                className="px-5 py-2.5 text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-colors"
-              >
-                ยกเลิก
-              </button>
-              <button
-                onClick={handleUpdateDepartment}
-                disabled={!editDept.name}
-                className="px-5 py-2.5 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-400 rounded-xl shadow-sm shadow-indigo-500/30 transition-all"
-              >
-                บันทึกการแก้ไข
-              </button>
+              <ActionButton action="cancel" onClick={() => setIsEditDeptModalOpen(false)}>ยกเลิก</ActionButton>
+              <ActionButton action="save" onClick={handleUpdateDepartment} disabled={!editDept.name}>บันทึกการแก้ไข</ActionButton>
             </div>
           </div>
         </div>
@@ -1268,19 +1226,8 @@ export default function OrganizationManagementPage() {
             </div>
 
             <div className="p-6 border-t border-slate-100 dark:border-slate-800 flex justify-end gap-3 bg-slate-50/50 dark:bg-slate-800/30 rounded-b-3xl">
-              <button
-                onClick={() => setIsEditPosModalOpen(false)}
-                className="px-5 py-2.5 text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-colors"
-              >
-                ยกเลิก
-              </button>
-              <button
-                onClick={handleUpdatePosition}
-                disabled={!editPos.name || !editPos.departmentId}
-                className="px-5 py-2.5 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-400 rounded-xl shadow-sm shadow-indigo-500/30 transition-all"
-              >
-                บันทึกการแก้ไข
-              </button>
+              <ActionButton action="cancel" onClick={() => setIsEditPosModalOpen(false)}>ยกเลิก</ActionButton>
+              <ActionButton action="save" onClick={handleUpdatePosition} disabled={!editPos.name || !editPos.departmentId}>บันทึกการแก้ไข</ActionButton>
             </div>
           </div>
         </div>
@@ -1312,18 +1259,8 @@ export default function OrganizationManagementPage() {
               </p>
             </div>
             <div className="p-4 border-t border-slate-100 dark:border-slate-800 flex gap-3 bg-slate-50/50 dark:bg-slate-800/30 rounded-b-3xl">
-              <button
-                onClick={() => setIsDeleteConfirmModalOpen(false)}
-                className="flex-1 px-4 py-2.5 text-sm font-medium text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 rounded-xl transition-colors"
-              >
-                ยกเลิก
-              </button>
-              <button
-                onClick={handleDelete}
-                className="flex-1 px-4 py-2.5 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-xl shadow-sm shadow-red-500/30 transition-all"
-              >
-                ยืนยันการลบ
-              </button>
+              <ActionButton action="cancel" className="flex-1" onClick={() => setIsDeleteConfirmModalOpen(false)}>ยกเลิก</ActionButton>
+              <ActionButton action="delete" className="flex-1" icon={Trash2} onClick={handleDelete}>ยืนยันการลบ</ActionButton>
             </div>
           </div>
         </div>
