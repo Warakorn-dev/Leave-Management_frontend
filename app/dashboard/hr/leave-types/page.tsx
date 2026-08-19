@@ -335,17 +335,17 @@ export default function HRLeaveTypes() {
                     <td className="py-4 px-6 hidden sm:table-cell">
                       <div className="flex flex-col gap-1.5">
                         {lt.requiresCertificate && (
-                          <Badge className="bg-amber-100 text-amber-700 hover:bg-amber-200 border-amber-200 w-max text-[10px]">
+                          <Badge className="bg-amber-100 dark:bg-amber-950/50 text-amber-700 dark:text-amber-300 hover:bg-amber-200 dark:hover:bg-amber-900/50 border-amber-200 dark:border-amber-800 w-max text-[10px]">
                             บังคับแนบใบรับรองแพทย์
                           </Badge>
                         )}
                         {lt.isSpecial && (
-                          <Badge className="bg-rose-100 text-rose-700 hover:bg-rose-200 border-rose-200 w-max text-[10px]">
+                          <Badge className="bg-rose-100 dark:bg-rose-950/50 text-rose-700 dark:text-rose-300 hover:bg-rose-200 dark:hover:bg-rose-900/50 border-rose-200 dark:border-rose-800 w-max text-[10px]">
                             ส่งตรงให้ CEO อนุมัติ
                           </Badge>
                         )}
                         {!lt.requiresCertificate && !lt.isSpecial && (
-                          <span className="text-xs text-slate-400">-</span>
+                          <span className="text-xs text-slate-400 dark:text-slate-500">-</span>
                         )}
                       </div>
                     </td>

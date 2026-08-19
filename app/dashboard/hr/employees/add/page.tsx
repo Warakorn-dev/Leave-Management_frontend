@@ -284,14 +284,14 @@ export default function AddEmployeePage() {
             <ArrowLeft className="w-6 h-6 sm:w-8 sm:h-8" strokeWidth={2} />
           </Link>
           <div>
-            <h1 className="text-2xl sm:text-[32px] font-bold text-slate-700 leading-tight flex items-center gap-2 sm:gap-3">
+            <h1 className="text-2xl sm:text-[32px] font-bold text-slate-700 dark:text-white leading-tight flex items-center gap-2 sm:gap-3">
               <UserPlus
                 className="w-6 h-6 sm:w-8 sm:h-8 text-blue-500"
                 strokeWidth={2}
               />
               เพิ่มพนักงานใหม่
             </h1>
-            <p className="text-slate-400 text-sm mt-1">
+            <p className="text-slate-400 dark:text-slate-400 text-sm mt-1">
               ลงทะเบียนข้อมูลพนักงานและสร้างบัญชีผู้ใช้งานระบบ
             </p>
           </div>
@@ -299,10 +299,10 @@ export default function AddEmployeePage() {
       </div>
 
       {/* Main Content Area */}
-      <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden p-5 sm:p-8 md:p-10">
+      <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800 overflow-hidden p-5 sm:p-8 md:p-10">
         <form onSubmit={handleSubmit}>
-          <div className="mb-6 md:mb-8 border-b border-slate-100 pb-3 md:pb-4">
-            <h2 className="text-base md:text-lg font-semibold text-slate-700">
+          <div className="mb-6 md:mb-8 border-b border-slate-100 dark:border-slate-800 pb-3 md:pb-4">
+            <h2 className="text-base md:text-lg font-semibold text-slate-700 dark:text-slate-200">
               ข้อมูลผู้ใช้งาน (Account Information)
             </h2>
           </div>
@@ -407,8 +407,8 @@ export default function AddEmployeePage() {
             </div>
           </div>
 
-          <div className="mb-6 md:mb-8 border-b border-slate-100 pb-3 md:pb-4">
-            <h2 className="text-base md:text-lg font-semibold text-slate-700">
+          <div className="mb-6 md:mb-8 border-b border-slate-100 dark:border-slate-800 pb-3 md:pb-4">
+            <h2 className="text-base md:text-lg font-semibold text-slate-700 dark:text-slate-200">
               ข้อมูลส่วนตัว (Personal Information)
             </h2>
           </div>
@@ -430,7 +430,7 @@ export default function AddEmployeePage() {
                   <option value="Female">หญิง (Female)</option>
                 </select>
                 <ChevronDown
-                  className="absolute right-5 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-700 pointer-events-none"
+                  className="absolute right-5 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-700 dark:text-slate-300 pointer-events-none"
                   strokeWidth={2.5}
                 />
               </div>
@@ -456,7 +456,7 @@ export default function AddEmployeePage() {
                   <option value="นางสาว ">นางสาว</option>
                 </select>
                 <ChevronDown
-                  className="absolute right-5 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-700 pointer-events-none"
+                  className="absolute right-5 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-700 dark:text-slate-300 pointer-events-none"
                   strokeWidth={2.5}
                 />
               </div>
@@ -714,10 +714,10 @@ export default function AddEmployeePage() {
             </div>
           </div>
 
-          <div className="flex flex-col sm:flex-row justify-end items-stretch sm:items-center gap-3 mt-10 md:mt-12 pt-5 md:pt-6 border-t border-slate-100">
+          <div className="flex flex-col sm:flex-row justify-end items-stretch sm:items-center gap-3 mt-10 md:mt-12 pt-5 md:pt-6 border-t border-slate-100 dark:border-slate-800">
             <Link
               href="/dashboard/hr/employees"
-              className="px-6 sm:px-8 py-3 sm:py-3.5 bg-[#f8fafc] border border-[#e2e8f0] hover:bg-[#f1f5f9] text-[#0f172a] rounded-xl font-medium text-base md:text-[17px] transition-colors cursor-pointer text-center"
+              className="px-6 sm:px-8 py-3 sm:py-3.5 bg-[#f8fafc] dark:bg-slate-800 border border-[#e2e8f0] dark:border-slate-700 hover:bg-[#f1f5f9] dark:hover:bg-slate-700 text-[#0f172a] dark:text-slate-100 rounded-xl font-medium text-base md:text-[17px] transition-colors cursor-pointer text-center"
             >
               ยกเลิก
             </Link>

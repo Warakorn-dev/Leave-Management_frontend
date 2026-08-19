@@ -144,6 +144,7 @@ export function CEOSidebar({ onNavigate }: { onNavigate?: () => void }) {
         </button>
       </div>
 
+<<<<<<< HEAD
       {/* User Profile */}
       <div className={`px-5 py-4 ${isCollapsed ? 'hidden' : 'block'}`}>
         <div className="bg-white/5 rounded-xl p-3 flex items-center gap-3 border border-white/10">
@@ -174,8 +175,10 @@ export function CEOSidebar({ onNavigate }: { onNavigate?: () => void }) {
         </div>
       </div>
 
+=======
+>>>>>>> 4c8dfa6dffaf6d7f9ff20a979aad43a0c07f99c0
       {/* Navigation */}
-      <nav className="flex-1 px-4 space-y-3 overflow-y-auto mt-2">
+      <nav className="flex-1 px-4 space-y-3 overflow-y-auto mt-4 pb-6">
         {menuItems.map((item) => {
           const isExactActive =
             pathname === item.href || pathname?.startsWith(item.href + '/');
@@ -208,6 +211,7 @@ export function CEOSidebar({ onNavigate }: { onNavigate?: () => void }) {
           );
         })}
       </nav>
+<<<<<<< HEAD
 
       {/* Logout */}
       <div className="p-5 mt-auto">
@@ -220,6 +224,8 @@ export function CEOSidebar({ onNavigate }: { onNavigate?: () => void }) {
           {!isCollapsed && <span>ออกจากระบบ</span>}
         </button>
       </div>
+=======
+>>>>>>> 4c8dfa6dffaf6d7f9ff20a979aad43a0c07f99c0
     </aside>
   );
 }
