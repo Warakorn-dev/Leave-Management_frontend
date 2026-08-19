@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useLeave } from "@/hooks/useLeave";
 import { useAuth } from "@/context/AuthContext";
 import { Calendar as CalendarIcon, X, User, Check, Clock, Eye } from "lucide-react";
-import { ActionButton } from "@/components/ui/action-button";
+import { ActionButton, IconButton } from "@/components/ui/action-button";
 import { isSameYearMonth } from "@/lib/api/utils";
 
 export default function HrApprovePage() {
@@ -251,14 +251,14 @@ export default function HrApprovePage() {
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse min-w-[900px]">
             <thead>
-              <tr className="bg-white border-b border-gray-100 text-gray-500 text-[13px]">
-                <th className="py-4 px-6 font-bold whitespace-nowrap">รหัสคำขอ</th>
+              <tr className="bg-[#F2F2F2] text-gray-500 text-[13px]">
+                <th className="py-4 px-6 font-bold whitespace-nowrap rounded-l-md">รหัสคำขอ</th>
                 <th className="py-4 px-6 font-bold whitespace-nowrap">ชื่อ-นามสกุล</th>
                 <th className="py-4 px-6 font-bold whitespace-nowrap">แผนก</th>
                 <th className="py-4 px-6 font-bold whitespace-nowrap">ประเภทการลา</th>
                 <th className="py-4 px-6 font-bold whitespace-nowrap">วันที่ลา</th>
                 <th className="py-4 px-6 font-bold whitespace-nowrap text-center">สถานะ</th>
-                <th className="py-4 px-6 font-bold whitespace-nowrap text-center">จัดการ</th>
+                <th className="py-4 px-6 font-bold whitespace-nowrap text-center rounded-r-md">จัดการ</th>
               </tr>
             </thead>
             <tbody>
@@ -317,29 +317,31 @@ export default function HrApprovePage() {
                         {isLockedByOther ? (
                           <span className="text-[13px] text-gray-400 font-medium">Locked</span>
                         ) : isLockedByMe ? (
-                          <button
+                          <ActionButton
+                            action="save"
+                            size="sm"
+                            icon={Check}
                             onClick={() => handleViewDetails(req)}
-                            className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-md text-[12px] font-bold bg-blue-600 text-white hover:bg-blue-700 transition-colors shadow-sm"
                           >
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M2 12h4l3-9 5 18 3-9h5"/></svg>
                             ตรวจสอบเอกสาร
-                          </button>
+                          </ActionButton>
                         ) : (
                           <div className="flex items-center justify-center gap-2">
-                            <button
+                            <ActionButton
+                              action="edit"
+                              size="sm"
+                              icon={Check}
                               onClick={() => handlePullRequest(req)}
-                              className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-md text-[12px] font-bold bg-blue-50 text-blue-600 hover:bg-blue-100 transition-colors"
                             >
-                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
                               ดึงมาตรวจสอบ
-                            </button>
-                            <button
+                            </ActionButton>
+                            <IconButton
+                              action="view"
+                              size="icon-sm"
+                              icon={Eye}
+                              label="ดูรายละเอียด"
                               onClick={() => handleViewDetails(req)}
-                              className="inline-flex items-center justify-center p-1.5 rounded-md border border-blue-200 text-blue-600 bg-white hover:bg-blue-50 transition-colors shadow-sm"
-                              title="ดูรายละเอียด"
-                            >
-                              <Eye className="w-[14px] h-[14px]" strokeWidth={2.5} />
-                            </button>
+                            />
                           </div>
                         )}
                       </td>
@@ -361,12 +363,12 @@ export default function HrApprovePage() {
             {/* Header */}
             <div className="flex items-center justify-between px-6 py-5">
               <h2 className="text-[20px] font-bold text-black">รายละเอียดคำขอลา (Leave Request Details)</h2>
-              <button
+              <IconButton
+                action="cancel"
+                icon={X}
+                label="ปิด"
                 onClick={() => setSelectedRequest(null)}
-                className="w-8 h-8 flex items-center justify-center text-white bg-red-500 rounded-full hover:bg-red-600 transition-colors shadow-sm"
-              >
-                <X className="w-5 h-5" strokeWidth={3} />
-              </button>
+              />
             </div>
 
             {/* Body */}
@@ -498,9 +500,7 @@ export default function HrApprovePage() {
           <div className="bg-white rounded-2xl w-full max-w-[400px] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
             <div className="bg-[#00C853] px-6 py-4 flex items-center justify-between">
               <h3 className="text-white font-bold text-lg">ยืนยันการตรวจสอบ</h3>
-              <button onClick={() => { setShowConfirmModal(false); setConfirmData(null); }} className="text-white/80 hover:text-white">
-                <X className="w-5 h-5" strokeWidth={3} />
-              </button>
+              <IconButton action="cancel" icon={X} label="ปิด" onClick={() => { setShowConfirmModal(false); setConfirmData(null); }} className="border-none bg-transparent hover:bg-white/20 text-white" />
             </div>
             <div className="p-6">
               <p className="text-gray-700 text-sm font-medium mb-1">คุณต้องการให้คำขอลานี้ผ่านการตรวจสอบเบื้องต้น ใช่หรือไม่?</p>
@@ -520,9 +520,7 @@ export default function HrApprovePage() {
           <div className="bg-white rounded-2xl w-full max-w-[400px] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
             <div className="bg-[#FF0000] px-6 py-4 flex items-center justify-between">
               <h3 className="text-white font-bold text-lg">ยืนยันการปฏิเสธคำขอ</h3>
-              <button onClick={() => { setShowRejectModal(false); setRejectData(null); setRejectReasonInput(""); }} className="text-white/80 hover:text-white">
-                <X className="w-5 h-5" strokeWidth={3} />
-              </button>
+              <IconButton action="cancel" icon={X} label="ปิด" onClick={() => { setShowRejectModal(false); setRejectData(null); setRejectReasonInput(""); }} className="border-none bg-transparent hover:bg-white/20 text-white" />
             </div>
             <div className="p-6">
               <p className="text-gray-700 text-sm font-medium mb-1">คุณต้องการปฏิเสธคำขอลานี้ ใช่หรือไม่?</p>
@@ -553,12 +551,12 @@ export default function HrApprovePage() {
           <div className="bg-white rounded-[24px] w-full max-w-4xl shadow-2xl flex flex-col max-h-[90vh] animate-in zoom-in-95 duration-200 border-2 border-blue-500 overflow-hidden relative" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 bg-[#FAFAFA]">
               <h2 className="text-[16px] font-bold text-black">ไฟล์เอกสารแนบ (Attachment)</h2>
-              <button
+              <IconButton
+                action="cancel"
+                icon={X}
+                label="ปิด"
                 onClick={() => setPreviewAttachment(null)}
-                className="w-8 h-8 flex items-center justify-center text-white bg-red-500 rounded-full hover:bg-red-600 transition-colors shadow-sm"
-              >
-                <X className="w-5 h-5" strokeWidth={3} />
-              </button>
+              />
             </div>
             <div className="p-6 overflow-y-auto flex-1 flex items-center justify-center bg-gray-50/50">
               {previewAttachment.isImage ? (

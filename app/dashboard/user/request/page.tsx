@@ -4,7 +4,9 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useLeaveBalance } from "@/hooks/useLeaveBalance";
 import { useLeave } from "@/hooks/useLeave";
-import { Mail, Bell, Settings, Upload, Check, X } from "lucide-react";
+import { Mail, Bell, Settings, Upload, Check, X, Calendar as CalendarIcon, Clock, FileText, ImageIcon } from "lucide-react";
+import { ActionButton } from "@/components/ui/action-button";
+import { Button } from "@/components/ui/button";
 import { DatePicker } from "@/components/DateAndTime";
 import { LeaveTimePicker } from "@/components/LeaveTimePicker";
 import { userApi, uploadApi } from "@/lib/api";
@@ -444,29 +446,31 @@ export default function RequestLeavePage() {
               </div>
               {attachmentFile && (
                 <div className="mt-2 text-right">
-                  <button 
+                  <Button 
+                    variant="link"
                     type="button" 
                     onClick={() => {
                       setAttachmentFile(null);
                       setAttachmentName(null);
                     }}
-                    className="text-xs text-red-500 hover:text-red-700 underline"
+                    className="text-xs text-red-500 hover:text-red-700 h-auto p-0"
                   >
                     ลบไฟล์แนบ
-                  </button>
+                  </Button>
                 </div>
               )}
             </div>
 
             {/* Submit Button */}
             <div className="flex justify-end">
-              <button 
+              <ActionButton 
+                action="save"
                 type="button"
                 onClick={handleSubmit}
-                className="bg-[#0000FF] hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-lg transition-all text-sm shadow-md hover:shadow-lg active:scale-95"
+                className="py-6 px-8 text-base shadow-md hover:shadow-lg active:scale-95"
               >
                 ส่งคำขอลา
-              </button>
+              </ActionButton>
             </div>
           </form>
         </div>
@@ -485,19 +489,21 @@ export default function RequestLeavePage() {
               สามารถเช็คสถานะได้จากหน้าเช็คสถานะของคุณ
             </p>
             <div className="flex items-center justify-center gap-4">
-              <button 
+              <ActionButton 
+                action="cancel"
                 onClick={() => setShowConfirmModal(false)}
-                className="bg-[#FF0000] hover:bg-red-600 text-white font-bold py-2.5 px-8 rounded-lg transition-colors text-sm shadow-sm"
+                className="py-5 px-8"
               >
                 ยกเลิก
-              </button>
-              <button 
+              </ActionButton>
+              <ActionButton 
+                action="approve"
                 onClick={confirmSubmit}
-                disabled={isSubmitting}
-                className={`${isSubmitting ? 'bg-gray-400 cursor-not-allowed' : 'bg-[#00B050] hover:bg-[#009040]'} text-white font-bold py-2.5 px-8 rounded-lg transition-colors text-sm shadow-sm flex items-center justify-center gap-2`}
+                loading={isSubmitting}
+                className="py-5 px-8"
               >
                 {isSubmitting ? 'กำลังประมวลผล...' : 'ยืนยัน'}
-              </button>
+              </ActionButton>
             </div>
           </div>
         </div>
@@ -515,12 +521,13 @@ export default function RequestLeavePage() {
               {errorMsg}
             </p>
             <div className="flex items-center justify-center">
-              <button 
+              <Button 
+                variant="secondary"
                 onClick={() => setShowErrorModal(false)}
-                className="bg-gray-800 hover:bg-gray-900 text-white font-bold py-3 px-12 rounded-lg transition-all text-sm shadow-md hover:shadow-lg active:scale-95"
+                className="py-6 px-12 text-sm shadow-md hover:shadow-lg active:scale-95"
               >
                 ตกลง
-              </button>
+              </Button>
             </div>
           </div>
         </div>

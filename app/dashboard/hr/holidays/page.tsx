@@ -271,25 +271,8 @@ export default function HolidayManagementPage() {
                       </td>
                       <td className="py-4 px-6">
                         <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-<<<<<<< HEAD
                           <IconButton action="edit" icon={Edit} label="แก้ไขวันหยุด" size="icon-sm" onClick={() => handleOpenEditModal(h)} />
                           <IconButton action="delete" icon={Trash2} label="ลบวันหยุด" size="icon-sm" onClick={() => handleDelete(h.id, h.name)} />
-=======
-                          <button
-                            onClick={() => handleOpenEditModal(h)}
-                            className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg transition-colors cursor-pointer"
-                            title="แก้ไข"
-                          >
-                            <Edit className="w-4 h-4" />
-                          </button>
-                          <button
-                            onClick={() => handleDelete(h.id, h.name)}
-                            className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-900/30 rounded-lg transition-colors cursor-pointer"
-                            title="ลบ"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
->>>>>>> 4c8dfa6dffaf6d7f9ff20a979aad43a0c07f99c0
                         </div>
                       </td>
                     </tr>
@@ -345,24 +328,8 @@ export default function HolidayManagementPage() {
             </div>
 
             <div className="flex items-center justify-end gap-3 mt-8">
-<<<<<<< HEAD
               <ActionButton action="cancel" onClick={() => setIsCreateModalOpen(false)}>ยกเลิก</ActionButton>
               <ActionButton action="save" type="submit">บันทึก</ActionButton>
-=======
-              <button
-                type="button"
-                onClick={() => setIsCreateModalOpen(false)}
-                className="px-6 py-2.5 text-sm font-bold text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-xl transition-colors cursor-pointer"
-              >
-                ยกเลิก
-              </button>
-              <button
-                type="submit"
-                className="px-6 py-2.5 text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-xl transition-colors shadow-sm cursor-pointer"
-              >
-                บันทึก
-              </button>
->>>>>>> 4c8dfa6dffaf6d7f9ff20a979aad43a0c07f99c0
             </div>
           </form>
         </DialogContent>
@@ -409,24 +376,8 @@ export default function HolidayManagementPage() {
             </div>
 
             <div className="flex items-center justify-end gap-3 mt-8">
-<<<<<<< HEAD
               <ActionButton action="cancel" onClick={() => setIsEditModalOpen(false)}>ยกเลิก</ActionButton>
               <ActionButton action="save" type="submit">บันทึกการแก้ไข</ActionButton>
-=======
-              <button
-                type="button"
-                onClick={() => setIsEditModalOpen(false)}
-                className="px-6 py-2.5 text-sm font-bold text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-xl transition-colors cursor-pointer"
-              >
-                ยกเลิก
-              </button>
-              <button
-                type="submit"
-                className="px-6 py-2.5 text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-xl transition-colors shadow-sm cursor-pointer"
-              >
-                บันทึกการแก้ไข
-              </button>
->>>>>>> 4c8dfa6dffaf6d7f9ff20a979aad43a0c07f99c0
             </div>
           </form>
         </DialogContent>

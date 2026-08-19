@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useLeave } from "@/hooks/useLeave";
 import { Calendar as CalendarIcon, X, User, Check, Clock, AlertTriangle } from "lucide-react";
+import { ActionButton, IconButton } from "@/components/ui/action-button";
 import { isSameYearMonth } from "@/lib/api/utils";
 
 export default function HrCancelApprovalPage() {
@@ -276,24 +277,27 @@ export default function HrCancelApprovalPage() {
                     </td>
                     <td className="py-6 px-6 text-right whitespace-nowrap">
                       <div className="flex items-center justify-end gap-2 pr-6">
-                        <button
+                        <ActionButton
+                          action="view"
+                          size="sm"
                           onClick={() => setSelectedRequest(req)}
-                          className="bg-[#FFA000] hover:bg-[#F57C00] text-black text-[11px] font-bold py-1.5 w-[105px] text-center rounded shadow-sm transition-colors"
                         >
                           รายละเอียด
-                        </button>
-                        <button
+                        </ActionButton>
+                        <ActionButton
+                          action="delete"
+                          size="sm"
                           onClick={() => handleApproveClick(req.id)}
-                          className="bg-rose-600 hover:bg-rose-700 text-white text-[11px] font-bold py-1.5 w-[105px] text-center rounded shadow-sm transition-colors"
                         >
                           อนุมัติการยกเลิก
-                        </button>
-                        <button
+                        </ActionButton>
+                        <ActionButton
+                          action="cancel"
+                          size="sm"
                           onClick={() => handleRejectClick(req.id)}
-                          className="bg-gray-500 hover:bg-gray-600 text-white text-[11px] font-bold py-1.5 w-[105px] text-center rounded shadow-sm transition-colors"
                         >
                           ปฏิเสธ (คงสภาพ)
-                        </button>
+                        </ActionButton>
                       </div>
                     </td>
                   </tr>
@@ -315,12 +319,13 @@ export default function HrCancelApprovalPage() {
                 <h2 className="text-[18px] font-bold text-gray-900">รายละเอียดคำขอยกเลิกการลา</h2>
                 <p className="text-sm text-rose-600 font-medium mt-0.5">กรุณาตรวจสอบข้อมูลก่อนพิจารณา</p>
               </div>
-              <button
+              <IconButton
+                action="cancel"
+                icon={X}
+                label="ปิด"
                 onClick={() => setSelectedRequest(null)}
-                className="w-8 h-8 flex items-center justify-center text-white bg-red-500 rounded-full hover:bg-red-600 transition-colors shadow-sm"
-              >
-                <X className="w-5 h-5" strokeWidth={3} />
-              </button>
+                className="border-none bg-transparent hover:bg-rose-100 text-rose-500 hover:text-rose-600"
+              />
             </div>
 
             {/* Body */}
@@ -456,9 +461,7 @@ export default function HrCancelApprovalPage() {
                 <AlertTriangle className="w-5 h-5" />
                 ยืนยันการอนุมัติการยกเลิก
               </h3>
-              <button onClick={() => { setShowApproveModal(false); setConfirmData(null); }} className="text-white/80 hover:text-white">
-                <X className="w-5 h-5" strokeWidth={3} />
-              </button>
+              <IconButton action="cancel" icon={X} label="ปิด" onClick={() => { setShowApproveModal(false); setConfirmData(null); }} className="border-none bg-transparent hover:bg-white/20 text-white" />
             </div>
             <div className="p-6">
               <div className="bg-rose-50 border border-rose-200 rounded-xl p-4 mb-5">
@@ -494,9 +497,7 @@ export default function HrCancelApprovalPage() {
           <div className="bg-white rounded-2xl w-full max-w-[420px] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
             <div className="bg-gray-600 px-6 py-4 flex items-center justify-between">
               <h3 className="text-white font-bold text-lg">ปฏิเสธคำขอยกเลิก (คงสภาพ)</h3>
-              <button onClick={() => { setShowRejectModal(false); setConfirmData(null); setRejectReasonInput(""); }} className="text-white/80 hover:text-white">
-                <X className="w-5 h-5" strokeWidth={3} />
-              </button>
+              <IconButton action="cancel" icon={X} label="ปิด" onClick={() => { setShowRejectModal(false); setConfirmData(null); setRejectReasonInput(""); }} className="border-none bg-transparent hover:bg-white/20 text-white" />
             </div>
             <div className="p-6">
               <p className="text-gray-700 text-sm font-medium mb-1">คุณต้องการปฏิเสธคำขอยกเลิกนี้ ใช่หรือไม่?</p>
@@ -545,12 +546,12 @@ export default function HrCancelApprovalPage() {
           >
             <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 bg-[#FAFAFA]">
               <h2 className="text-[16px] font-bold text-black">ไฟล์เอกสารแนบ</h2>
-              <button
+              <IconButton
+                action="cancel"
+                icon={X}
+                label="ปิด"
                 onClick={() => setPreviewAttachment(null)}
-                className="w-8 h-8 flex items-center justify-center text-white bg-red-500 rounded-full hover:bg-red-600 transition-colors shadow-sm"
-              >
-                <X className="w-5 h-5" strokeWidth={3} />
-              </button>
+              />
             </div>
             <div className="p-6 overflow-y-auto flex-1 flex items-center justify-center bg-gray-50/50">
               {previewAttachment.isImage ? (

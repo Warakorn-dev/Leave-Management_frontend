@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { Calendar as CalendarIcon, X, User, Check, Clock, AlertCircle } from "lucide-react";
 import Swal from "sweetalert2";
-import { ActionButton } from "@/components/ui/action-button";
+import { ActionButton, IconButton } from "@/components/ui/action-button";
 import { isSameYearMonth } from "@/lib/api/utils";
 
 const getToken = () =>
@@ -325,9 +325,7 @@ export default function HRDeptApprovePage() {
             {/* Modal Header */}
             <div className="flex items-center justify-between px-6 py-5">
               <h2 className="text-[20px] font-bold text-black">รายละเอียดคำขอลา</h2>
-              <button onClick={() => setSelectedRequest(null)} className="w-8 h-8 flex items-center justify-center text-white bg-red-500 rounded-full hover:bg-red-600 transition-colors">
-                <X className="w-5 h-5" strokeWidth={3} />
-              </button>
+              <IconButton action="cancel" icon={X} label="ปิด" onClick={() => setSelectedRequest(null)} />
             </div>
 
             {/* Modal Body */}
@@ -441,9 +439,7 @@ export default function HRDeptApprovePage() {
           <div className="bg-white rounded-[24px] w-full max-w-4xl shadow-2xl flex flex-col max-h-[90vh] overflow-hidden border-2 border-blue-500" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 bg-[#FAFAFA]">
               <h2 className="text-[16px] font-bold text-black">ไฟล์เอกสารแนบ</h2>
-              <button onClick={() => setPreviewAttachment(null)} className="w-8 h-8 flex items-center justify-center text-white bg-red-500 rounded-full hover:bg-red-600 transition-colors">
-                <X className="w-5 h-5" strokeWidth={3} />
-              </button>
+              <IconButton action="cancel" icon={X} label="ปิด" onClick={() => setPreviewAttachment(null)} />
             </div>
             <div className="p-6 overflow-y-auto flex-1 flex items-center justify-center bg-gray-50/50">
               {previewAttachment.isImage ? (

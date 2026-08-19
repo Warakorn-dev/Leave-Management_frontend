@@ -280,7 +280,7 @@ export default function EditEmployeePage() {
   if (!employeeId) {
     return (
       <div className="max-w-[1000px] mx-auto min-h-screen pb-12 px-3 sm:px-5 md:px-8 pt-4 md:pt-6">
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-10 text-center">
+        <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800 p-10 text-center">
           <p className="text-slate-500 text-lg">ไม่พบ ID พนักงาน กรุณาเลือกพนักงานจากรายการ</p>
           <Link
             href="/dashboard/hr/employees"
@@ -296,7 +296,7 @@ export default function EditEmployeePage() {
   if (isLoadingEmployees || !isDataLoaded) {
     return (
       <div className="max-w-[1000px] mx-auto min-h-screen pb-12 px-3 sm:px-5 md:px-8 pt-4 md:pt-6">
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-10 text-center">
+        <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800 p-10 text-center">
           <p className="text-slate-400 text-lg animate-pulse">กำลังโหลดข้อมูลพนักงาน...</p>
         </div>
       </div>
@@ -330,7 +330,7 @@ export default function EditEmployeePage() {
       </div>
 
       {/* Main Content Area */}
-      <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden p-5 sm:p-8 md:p-10">
+      <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800 overflow-hidden p-5 sm:p-8 md:p-10">
         <form onSubmit={handleSubmit}>
           <div className="mb-6 md:mb-8 border-b border-slate-100 pb-3 md:pb-4">
             <h2 className="text-base md:text-lg font-semibold text-slate-700">
