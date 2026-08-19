@@ -328,44 +328,62 @@ export default function CEOReport() {
 
   // --- HANDLERS ---
   const handleExportCSV = () => {
-    if (leaves.length === 0) {
+    if (filteredLeaves.length === 0) {
       Swal.fire({
         icon: 'warning',
         title: 'ไม่มีข้อมูล',
-        text: 'ไม่พบข้อมูลสำหรับ Export',
+        text: 'ไม่พบข้อมูลสำหรับ Export ตามตัวกรองที่เลือก',
       });
       return;
     }
 
     // CSV Header
     let csvContent =
-      'รหัสพนักงาน,ชื่อ-นามสกุล,แผนก,เหตุผลการลา,วันที่การลา,จำนวนวัน,สถานะ\n';
+      'รหัสการลา,รหัสพนักงาน,ชื่อ,นามสกุล,แผนก,ประเภทการลา,วันที่การลา,เหตุผลการลา,จำนวนวัน,สถานะ\n';
 
-    leaves.forEach((l) => {
+    const escapeCSV = (value: unknown) => {
+      const text = String(value ?? '');
+      return `"${text.replace(/"/g, '""')}"`;
+    };
+
+    filteredLeaves.forEach((l) => {
       const employee = employees.find(
         (e) =>
           e.id === l.employeeId ||
           e.employeeId === l.employeeId ||
           e.username === l.userId ||
-          e.firstName + ' ' + e.lastName === l.userId,
+          e.firstName === l.userId ||
+          e.lastName === l.userId,
       );
+      
+      const requestCode = l.requestCode || '-';
       const empId =
         employee?.employeeId || l.employee?.employeeCode || l.employeeId || '-';
-      const empName = employee
-        ? `${employee.firstName} ${employee.lastName}`
-        : l.employeeName || l.userId || 'ไม่ระบุชื่อ';
+
+      let firstName = '-';
+      let lastName = '-';
+      if (employee?.firstName) {
+        firstName = employee.firstName;
+        lastName = employee.lastName || '-';
+      } else {
+        const nameParts = String(
+          employee?.employeeName ||
+          l.employeeName ||
+          l.userId ||
+          ''
+        ).trim().split(/\s+/);
+        firstName = nameParts[0] || 'ไม่ระบุชื่อ';
+        lastName = nameParts.length > 1 ? nameParts.slice(1).join(' ') : '-';
+      }
+
       const deptName =
         employee?.departmentName || l.departmentName || l.department || '-';
+      
+      const leaveType = l.leaveTypeName || l.type || '-';
       const dates = formatDateRange(l.startDate, l.endDate, l);
-      // Escape commas for CSV
-      const reason = `"${(l.reason || '').replace(/"/g, '""')}"`;
-      const shortTypeName = (l.leaveTypeName || l.type || '').split(' ')[0];
-      const statusText =
-        (l.status || '').toLowerCase() === 'approved'
-          ? 'อนุมัติ'
-          : (l.status || '').toLowerCase() === 'pending'
-            ? 'รออนุมัติ'
-            : 'ปฏิเสธ';
+      const reason = l.reason || '-';
+      const statusText = getLeaveStatusText(l.status);
+
       const durationText = (() => {
         const days = Number(l.totalDays || l.durationDays || 0);
         const mode = l.startFormat || l.leaveMode;
@@ -400,7 +418,20 @@ export default function CEOReport() {
         return `${finalDays} วัน`;
       })();
 
-      csvContent += `${empId},${empName},${deptName},${shortTypeName},${dates},${durationText},${statusText}\n`;
+      const row = [
+        requestCode,
+        empId,
+        firstName,
+        lastName,
+        deptName,
+        leaveType,
+        dates,
+        reason,
+        durationText,
+        statusText,
+      ].map(escapeCSV).join(',');
+
+      csvContent += row + '\n';
     });
 
     // Create a Blob and Download
@@ -421,8 +452,8 @@ export default function CEOReport() {
     Swal.fire({
       icon: 'success',
       title: 'ดาวน์โหลดสำเร็จ',
-      text: 'ไฟล์ CSV ถูกดาวน์โหลดไปยังเครื่องของคุณเรียบร้อยแล้ว',
-      timer: 1500,
+      text: `Export ข้อมูล ${filteredLeaves.length} รายการเรียบร้อยแล้ว`,
+      timer: 2000,
       showConfirmButton: false,
     });
   };
