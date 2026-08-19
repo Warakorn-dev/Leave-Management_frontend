@@ -205,22 +205,22 @@ export default function HrApprovePage() {
         <div className="mb-8 relative inline-block">
           <button
             onClick={() => setIsPickerOpen(!isPickerOpen)}
-            className="border border-gray-300 text-gray-700 text-sm font-bold py-2 px-5 rounded-full shadow-sm flex items-center gap-3 hover:bg-gray-50 transition-all active:scale-95"
+            className="border border-gray-300 dark:border-slate-700 text-gray-700 dark:text-slate-200 text-sm font-bold py-2 px-5 rounded-full shadow-sm flex items-center gap-3 bg-white dark:bg-slate-800 hover:bg-gray-50 dark:hover:bg-slate-700/80 transition-all active:scale-95"
           >
             {formatMonthYear(selectedMonthRaw)}
-            <CalendarIcon className="w-4 h-4 text-gray-700" strokeWidth={2.5} />
+            <CalendarIcon className="w-4 h-4 text-gray-700 dark:text-slate-200" strokeWidth={2.5} />
           </button>
 
           {isPickerOpen && (
             <>
               <div className="fixed inset-0 z-40" onClick={() => setIsPickerOpen(false)}></div>
-              <div className="absolute top-full left-0 mt-3 bg-white rounded-2xl shadow-2xl border border-gray-100 p-5 w-[340px] z-50 animate-in fade-in zoom-in-95 duration-200">
+              <div className="absolute top-full left-0 mt-3 bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-gray-100 dark:border-slate-700 p-5 w-[340px] z-50 animate-in fade-in zoom-in-95 duration-200">
                 <div className="flex items-center justify-between mb-5 px-1">
-                  <button onClick={() => setTempYear(y => y - 1)} className="p-2 hover:bg-gray-100 rounded-full transition-colors text-gray-500 hover:text-black">
+                  <button onClick={() => setTempYear(y => y - 1)} className="p-2 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-full transition-colors text-gray-500 dark:text-slate-400 hover:text-black dark:hover:text-white">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6" /></svg>
                   </button>
-                  <span className="font-bold text-lg text-black tracking-wide">{tempYear + 543}</span>
-                  <button onClick={() => setTempYear(y => y + 1)} className="p-2 hover:bg-gray-100 rounded-full transition-colors text-gray-500 hover:text-black">
+                  <span className="font-bold text-lg text-black dark:text-white tracking-wide">{tempYear + 543}</span>
+                  <button onClick={() => setTempYear(y => y + 1)} className="p-2 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-full transition-colors text-gray-500 dark:text-slate-400 hover:text-black dark:hover:text-white">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m9 18 6-6-6-6" /></svg>
                   </button>
                 </div>
@@ -233,7 +233,7 @@ export default function HrApprovePage() {
                         onClick={() => handleMonthSelect(i)}
                         className={`py-2.5 rounded-xl text-[14px] font-bold transition-all ${isSelected
                           ? 'bg-blue-600 text-white shadow-md shadow-blue-600/20'
-                          : 'text-gray-600 hover:bg-blue-50 hover:text-blue-700'
+                          : 'text-gray-600 dark:text-slate-300 hover:bg-blue-50 dark:hover:bg-blue-900/40 hover:text-blue-700 dark:hover:text-blue-300'
                           }`}
                       >
                         {m}

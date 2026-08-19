@@ -1,8 +1,8 @@
 // @ts-nocheck
-'use client';
+"use client";
 
-import React from 'react';
-import { Box, Typography } from '@mui/material';
+import React, { useState, useEffect, useMemo } from 'react';
+import { Box, Typography, createTheme, ThemeProvider } from '@mui/material';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { DatePicker as MuiDatePicker } from '@mui/x-date-pickers/DatePicker';
@@ -37,25 +37,36 @@ class AdapterDayjsBuddhist extends AdapterDayjs {
   }
 }
 
-// Common styles to enforce EPP's premium purple design
+// Common styles with Sarabun font
 const pickerStyles = {
+  fontFamily: 'var(--font-sarabun), Sarabun, system-ui, sans-serif',
   '& .MuiOutlinedInput-root': {
+    fontFamily: 'var(--font-sarabun), Sarabun, system-ui, sans-serif',
     borderRadius: 2,
     bgcolor: 'background.paper',
     height: 38,
     transition: 'all 0.2s',
     '&:hover': {
-      borderColor: '#6b38fb',
+      borderColor: '#2563eb',
     },
     '&.Mui-focused': {
-      borderColor: '#6b38fb',
-      boxShadow: '0 0 0 2px rgba(107, 56, 251, 0.2)',
+      borderColor: '#2563eb',
+      boxShadow: '0 0 0 2px rgba(37, 99, 235, 0.2)',
     },
+  },
+  '& .MuiInputBase-input': {
+    fontFamily: 'var(--font-sarabun), Sarabun, system-ui, sans-serif',
+    fontSize: '0.875rem',
   },
 };
 
 const layoutStyles = (theme) => ({
+  fontFamily: 'var(--font-sarabun), Sarabun, system-ui, sans-serif',
+  '& *': {
+    fontFamily: 'var(--font-sarabun), Sarabun, system-ui, sans-serif !important',
+  },
   '& .MuiPickersLayout-root': {
+    fontFamily: 'var(--font-sarabun), Sarabun, system-ui, sans-serif',
     borderRadius: 3,
     overflow: 'hidden',
     boxShadow: theme.palette.mode === 'dark' ? '0 8px 32px rgba(0,0,0,0.5)' : '0 8px 32px rgba(0,0,0,0.08)',
@@ -63,7 +74,7 @@ const layoutStyles = (theme) => ({
     backgroundColor: theme.palette.background.paper,
   },
   '& .MuiPickersToolbar-root': {
-    backgroundColor: '#6b38fb',
+    backgroundColor: '#2563eb',
     color: '#ffffff',
     '& *': {
       color: '#ffffff !important',
@@ -77,7 +88,7 @@ const layoutStyles = (theme) => ({
     color: theme.palette.text.primary,
   },
   '& .MuiPickersArrowSwitcher-button': {
-    color: '#6b38fb',
+    color: '#2563eb',
   },
   '& .MuiDayCalendar-weekHeader .MuiTypography-root': {
     fontWeight: 'bold',
@@ -88,24 +99,24 @@ const layoutStyles = (theme) => ({
     borderRadius: '50%',
     color: theme.palette.text.primary,
     '&:hover': {
-      backgroundColor: theme.palette.mode === 'dark' ? '#3b3b3b' : '#f3e5f5',
+      backgroundColor: theme.palette.mode === 'dark' ? '#3b3b3b' : '#eff6ff',
     },
     '&.Mui-selected': {
-      backgroundColor: '#6b38fb !important',
+      backgroundColor: '#2563eb !important',
       color: '#ffffff !important',
       '&:hover': {
-        backgroundColor: '#5521e6 !important',
+        backgroundColor: '#1d4ed8 !important',
       },
     },
     '&.MuiPickersDay-today': {
-      borderColor: '#6b38fb',
+      borderColor: '#2563eb',
       '&:not(.Mui-selected)': {
-        color: '#6b38fb',
+        color: '#2563eb',
       },
     },
   },
   '& .MuiDialogActions-root .MuiButton-root': {
-    color: '#6b38fb',
+    color: '#2563eb',
     fontWeight: 'bold',
     borderRadius: 2,
     px: 2,
@@ -207,6 +218,41 @@ export default function DatePicker({
   // Convert minDate/maxDate if they are Date objects
   const parsedMinDate = minDate ? dayjs(minDate) : undefined;
   const parsedMaxDate = maxDate ? dayjs(maxDate) : undefined;
+
+  const [isDark, setIsDark] = useState(false);
+
+  useEffect(() => {
+    const checkDark = () => {
+      setIsDark(document.documentElement.classList.contains('dark'));
+    };
+    checkDark();
+    const observer = new MutationObserver(checkDark);
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+    return () => observer.disconnect();
+  }, []);
+
+  const muiTheme = useMemo(() => {
+    return createTheme({
+      palette: {
+        mode: isDark ? 'dark' : 'light',
+        primary: {
+          main: '#2563eb',
+        },
+        background: {
+          paper: isDark ? '#111827' : '#ffffff',
+          default: isDark ? '#0b1120' : '#ffffff',
+        },
+        text: {
+          primary: isDark ? '#f8fafc' : '#1e293b',
+          secondary: isDark ? '#cbd5e1' : '#64748b',
+        },
+        divider: isDark ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0, 0, 0, 0.12)',
+      },
+      typography: {
+        fontFamily: 'var(--font-sarabun), "Sarabun", system-ui, -apple-system, sans-serif',
+      },
+    });
+  }, [isDark]);
 
   const { data: holidaysData = [] } = useHolidaysQuery();
 
@@ -328,19 +374,21 @@ export default function DatePicker({
   };
 
   return (
-    <LocalizationProvider dateAdapter={AdapterDayjsBuddhist} adapterLocale="th">
-      <Box sx={{ width: '100%' }}>
-        {label && (
-          <Typography
-            variant="body2"
-            fontWeight="bold"
-            sx={{ mb: 0.5, color: 'text.primary' }}
-          >
-            {label}
-          </Typography>
-        )}
-        {renderPicker()}
-      </Box>
-    </LocalizationProvider>
+    <ThemeProvider theme={muiTheme}>
+      <LocalizationProvider dateAdapter={AdapterDayjsBuddhist} adapterLocale="th">
+        <Box sx={{ width: '100%' }}>
+          {label && (
+            <Typography
+              variant="body2"
+              fontWeight="bold"
+              sx={{ mb: 0.5, color: 'text.primary' }}
+            >
+              {label}
+            </Typography>
+          )}
+          {renderPicker()}
+        </Box>
+      </LocalizationProvider>
+    </ThemeProvider>
   );
 }

@@ -951,7 +951,7 @@ export default function EmployeeManagementPage() {
             <div className="flex justify-end items-center gap-4 mt-16 pb-2">
               <button
                 onClick={() => setIsEditModalOpen(false)}
-                className="px-8 py-3.5 bg-[#f8fafc] border border-[#e2e8f0] hover:bg-[#f1f5f9] text-[#0f172a] rounded-xl font-medium text-[17px] transition-colors cursor-pointer"
+                className="px-8 py-3.5 bg-[#f8fafc] dark:bg-slate-800 border border-[#e2e8f0] dark:border-slate-700 hover:bg-[#f1f5f9] dark:hover:bg-slate-700 text-[#0f172a] dark:text-slate-100 rounded-xl font-medium text-[17px] transition-colors cursor-pointer"
               >
                 ยกเลิก
               </button>
@@ -1174,7 +1174,7 @@ export default function EmployeeManagementPage() {
             <div className="flex justify-end items-center gap-4 mt-8 pb-2">
               <button
                 onClick={() => setIsBalanceModalOpen(false)}
-                className="px-8 py-3.5 bg-[#f8fafc] border border-[#e2e8f0] hover:bg-[#f1f5f9] text-[#0f172a] rounded-xl font-medium text-[17px] transition-colors cursor-pointer"
+                className="px-8 py-3.5 bg-[#f8fafc] dark:bg-slate-800 border border-[#e2e8f0] dark:border-slate-700 hover:bg-[#f1f5f9] dark:hover:bg-slate-700 text-[#0f172a] dark:text-slate-100 rounded-xl font-medium text-[17px] transition-colors cursor-pointer"
               >
                 ยกเลิก
               </button>

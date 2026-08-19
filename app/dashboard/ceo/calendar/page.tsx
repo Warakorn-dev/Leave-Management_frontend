@@ -262,11 +262,11 @@ export default function LeaveCalendarPage() {
 
       {/* Leave Details Modal */}
       {selectedDateLeaves && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-white rounded-xl w-full max-w-[500px] shadow-2xl flex flex-col max-h-[85vh] animate-in zoom-in-95 duration-200 overflow-hidden">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl w-full max-w-[500px] shadow-2xl flex flex-col max-h-[85vh] animate-in zoom-in-95 duration-200 overflow-hidden">
 
             {/* Modal Header */}
-            <div className="bg-[#1f1a4e] px-6 py-5 flex items-center justify-between">
+            <div className="bg-[#1f1a4e] dark:bg-slate-950 px-6 py-5 flex items-center justify-between border-b border-slate-800">
               <div className="flex items-center gap-3">
                 <div className="w-9 h-9 rounded-full flex items-center justify-center border border-[#ffaa00]/30 text-[#ffaa00]">
                   <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M22 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" /></svg>
@@ -278,14 +278,14 @@ export default function LeaveCalendarPage() {
               </div>
               <button
                 onClick={() => setSelectedDateLeaves(null)}
-                className="w-7 h-7 bg-[#ff4d4f] hover:bg-[#ff7875] text-white rounded-full flex items-center justify-center transition-colors shadow-sm"
+                className="w-7 h-7 bg-[#ff4d4f] hover:bg-[#ff7875] text-white rounded-full flex items-center justify-center transition-colors shadow-sm cursor-pointer"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18" /><path d="m6 6 12 12" /></svg>
               </button>
             </div>
 
             {/* Modal Body */}
-            <div className="p-6 overflow-y-auto flex-1 bg-[#f9fafb]">
+            <div className="p-6 overflow-y-auto flex-1 bg-[#f9fafb] dark:bg-[#0B1120]">
               <div className="space-y-4">
                 {selectedDateLeaves.map((leave, idx) => {
                   const empName = leave.employeeName || (leave.user?.firstName ? `${leave.user.firstName} ${leave.user.lastName || ''}`.trim() : null) || leave.userId || "ไม่ระบุชื่อ";
@@ -301,21 +301,21 @@ export default function LeaveCalendarPage() {
                   const dateDisplay = leave.startDate === leave.endDate ? startDateStr : `${startDateStr} - ${endDateStr}`;
 
                   // Determine badge colors based on leave type
-                  let badgeBg = "bg-blue-100";
-                  let badgeText = "text-blue-700";
+                  let badgeBg = "bg-blue-100 dark:bg-blue-900/40 border border-blue-200 dark:border-blue-800";
+                  let badgeText = "text-blue-700 dark:text-blue-300";
                   if (leaveType.includes("ป่วย")) {
-                    badgeBg = "bg-orange-100";
-                    badgeText = "text-orange-700";
+                    badgeBg = "bg-orange-100 dark:bg-orange-900/40 border border-orange-200 dark:border-orange-800";
+                    badgeText = "text-orange-700 dark:text-orange-300";
                   } else if (leaveType.includes("กิจ")) {
-                    badgeBg = "bg-cyan-100";
-                    badgeText = "text-cyan-700";
+                    badgeBg = "bg-cyan-100 dark:bg-cyan-900/40 border border-cyan-200 dark:border-cyan-800";
+                    badgeText = "text-cyan-700 dark:text-cyan-300";
                   }
 
                   return (
-                    <div key={idx} className="bg-white border border-gray-100 rounded-xl p-5 flex flex-col gap-4 shadow-[0_2px_10px_rgba(0,0,0,0.02)] transition-transform hover:-translate-y-0.5">
+                    <div key={idx} className="bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-xl p-5 flex flex-col gap-4 shadow-sm transition-transform hover:-translate-y-0.5">
                       {/* Top Row: User Info & Badge */}
                       <div className="flex items-center gap-4">
-                        <div className="w-[42px] h-[42px] rounded-full bg-indigo-50 flex items-center justify-center border border-indigo-100 shrink-0 overflow-hidden relative group">
+                        <div className="w-[42px] h-[42px] rounded-full bg-indigo-50 dark:bg-indigo-900/40 flex items-center justify-center border border-indigo-100 dark:border-indigo-800 shrink-0 overflow-hidden relative group">
                           {profilePic ? (
                             <img
                               src={profilePic.startsWith('http') || profilePic.startsWith('data:') ? profilePic : `/${profilePic.replace(/^\/+/, '')}`}
@@ -324,11 +324,11 @@ export default function LeaveCalendarPage() {
                               onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.nextElementSibling?.classList.remove('hidden'); }}
                             />
                           ) : null}
-                          <span className={`text-[18px] font-bold text-indigo-700 ${profilePic ? 'hidden' : ''}`}>{initial}</span>
+                          <span className={`text-[18px] font-bold text-indigo-700 dark:text-indigo-300 ${profilePic ? 'hidden' : ''}`}>{initial}</span>
                         </div>
                         <div className="flex-1 min-w-0">
-                          <h3 className="font-bold text-[15px] text-gray-900 truncate">{empName}</h3>
-                          <p className="text-[12px] text-gray-400 font-medium truncate">{deptName} • {positionName}</p>
+                          <h3 className="font-bold text-[15px] text-gray-900 dark:text-slate-100 truncate">{empName}</h3>
+                          <p className="text-[12px] text-gray-400 dark:text-slate-400 font-medium truncate">{deptName} • {positionName}</p>
                         </div>
                         <div className={`px-4 py-1.5 rounded-full text-[12px] font-bold whitespace-nowrap ${badgeBg} ${badgeText}`}>
                           {leaveType}
@@ -336,23 +336,23 @@ export default function LeaveCalendarPage() {
                       </div>
 
                       {/* Bottom Row: Additional Details */}
-                      <div className="bg-gray-50/80 rounded-lg p-3 space-y-2 text-[13px] border border-gray-100">
+                      <div className="bg-gray-50/80 dark:bg-slate-800/80 rounded-lg p-3 space-y-2 text-[13px] border border-gray-100 dark:border-slate-700/60">
                         <div className="flex justify-between items-start">
-                          <span className="text-gray-500 font-bold min-w-[70px]">วันที่ลา:</span>
-                          <span className="text-gray-800 text-right">{dateDisplay}</span>
+                          <span className="text-gray-500 dark:text-slate-400 font-bold min-w-[70px]">วันที่ลา:</span>
+                          <span className="text-gray-800 dark:text-slate-200 text-right">{dateDisplay}</span>
                         </div>
                         <div className="flex justify-between items-start">
-                          <span className="text-gray-500 font-bold min-w-[70px]">รูปแบบ:</span>
-                          <span className="text-gray-800 text-right">
+                          <span className="text-gray-500 dark:text-slate-400 font-bold min-w-[70px]">รูปแบบ:</span>
+                          <span className="text-gray-800 dark:text-slate-200 text-right">
                             {leave.startDate === leave.endDate
                               ? (leave.startFormat === 'morning' ? 'ครึ่งวันเช้า' : leave.startFormat === 'afternoon' ? 'ครึ่งวันบ่าย' : 'เต็มวัน')
                               : 'หลายวัน'}
-                            <span className="ml-1 text-blue-600 font-bold">({leave.totalDays || leave.durationDays || 0} วัน)</span>
+                            <span className="ml-1 text-blue-600 dark:text-blue-400 font-bold">({leave.totalDays || leave.durationDays || 0} วัน)</span>
                           </span>
                         </div>
                         <div className="flex justify-between items-start">
-                          <span className="text-gray-500 font-bold min-w-[70px]">เหตุผล:</span>
-                          <span className="text-gray-800 text-right line-clamp-2">{leave.reason || '-'}</span>
+                          <span className="text-gray-500 dark:text-slate-400 font-bold min-w-[70px]">เหตุผล:</span>
+                          <span className="text-gray-800 dark:text-slate-200 text-right line-clamp-2">{leave.reason || '-'}</span>
                         </div>
                       </div>
                     </div>

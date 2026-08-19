@@ -1,8 +1,8 @@
 // @ts-nocheck
 'use client';
 
-import React from 'react';
-import { Box, Typography } from '@mui/material';
+import React, { useState, useEffect, useMemo } from 'react';
+import { Box, Typography, createTheme, ThemeProvider } from '@mui/material';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { TimePicker as MuiTimePicker } from '@mui/x-date-pickers/TimePicker';
@@ -15,25 +15,36 @@ import customParseFormat from 'dayjs/plugin/customParseFormat';
 // Initialize dayjs plugins
 dayjs.extend(customParseFormat);
 
-// Styling matching EPP's signature purple theme
+// Styling matching brand blue theme with Sarabun font
 const pickerStyles = {
+  fontFamily: 'var(--font-sarabun), Sarabun, system-ui, sans-serif',
   '& .MuiOutlinedInput-root': {
+    fontFamily: 'var(--font-sarabun), Sarabun, system-ui, sans-serif',
     borderRadius: 2,
     bgcolor: 'background.paper',
     height: 38,
     transition: 'all 0.2s',
     '&:hover': {
-      borderColor: '#6b38fb',
+      borderColor: '#2563eb',
     },
     '&.Mui-focused': {
-      borderColor: '#6b38fb',
-      boxShadow: '0 0 0 2px rgba(107, 56, 251, 0.2)',
+      borderColor: '#2563eb',
+      boxShadow: '0 0 0 2px rgba(37, 99, 235, 0.2)',
     },
+  },
+  '& .MuiInputBase-input': {
+    fontFamily: 'var(--font-sarabun), Sarabun, system-ui, sans-serif',
+    fontSize: '0.875rem',
   },
 };
 
 const layoutStyles = (theme) => ({
+  fontFamily: 'var(--font-sarabun), Sarabun, system-ui, sans-serif',
+  '& *': {
+    fontFamily: 'var(--font-sarabun), Sarabun, system-ui, sans-serif !important',
+  },
   '& .MuiPickersLayout-root': {
+    fontFamily: 'var(--font-sarabun), Sarabun, system-ui, sans-serif',
     borderRadius: 3,
     overflow: 'hidden',
     boxShadow:
@@ -44,7 +55,7 @@ const layoutStyles = (theme) => ({
     backgroundColor: theme.palette.background.paper,
   },
   '& .MuiPickersToolbar-root': {
-    backgroundColor: '#6b38fb',
+    backgroundColor: '#2563eb',
     color: '#ffffff',
     '& *': {
       color: '#ffffff !important',
@@ -54,14 +65,14 @@ const layoutStyles = (theme) => ({
     backgroundColor: theme.palette.mode === 'dark' ? '#2d2d2d' : '#f5f5f5',
   },
   '& .MuiClock-pin': {
-    backgroundColor: '#6b38fb',
+    backgroundColor: '#2563eb',
   },
   '& .MuiClockPointer-root': {
-    backgroundColor: '#6b38fb',
+    backgroundColor: '#2563eb',
   },
   '& .MuiClockPointer-thumb': {
-    borderColor: '#6b38fb',
-    backgroundColor: '#6b38fb',
+    borderColor: '#2563eb',
+    backgroundColor: '#2563eb',
   },
   '& .MuiClockNumber-selectAnimate': {
     fontSize: '0.9rem',
@@ -190,20 +201,57 @@ export default function TimePicker({
     }
   };
 
+  const [isDark, setIsDark] = useState(false);
+
+  useEffect(() => {
+    const checkDark = () => {
+      setIsDark(document.documentElement.classList.contains('dark'));
+    };
+    checkDark();
+    const observer = new MutationObserver(checkDark);
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+    return () => observer.disconnect();
+  }, []);
+
+  const muiTheme = useMemo(() => {
+    return createTheme({
+      palette: {
+        mode: isDark ? 'dark' : 'light',
+        primary: {
+          main: '#2563eb',
+        },
+        background: {
+          paper: isDark ? '#111827' : '#ffffff',
+          default: isDark ? '#0b1120' : '#ffffff',
+        },
+        text: {
+          primary: isDark ? '#f8fafc' : '#1e293b',
+          secondary: isDark ? '#cbd5e1' : '#64748b',
+        },
+        divider: isDark ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0, 0, 0, 0.12)',
+      },
+      typography: {
+        fontFamily: 'var(--font-sarabun), "Sarabun", system-ui, -apple-system, sans-serif',
+      },
+    });
+  }, [isDark]);
+
   return (
-    <LocalizationProvider dateAdapter={AdapterDayjs} adapterLocale="th">
-      <Box sx={{ width: '100%' }}>
-        {label && (
-          <Typography
-            variant="body2"
-            fontWeight="bold"
-            sx={{ mb: 0.5, color: 'text.primary' }}
-          >
-            {label}
-          </Typography>
-        )}
-        {renderPicker()}
-      </Box>
-    </LocalizationProvider>
+    <ThemeProvider theme={muiTheme}>
+      <LocalizationProvider dateAdapter={AdapterDayjs} adapterLocale="th">
+        <Box sx={{ width: '100%' }}>
+          {label && (
+            <Typography
+              variant="body2"
+              fontWeight="bold"
+              sx={{ mb: 0.5, color: 'text.primary' }}
+            >
+              {label}
+            </Typography>
+          )}
+          {renderPicker()}
+        </Box>
+      </LocalizationProvider>
+    </ThemeProvider>
   );
 }
