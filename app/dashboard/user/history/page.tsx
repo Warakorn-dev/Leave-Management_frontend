@@ -18,6 +18,7 @@ import {
   Search,
 } from 'lucide-react';
 import { useLeave } from '@/hooks/useLeave';
+import { isSameYearMonth } from '@/lib/api/utils';
 import { useLeaveBalance } from '@/hooks/useLeaveBalance';
 import Swal from 'sweetalert2';
 import { DatePicker } from '@/components/DateAndTime';
@@ -129,7 +130,7 @@ export default function LeaveHistoryPage() {
       }
 
       if (filterType === 'monthly') {
-        return r.startDate.startsWith(selectedMonthRaw);
+        return isSameYearMonth(r.startDate, selectedMonthRaw);
       } else {
         if (!selectedDate) return true;
         const selectedStr = `${selectedDate.getFullYear()}-${String(selectedDate.getMonth() + 1).padStart(2, '0')}-${String(selectedDate.getDate()).padStart(2, '0')}`;

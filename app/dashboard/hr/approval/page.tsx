@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useLeave } from "@/hooks/useLeave";
 import { useAuth } from "@/context/AuthContext";
 import { Calendar as CalendarIcon, X, User, Check, Clock, Eye } from "lucide-react";
+import { isSameYearMonth } from "@/lib/api/utils";
 
 export default function HrApprovePage() {
   const [requests, setRequests] = useState<any[]>([]);
@@ -56,7 +57,7 @@ export default function HrApprovePage() {
   const { mutateAsync: markLeaveViewed } = useMarkLeaveViewedMutation();
 
   useEffect(() => {
-    const filtered = allLeaves.filter((r: any) => r.startDate.startsWith(selectedMonthRaw));
+    const filtered = allLeaves.filter((r: any) => isSameYearMonth(r.startDate, selectedMonthRaw));
     const sorted = [...filtered].sort((a: any, b: any) => new Date(b.createdAt || b.startDate).getTime() - new Date(a.createdAt || a.startDate).getTime());
 
     setRequests(sorted.map((r: any) => {

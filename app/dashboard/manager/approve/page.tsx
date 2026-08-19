@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { Calendar as CalendarIcon, X, User, Check, Clock, AlertCircle } from "lucide-react";
 import Swal from "sweetalert2";
+import { isSameYearMonth } from "@/lib/api/utils";
 
 const getToken = () =>
   typeof window !== "undefined" ? sessionStorage.getItem("accessToken") : "";
@@ -141,7 +142,7 @@ export default function ManagerApprovePage() {
   }, [selectedRequest]);
 
   // Filter by selected month
-  const requests = rawRequests.filter((r) => r.startDate?.startsWith(selectedMonthRaw));
+  const requests = rawRequests.filter((r) => isSameYearMonth(r.startDate, selectedMonthRaw));
 
   const handleMonthSelect = (monthIndex: number) => {
     setSelectedMonthRaw(`${tempYear}-${(monthIndex + 1).toString().padStart(2, "0")}`);
