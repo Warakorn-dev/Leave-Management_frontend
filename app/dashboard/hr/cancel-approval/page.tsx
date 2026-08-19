@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useLeave } from "@/hooks/useLeave";
 import { Calendar as CalendarIcon, X, User, Check, Clock, AlertTriangle } from "lucide-react";
+import { isSameYearMonth } from "@/lib/api/utils";
 
 export default function HrCancelApprovalPage() {
   const [requests, setRequests] = useState<any[]>([]);
@@ -55,7 +56,7 @@ export default function HrCancelApprovalPage() {
   const { mutateAsync: verifyLeave } = useVerifyLeaveMutation();
 
   useEffect(() => {
-    const filtered = allCancellations.filter((r: any) => r.startDate?.startsWith(selectedMonthRaw));
+    const filtered = allCancellations.filter((r: any) => isSameYearMonth(r.startDate, selectedMonthRaw));
     const sorted = [...filtered].sort(
       (a: any, b: any) => new Date(b.createdAt || b.startDate).getTime() - new Date(a.createdAt || a.startDate).getTime()
     );

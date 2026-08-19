@@ -24,11 +24,6 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType>({ user: null });
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
-  const auth = useAuthLogic();
-  return <AuthContext.Provider value={auth}>{children}</AuthContext.Provider>;
-};
-
-function useAuthLogic() {
   const [user, setUser] = useState<User | null>(null);
 
   useEffect(() => {
@@ -108,20 +103,9 @@ function useAuthLogic() {
     }
   }, []);
 
-  return { user };
-}
+  return <AuthContext.Provider value={{ user }}>{children}</AuthContext.Provider>;
+};
 
 export const useAuth = () => {
-  // We can just rely on the local state since AuthProvider is not actually wrapping the application
-  // but just in case, we will always call useContext.
-  const context = useContext(AuthContext);
-  const localAuth = useAuthLogic();
-
-  // If the context is somehow populated (someone used AuthProvider), return it
-  if (context.user) {
-    return context;
-  }
-
-  // Otherwise fallback to our local state
-  return localAuth;
+  return useContext(AuthContext);
 };

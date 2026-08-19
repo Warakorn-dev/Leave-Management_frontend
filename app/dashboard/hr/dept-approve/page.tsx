@@ -3,7 +3,11 @@
 import { useState, useEffect, useCallback } from "react";
 import { Calendar as CalendarIcon, X, User, Check, Clock, AlertCircle } from "lucide-react";
 import Swal from "sweetalert2";
+<<<<<<< HEAD
 import { ActionButton } from "@/components/ui/action-button";
+=======
+import { isSameYearMonth } from "@/lib/api/utils";
+>>>>>>> a1428d61a2be3cfef7eff7e044c798dc8267e702
 
 const getToken = () =>
   typeof window !== "undefined" ? sessionStorage.getItem("accessToken") : "";
@@ -142,7 +146,7 @@ export default function HRDeptApprovePage() {
   }, [selectedRequest]);
 
   // Filter by selected month
-  const requests = rawRequests.filter((r) => r.startDate?.startsWith(selectedMonthRaw));
+  const requests = rawRequests.filter((r) => isSameYearMonth(r.startDate, selectedMonthRaw));
 
   const handleMonthSelect = (monthIndex: number) => {
     setSelectedMonthRaw(`${tempYear}-${(monthIndex + 1).toString().padStart(2, "0")}`);

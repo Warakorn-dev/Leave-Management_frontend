@@ -53,7 +53,7 @@ export default function DashboardShell({ children }: { children: React.ReactNode
         router.push("/dashboard/manager/dashboard");
         return;
       }
-      if (storedRole === "user" && !pathname.startsWith("/dashboard/user")) {
+      if ((storedRole === "user" || storedRole === "employee") && !pathname.startsWith("/dashboard/user")) {
         router.push("/dashboard/user/dashboard");
         return;
       }
