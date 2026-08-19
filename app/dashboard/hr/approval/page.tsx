@@ -4,11 +4,8 @@ import { useState, useEffect } from "react";
 import { useLeave } from "@/hooks/useLeave";
 import { useAuth } from "@/context/AuthContext";
 import { Calendar as CalendarIcon, X, User, Check, Clock, Eye } from "lucide-react";
-<<<<<<< HEAD
 import { ActionButton } from "@/components/ui/action-button";
-=======
 import { isSameYearMonth } from "@/lib/api/utils";
->>>>>>> a1428d61a2be3cfef7eff7e044c798dc8267e702
 
 export default function HrApprovePage() {
   const [requests, setRequests] = useState<any[]>([]);

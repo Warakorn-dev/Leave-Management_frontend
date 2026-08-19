@@ -14,7 +14,6 @@ import {
   User,
   Calendar as CalendarIcon,
   Clock,
-  AlertCircle,
 } from 'lucide-react';
 import { getLeaveStatusText, resolveAssetUrl } from '@/lib/api/utils';
 import { ActionButton } from '@/components/ui/action-button';
@@ -410,9 +409,29 @@ export default function CEOApproval() {
                       </td>
                       <td className="px-6 py-4">
                         <div className="flex items-center justify-center gap-2">
-                          <ActionButton action="approve" size="sm" icon={CheckCircle2} onClick={() => handleApprove(leave)}>อนุมัติ</ActionButton>
-                          <ActionButton action="reject" size="sm" icon={X} onClick={() => handleReject(leave)}>ปฏิเสธ</ActionButton>
-                          <ActionButton action="view" size="sm" onClick={() => setSelectedLeave(leave)}>รายละเอียด</ActionButton>
+                          <ActionButton
+                            action="approve"
+                            size="sm"
+                            icon={CheckCircle2}
+                            onClick={() => handleApprove(leave)}
+                          >
+                            อนุมัติ
+                          </ActionButton>
+                          <ActionButton
+                            action="reject"
+                            size="sm"
+                            icon={X}
+                            onClick={() => handleReject(leave)}
+                          >
+                            ปฏิเสธ
+                          </ActionButton>
+                          <ActionButton
+                            action="view"
+                            size="sm"
+                            onClick={() => setSelectedLeave(leave)}
+                          >
+                            รายละเอียด
+                          </ActionButton>
                         </div>
                       </td>
                     </tr>
@@ -483,12 +502,6 @@ export default function CEOApproval() {
                           </span>
                           {leave.departmentName} | {leave.positionName}
                         </p>
-                        <p>
-                          <span className="font-bold min-w-[90px] inline-block">
-                            บทบาท:
-                          </span>
-                          {leave.employee?.user?.role?.name || '-'}
-                        </p>
                       </div>
                     </div>
                   </div>
@@ -535,12 +548,6 @@ export default function CEOApproval() {
                                 ? 'ครึ่งวันบ่าย'
                                 : 'เต็มวัน'}
                         </p>
-                        {leave.leaveType?.isSpecial && (
-                          <p className="flex items-center gap-2 text-purple-600">
-                            <AlertCircle className="w-4 h-4 shrink-0" />
-                            <span className="font-bold">คำขอประเภทพิเศษ</span>
-                          </p>
-                        )}
                         {leave.attachments?.length > 0 && (
                           <p>
                             <span className="font-bold">เอกสารแนบ:</span>{' '}
@@ -614,8 +621,20 @@ export default function CEOApproval() {
                       : '-'}
                   </span>
                   <div className="flex items-center gap-3">
-                    <ActionButton action="approve" icon={CheckCircle2} onClick={() => handleApprove(leave)}>อนุมัติ</ActionButton>
-                    <ActionButton action="reject" icon={X} onClick={() => handleReject(leave)}>ปฏิเสธ</ActionButton>
+                    <ActionButton
+                      action="approve"
+                      icon={CheckCircle2}
+                      onClick={() => handleApprove(leave)}
+                    >
+                      อนุมัติ
+                    </ActionButton>
+                    <ActionButton
+                      action="reject"
+                      icon={X}
+                      onClick={() => handleReject(leave)}
+                    >
+                      ปฏิเสธ
+                    </ActionButton>
                   </div>
                 </div>
               </div>
