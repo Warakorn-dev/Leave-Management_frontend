@@ -56,6 +56,17 @@ export default function EditEmployeePage() {
 
     const emp: any = employees.find((e) => String(e.id) === String(employeeId));
     if (emp) {
+      if (emp.role?.toLowerCase() === 'ceo' && user?.role?.toLowerCase() !== 'ceo') {
+        Swal.fire({
+          icon: 'error',
+          title: 'ไม่มีสิทธิ์เข้าถึง',
+          text: 'คุณไม่มีสิทธิ์แก้ไขข้อมูลของ CEO',
+        }).then(() => {
+          router.push('/dashboard/hr/employees');
+        });
+        return;
+      }
+
       setFormData({
         id: emp.id,
         employeeId: emp.employeeId || '',

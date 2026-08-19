@@ -210,6 +210,9 @@ export default function DatePicker({
 
   const { data: holidaysData = [] } = useHolidaysQuery();
 
+  const actualViews = props.views || ['year', 'month', 'day'];
+  const actualOpenTo = props.openTo || (actualViews.includes('day') ? 'day' : actualViews.includes('month') ? 'month' : actualViews[0]);
+
   const handleDateChange = (newValue) => {
     if (onChange) {
       if (newValue && dayjs.isDayjs(newValue)) {
@@ -239,8 +242,8 @@ export default function DatePicker({
               disabled={disabled}
               minDate={parsedMinDate}
               maxDate={parsedMaxDate}
-              views={props.views || ['year', 'month', 'day']}
-              openTo={props.openTo || 'day'}
+              views={actualViews}
+              openTo={actualOpenTo}
               slots={{
                 day: CustomDay,
               }}
@@ -262,8 +265,8 @@ export default function DatePicker({
             format={format}
             minDate={parsedMinDate}
             maxDate={parsedMaxDate}
-            views={props.views || ['year', 'month', 'day']}
-            openTo={props.openTo || 'day'}
+            views={actualViews}
+            openTo={actualOpenTo}
             slots={{
               day: CustomDay,
             }}
@@ -304,8 +307,8 @@ export default function DatePicker({
             format={format}
             minDate={parsedMinDate}
             maxDate={parsedMaxDate}
-            views={props.views || ['year', 'month', 'day']}
-            openTo={props.openTo || 'day'}
+            views={actualViews}
+            openTo={actualOpenTo}
             slots={{
               day: CustomDay,
             }}
