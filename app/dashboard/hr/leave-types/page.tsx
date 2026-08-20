@@ -27,7 +27,6 @@ import {
   FileText,
 } from 'lucide-react';
 import { LeaveType } from '@/lib/api/types';
-import { ActionButton, IconButton } from '@/components/ui/action-button';
 
 const leaveTypeSchema = z.object({
   name: z
@@ -335,23 +334,35 @@ export default function HRLeaveTypes() {
                     <td className="py-4 px-6 hidden sm:table-cell">
                       <div className="flex flex-col gap-1.5">
                         {lt.requiresCertificate && (
-                          <Badge className="bg-amber-100 dark:bg-amber-950/50 text-amber-700 dark:text-amber-300 hover:bg-amber-200 dark:hover:bg-amber-900/50 border-amber-200 dark:border-amber-800 w-max text-[10px]">
+                          <Badge className="bg-amber-100 text-amber-700 hover:bg-amber-200 border-amber-200 w-max text-[10px]">
                             บังคับแนบใบรับรองแพทย์
                           </Badge>
                         )}
                         {lt.isSpecial && (
-                          <Badge className="bg-rose-100 dark:bg-rose-950/50 text-rose-700 dark:text-rose-300 hover:bg-rose-200 dark:hover:bg-rose-900/50 border-rose-200 dark:border-rose-800 w-max text-[10px]">
+                          <Badge className="bg-rose-100 text-rose-700 hover:bg-rose-200 border-rose-200 w-max text-[10px]">
                             ส่งตรงให้ CEO อนุมัติ
                           </Badge>
                         )}
                         {!lt.requiresCertificate && !lt.isSpecial && (
-                          <span className="text-xs text-slate-400 dark:text-slate-500">-</span>
+                          <span className="text-xs text-slate-400">-</span>
                         )}
                       </div>
                     </td>
                     <td className="py-4 px-6 text-right space-x-2">
-                      <IconButton action="edit" icon={Edit2} label="แก้ไขประเภทการลา" size="icon-sm" onClick={() => handleEditOpen(lt)} />
-                      <IconButton action="delete" icon={Trash2} label="ลบประเภทการลา" size="icon-sm" onClick={() => handleDelete(lt)} />
+                      <button
+                        onClick={() => handleEditOpen(lt)}
+                        className="inline-flex p-2 rounded-lg bg-slate-50 border border-slate-200 hover:bg-indigo-50 hover:border-indigo-200 text-slate-500 hover:text-indigo-600 cursor-pointer transition-all shadow-sm"
+                        title="แก้ไข"
+                      >
+                        <Edit2 className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => handleDelete(lt)}
+                        className="inline-flex p-2 rounded-lg bg-slate-50 border border-slate-200 hover:bg-rose-50 hover:border-rose-200 text-slate-500 hover:text-rose-600 cursor-pointer transition-all shadow-sm"
+                        title="ลบ"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
                     </td>
                   </tr>
                 ))}
@@ -511,8 +522,19 @@ export default function HRLeaveTypes() {
             </div>
 
             <DialogFooter>
-              <ActionButton action="cancel" onClick={() => setDialogOpen(false)}>ยกเลิก</ActionButton>
-              <ActionButton action="save" type="submit">บันทึกข้อมูล</ActionButton>
+              <button
+                type="button"
+                onClick={() => setDialogOpen(false)}
+                className="px-4 py-2 text-sm font-semibold rounded-xl border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-850 text-slate-655 dark:text-slate-350 cursor-pointer"
+              >
+                ยกเลิก (Cancel)
+              </button>
+              <button
+                type="submit"
+                className="px-4 py-2 text-sm font-semibold rounded-xl text-white bg-indigo-600 hover:bg-indigo-500 cursor-pointer"
+              >
+                บันทึกข้อมูล (Save)
+              </button>
             </DialogFooter>
           </form>
         </DialogContent>

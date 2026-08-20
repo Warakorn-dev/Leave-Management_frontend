@@ -41,12 +41,3 @@ export function resolveAssetUrl(path?: string | null): string {
   if (/^(data:|blob:|https?:\/\/)/i.test(path)) return path;
   return `/${path.replace(/^\/+/, '')}`;
 }
-
-export function isSameYearMonth(dateInput: string | Date | undefined | null, targetYyyyMm: string): boolean {
-  if (!dateInput || !targetYyyyMm) return false;
-  const d = new Date(dateInput);
-  if (isNaN(d.getTime())) return false;
-  const year = d.getFullYear();
-  const month = String(d.getMonth() + 1).padStart(2, '0');
-  return `${year}-${month}` === targetYyyyMm;
-}

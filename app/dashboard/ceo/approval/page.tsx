@@ -14,9 +14,9 @@ import {
   User,
   Calendar as CalendarIcon,
   Clock,
+  AlertCircle,
 } from 'lucide-react';
 import { getLeaveStatusText, resolveAssetUrl } from '@/lib/api/utils';
-import { ActionButton } from '@/components/ui/action-button';
 
 const getToken = () =>
   typeof window !== 'undefined' ? sessionStorage.getItem('accessToken') : '';
@@ -409,29 +409,24 @@ export default function CEOApproval() {
                       </td>
                       <td className="px-6 py-4">
                         <div className="flex items-center justify-center gap-2">
-                          <ActionButton
-                            action="approve"
-                            size="sm"
-                            icon={CheckCircle2}
+                          <button
                             onClick={() => handleApprove(leave)}
+                            className="bg-[#00C853] hover:bg-[#00B04A] text-white text-xs font-semibold px-3.5 py-1.5 rounded-xl transition-all shadow-sm"
                           >
                             อนุมัติ
-                          </ActionButton>
-                          <ActionButton
-                            action="reject"
-                            size="sm"
-                            icon={X}
+                          </button>
+                          <button
                             onClick={() => handleReject(leave)}
+                            className="bg-red-100 hover:bg-red-200 text-red-600 text-xs font-semibold px-3.5 py-1.5 rounded-xl transition-all"
                           >
                             ปฏิเสธ
-                          </ActionButton>
-                          <ActionButton
-                            action="view"
-                            size="sm"
+                          </button>
+                          <button
                             onClick={() => setSelectedLeave(leave)}
+                            className="flex items-center gap-1.5 text-slate-500 hover:text-indigo-600 text-xs font-semibold transition-colors bg-slate-100 hover:bg-indigo-50 px-3 py-1.5 rounded-xl"
                           >
                             รายละเอียด
-                          </ActionButton>
+                          </button>
                         </div>
                       </td>
                     </tr>
@@ -502,6 +497,12 @@ export default function CEOApproval() {
                           </span>
                           {leave.departmentName} | {leave.positionName}
                         </p>
+                        <p>
+                          <span className="font-bold min-w-[90px] inline-block">
+                            บทบาท:
+                          </span>
+                          {leave.employee?.user?.role?.name || '-'}
+                        </p>
                       </div>
                     </div>
                   </div>
@@ -548,6 +549,12 @@ export default function CEOApproval() {
                                 ? 'ครึ่งวันบ่าย'
                                 : 'เต็มวัน'}
                         </p>
+                        {leave.leaveType?.isSpecial && (
+                          <p className="flex items-center gap-2 text-purple-600">
+                            <AlertCircle className="w-4 h-4 shrink-0" />
+                            <span className="font-bold">คำขอประเภทพิเศษ</span>
+                          </p>
+                        )}
                         {leave.attachments?.length > 0 && (
                           <p>
                             <span className="font-bold">เอกสารแนบ:</span>{' '}
@@ -621,20 +628,18 @@ export default function CEOApproval() {
                       : '-'}
                   </span>
                   <div className="flex items-center gap-3">
-                    <ActionButton
-                      action="approve"
-                      icon={CheckCircle2}
+                    <button
                       onClick={() => handleApprove(leave)}
+                      className="bg-[#00C853] hover:bg-[#00B04A] text-white text-[13px] font-bold py-2 px-6 rounded-xl shadow-sm transition-colors"
                     >
                       อนุมัติ
-                    </ActionButton>
-                    <ActionButton
-                      action="reject"
-                      icon={X}
+                    </button>
+                    <button
                       onClick={() => handleReject(leave)}
+                      className="bg-red-500 hover:bg-red-600 text-white text-[13px] font-bold py-2 px-6 rounded-xl shadow-sm transition-colors"
                     >
                       ปฏิเสธ
-                    </ActionButton>
+                    </button>
                   </div>
                 </div>
               </div>

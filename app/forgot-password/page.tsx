@@ -15,14 +15,9 @@ export default function ForgotPasswordPage() {
   const [username, setUsername] = useState("");
 
   useEffect(() => {
-    const savedTheme = (localStorage.getItem('app_theme') || localStorage.getItem('auth-theme')) as string | null;
-    const isDarkTheme = savedTheme === 'dark' || (!savedTheme && window.matchMedia('(prefers-color-scheme: dark)').matches);
-    const activeTheme = isDarkTheme ? 'dark' : 'gray';
-    setTheme(activeTheme);
-    if (isDarkTheme) {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
+    const savedTheme = localStorage.getItem('auth-theme') as 'gray' | 'dark' | null;
+    if (savedTheme) {
+      setTheme(savedTheme);
     }
   }, []);
 
@@ -30,12 +25,6 @@ export default function ForgotPasswordPage() {
     const newTheme = theme === 'dark' ? 'gray' : 'dark';
     setTheme(newTheme);
     localStorage.setItem('auth-theme', newTheme);
-    localStorage.setItem('app_theme', newTheme === 'dark' ? 'dark' : 'light');
-    if (newTheme === 'dark') {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
   };
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);

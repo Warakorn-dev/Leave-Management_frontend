@@ -4,9 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useLeaveBalance } from "@/hooks/useLeaveBalance";
 import { useLeave } from "@/hooks/useLeave";
-import { Mail, Bell, Settings, Upload, Check, X, Calendar as CalendarIcon, Clock, FileText, ImageIcon } from "lucide-react";
-import { ActionButton } from "@/components/ui/action-button";
-import { Button } from "@/components/ui/button";
+import { Mail, Bell, Settings, Upload, Check, X } from "lucide-react";
 import { DatePicker } from "@/components/DateAndTime";
 import { LeaveTimePicker } from "@/components/LeaveTimePicker";
 import { userApi, uploadApi } from "@/lib/api";
@@ -58,9 +56,13 @@ export default function RequestLeavePage() {
     if (!Array.isArray(myLeaves)) return false;
 
     const currentUserId = typeof window !== 'undefined' ? sessionStorage.getItem('userId') : '';
-
     return myLeaves.some((leave: any) => {
-      if (!leave || ['REJECTED', 'Rejected', 'CANCELLED', 'Cancelled'].includes(leave.status)) return false;
+      if (
+        ['REJECTED', 'Rejected', 'CANCELLED', 'Cancelled'].includes(
+          leave.status,
+        )
+      )
+        return false;
       if (!leave.startDate || !leave.endDate) return false;
 
       // Only disable dates for the current user's own leaves, not other employees'
@@ -446,31 +448,29 @@ export default function RequestLeavePage() {
               </div>
               {attachmentFile && (
                 <div className="mt-2 text-right">
-                  <Button 
-                    variant="link"
+                  <button 
                     type="button" 
                     onClick={() => {
                       setAttachmentFile(null);
                       setAttachmentName(null);
                     }}
-                    className="text-xs text-red-500 hover:text-red-700 h-auto p-0"
+                    className="text-xs text-red-500 hover:text-red-700 underline"
                   >
                     ลบไฟล์แนบ
-                  </Button>
+                  </button>
                 </div>
               )}
             </div>
 
             {/* Submit Button */}
             <div className="flex justify-end">
-              <ActionButton 
-                action="save"
+              <button 
                 type="button"
                 onClick={handleSubmit}
-                className="py-6 px-8 text-base shadow-md hover:shadow-lg active:scale-95"
+                className="bg-[#0000FF] hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-lg transition-all text-sm shadow-md hover:shadow-lg active:scale-95"
               >
                 ส่งคำขอลา
-              </ActionButton>
+              </button>
             </div>
           </form>
         </div>
@@ -489,21 +489,19 @@ export default function RequestLeavePage() {
               สามารถเช็คสถานะได้จากหน้าเช็คสถานะของคุณ
             </p>
             <div className="flex items-center justify-center gap-4">
-              <ActionButton 
-                action="cancel"
+              <button 
                 onClick={() => setShowConfirmModal(false)}
-                className="py-5 px-8"
+                className="bg-[#FF0000] hover:bg-red-600 text-white font-bold py-2.5 px-8 rounded-lg transition-colors text-sm shadow-sm"
               >
                 ยกเลิก
-              </ActionButton>
-              <ActionButton 
-                action="approve"
+              </button>
+              <button 
                 onClick={confirmSubmit}
-                loading={isSubmitting}
-                className="py-5 px-8"
+                disabled={isSubmitting}
+                className={`${isSubmitting ? 'bg-gray-400 cursor-not-allowed' : 'bg-[#00B050] hover:bg-[#009040]'} text-white font-bold py-2.5 px-8 rounded-lg transition-colors text-sm shadow-sm flex items-center justify-center gap-2`}
               >
                 {isSubmitting ? 'กำลังประมวลผล...' : 'ยืนยัน'}
-              </ActionButton>
+              </button>
             </div>
           </div>
         </div>
@@ -521,13 +519,12 @@ export default function RequestLeavePage() {
               {errorMsg}
             </p>
             <div className="flex items-center justify-center">
-              <Button 
-                variant="secondary"
+              <button 
                 onClick={() => setShowErrorModal(false)}
-                className="py-6 px-12 text-sm shadow-md hover:shadow-lg active:scale-95"
+                className="bg-gray-800 hover:bg-gray-900 text-white font-bold py-3 px-12 rounded-lg transition-all text-sm shadow-md hover:shadow-lg active:scale-95"
               >
                 ตกลง
-              </Button>
+              </button>
             </div>
           </div>
         </div>

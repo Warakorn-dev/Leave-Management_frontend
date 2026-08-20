@@ -188,23 +188,23 @@ export default function UserSettingsPage() {
   };
 
   return (
-    <div className="min-h-[calc(100vh-4rem)] bg-gradient-to-br from-slate-50 to-slate-100 dark:from-[#0B1120] dark:to-[#0B1120] dark:bg-[#0B1120] font-sans text-slate-800 dark:text-slate-100 flex flex-col relative overflow-hidden">
+    <div className="min-h-[calc(100vh-4rem)] bg-gradient-to-br from-slate-50 to-slate-100 font-sans text-slate-800 flex flex-col relative overflow-hidden">
       {/* Decorative Background Elements */}
-      <div className="absolute top-[-10%] left-[-10%] w-96 h-96 bg-blue-400/20 dark:bg-blue-600/10 rounded-full blur-3xl mix-blend-multiply dark:mix-blend-screen opacity-50 animate-blob"></div>
-      <div className="absolute top-[20%] right-[-10%] w-[30rem] h-[30rem] bg-indigo-400/20 dark:bg-indigo-600/10 rounded-full blur-3xl mix-blend-multiply dark:mix-blend-screen opacity-50 animate-blob animation-delay-2000"></div>
-      <div className="absolute bottom-[-20%] left-[20%] w-80 h-80 bg-purple-400/20 dark:bg-purple-600/10 rounded-full blur-3xl mix-blend-multiply dark:mix-blend-screen opacity-50 animate-blob animation-delay-4000"></div>
+      <div className="absolute top-[-10%] left-[-10%] w-96 h-96 bg-blue-400/20 rounded-full blur-3xl mix-blend-multiply opacity-50 animate-blob"></div>
+      <div className="absolute top-[20%] right-[-10%] w-[30rem] h-[30rem] bg-indigo-400/20 rounded-full blur-3xl mix-blend-multiply opacity-50 animate-blob animation-delay-2000"></div>
+      <div className="absolute bottom-[-20%] left-[20%] w-80 h-80 bg-purple-400/20 rounded-full blur-3xl mix-blend-multiply opacity-50 animate-blob animation-delay-4000"></div>
 
       {/* Top Banner */}
-      <div className="bg-white/80 dark:bg-slate-900/90 backdrop-blur-md border-b border-white/20 dark:border-slate-800 flex items-center justify-between px-8 py-6 shadow-sm z-10 sticky top-0">
+      <div className="bg-white/80 backdrop-blur-md border-b border-white/20 flex items-center justify-between px-8 py-6 shadow-sm z-10 sticky top-0">
         <div className="flex items-center gap-4">
           <div className="w-10 h-10 bg-gradient-to-tr from-blue-600 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/30 text-white">
             <User className="w-5 h-5" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-slate-900 to-slate-600 dark:from-white dark:to-slate-200 tracking-tight">
+            <h1 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-slate-900 to-slate-600 tracking-tight">
               ข้อมูลส่วนตัว
             </h1>
-            <p className="text-sm text-slate-500 dark:text-slate-400 font-medium">
+            <p className="text-sm text-slate-500 font-medium">
               จัดการข้อมูลและบัญชีผู้ใช้ของคุณ
             </p>
           </div>
@@ -213,11 +213,11 @@ export default function UserSettingsPage() {
 
       {/* Main Content Container */}
       <div className="flex-1 p-6 md:p-8 z-10">
-        <div className="bg-white/70 dark:bg-slate-900/90 backdrop-blur-xl rounded-3xl shadow-xl border border-white/50 dark:border-slate-800 p-8 max-w-[850px] mx-auto animate-in fade-in slide-in-from-bottom-8 duration-700 ease-out flex flex-col md:flex-row gap-12">
+        <div className="bg-white/70 backdrop-blur-xl rounded-3xl shadow-xl border border-white/50 p-8 max-w-[850px] mx-auto animate-in fade-in slide-in-from-bottom-8 duration-700 ease-out flex flex-col md:flex-row gap-12">
           {/* Profile Picture Section (Left) */}
           <div className="flex flex-col items-center justify-start md:w-1/3 pt-4">
             <div className="relative group cursor-pointer mb-4">
-              <div className="w-40 h-40 rounded-full border-[6px] border-white dark:border-slate-800 shadow-2xl overflow-hidden bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-800 dark:to-slate-700 flex items-center justify-center relative transition-transform duration-300 group-hover:scale-105">
+              <div className="w-40 h-40 rounded-full border-[6px] border-white shadow-2xl overflow-hidden bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center relative transition-transform duration-300 group-hover:scale-105">
                 {profilePic ? (
                   <img
                     src={profilePic}
@@ -225,7 +225,7 @@ export default function UserSettingsPage() {
                     className="w-full h-full object-cover"
                   />
                 ) : (
-                  <User className="w-16 h-16 text-slate-300 dark:text-slate-600" />
+                  <User className="w-16 h-16 text-slate-300" />
                 )}
 
                 {/* Hover overlay */}
@@ -234,13 +234,13 @@ export default function UserSettingsPage() {
                 </div>
 
                 {isUploading && (
-                  <div className="absolute inset-0 bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm flex items-center justify-center z-10">
+                  <div className="absolute inset-0 bg-white/80 backdrop-blur-sm flex items-center justify-center z-10">
                     <span className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></span>
                   </div>
                 )}
               </div>
 
-              <label className="absolute bottom-2 right-2 w-8 h-8 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-full flex items-center justify-center cursor-pointer shadow-lg hover:shadow-blue-500/50 transition-all duration-300 border-[2px] border-white dark:border-slate-800 hover:scale-110 z-20">
+              <label className="absolute bottom-2 right-2 w-8 h-8 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-full flex items-center justify-center cursor-pointer shadow-lg hover:shadow-blue-500/50 transition-all duration-300 border-[2px] border-white hover:scale-110 z-20">
                 <Upload className="w-3.5 h-3.5" />
                 <input
                   type="file"
@@ -261,21 +261,21 @@ export default function UserSettingsPage() {
                   handleDeleteProfilePic();
                 }}
                 disabled={isUploading}
-                className="flex items-center gap-1.5 text-rose-500 hover:text-rose-600 hover:underline transition-colors mb-4 text-xs font-medium cursor-pointer"
+                className="flex items-center gap-1.5 text-rose-500 hover:text-rose-600 hover:underline transition-colors mb-4 text-xs font-medium"
               >
                 <Trash2 className="w-3.5 h-3.5" />
                 ลบรูปโปรไฟล์
               </button>
             )}
 
-            <h2 className="text-xl font-bold text-slate-800 dark:text-white text-center">
+            <h2 className="text-xl font-bold text-slate-800 text-center">
               {username}
             </h2>
-            <div className="flex items-center gap-1.5 mt-1 bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 px-3 py-1 rounded-full text-xs font-semibold shadow-sm border border-blue-100 dark:border-blue-800">
+            <div className="flex items-center gap-1.5 mt-1 bg-blue-50 text-blue-700 px-3 py-1 rounded-full text-xs font-semibold shadow-sm border border-blue-100">
               <ShieldCheck className="w-3.5 h-3.5" /> Employee Role
             </div>
             {rawHireDate && (
-              <div className="flex items-center gap-1.5 mt-2 bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 px-3 py-1.5 rounded-full text-[12px] font-medium shadow-sm border border-slate-200 dark:border-slate-700">
+              <div className="flex items-center gap-1.5 mt-2 bg-slate-50 text-slate-600 px-3 py-1.5 rounded-full text-[12px] font-medium shadow-sm border border-slate-200">
                 <Briefcase className="w-3.5 h-3.5 text-slate-400" />{' '}
                 {getWorkDuration()}
               </div>
@@ -284,11 +284,11 @@ export default function UserSettingsPage() {
 
           {/* User Details Section (Right) */}
           <div className="flex-1 space-y-6">
-            <div className="border-b border-slate-200/60 dark:border-slate-800 pb-4 mb-6">
-              <h3 className="text-lg font-bold text-slate-800 dark:text-white">
+            <div className="border-b border-slate-200/60 pb-4 mb-6">
+              <h3 className="text-lg font-bold text-slate-800">
                 รายละเอียดบัญชี
               </h3>
-              <p className="text-sm text-slate-500 dark:text-slate-400">
+              <p className="text-sm text-slate-500">
                 ข้อมูลที่ใช้ในระบบบริษัทของคุณ
               </p>
             </div>
@@ -296,7 +296,7 @@ export default function UserSettingsPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* Employee ID */}
               <div className="col-span-1 md:col-span-2 group">
-                <label className="text-[13px] font-bold text-slate-500 dark:text-slate-400 mb-2 flex items-center gap-2 uppercase tracking-wider">
+                <label className="text-[13px] font-bold text-slate-500 mb-2 flex items-center gap-2 uppercase tracking-wider">
                   <BadgeInfo className="w-4 h-4 text-indigo-400 group-hover:text-indigo-600 transition-colors" />{' '}
                   รหัสพนักงาน
                 </label>
@@ -305,10 +305,10 @@ export default function UserSettingsPage() {
                     type="text"
                     value={employeeId}
                     readOnly
-                    className="w-full border-0 bg-slate-50/50 dark:bg-slate-800/80 rounded-xl px-4 py-3.5 text-sm font-medium text-slate-700 dark:text-slate-200 outline-none ring-1 ring-slate-200/60 dark:ring-slate-700 focus:ring-2 focus:ring-blue-500/20 shadow-inner cursor-default transition-all"
+                    className="w-full border-0 bg-slate-50/50 rounded-xl px-4 py-3.5 text-sm font-medium text-slate-700 outline-none ring-1 ring-slate-200/60 focus:ring-2 focus:ring-blue-500/20 shadow-inner cursor-default transition-all"
                   />
                   <div className="absolute inset-y-0 right-4 flex items-center pointer-events-none">
-                    <span className="text-xs text-slate-400 dark:text-slate-400 font-medium">
+                    <span className="text-xs text-slate-400 font-medium">
                       Read Only
                     </span>
                   </div>
@@ -317,7 +317,7 @@ export default function UserSettingsPage() {
 
               {/* First Name */}
               <div className="group">
-                <label className="text-[13px] font-bold text-slate-500 dark:text-slate-400 mb-2 flex items-center gap-2 uppercase tracking-wider">
+                <label className="text-[13px] font-bold text-slate-500 mb-2 flex items-center gap-2 uppercase tracking-wider">
                   <User className="w-4 h-4 text-blue-400 group-hover:text-blue-600 transition-colors" />{' '}
                   ชื่อ
                 </label>
@@ -325,13 +325,13 @@ export default function UserSettingsPage() {
                   type="text"
                   value={firstName}
                   readOnly
-                  className="w-full border-0 bg-slate-50/50 dark:bg-slate-800/80 rounded-xl px-4 py-3.5 text-sm font-medium text-slate-700 dark:text-slate-200 outline-none ring-1 ring-slate-200/60 dark:ring-slate-700 focus:ring-2 focus:ring-blue-500/20 shadow-inner cursor-default transition-all"
+                  className="w-full border-0 bg-slate-50/50 rounded-xl px-4 py-3.5 text-sm font-medium text-slate-700 outline-none ring-1 ring-slate-200/60 focus:ring-2 focus:ring-blue-500/20 shadow-inner cursor-default transition-all"
                 />
               </div>
 
               {/* Last Name */}
               <div className="group">
-                <label className="text-[13px] font-bold text-slate-500 dark:text-slate-400 mb-2 flex items-center gap-2 uppercase tracking-wider">
+                <label className="text-[13px] font-bold text-slate-500 mb-2 flex items-center gap-2 uppercase tracking-wider">
                   <User className="w-4 h-4 text-blue-400 group-hover:text-blue-600 transition-colors" />{' '}
                   นามสกุล
                 </label>
@@ -339,13 +339,13 @@ export default function UserSettingsPage() {
                   type="text"
                   value={lastName}
                   readOnly
-                  className="w-full border-0 bg-slate-50/50 dark:bg-slate-800/80 rounded-xl px-4 py-3.5 text-sm font-medium text-slate-700 dark:text-slate-200 outline-none ring-1 ring-slate-200/60 dark:ring-slate-700 focus:ring-2 focus:ring-blue-500/20 shadow-inner cursor-default transition-all"
+                  className="w-full border-0 bg-slate-50/50 rounded-xl px-4 py-3.5 text-sm font-medium text-slate-700 outline-none ring-1 ring-slate-200/60 focus:ring-2 focus:ring-blue-500/20 shadow-inner cursor-default transition-all"
                 />
               </div>
 
               {/* First Name EN */}
               <div className="group">
-                <label className="text-[13px] font-bold text-slate-500 dark:text-slate-400 mb-2 flex items-center gap-2 uppercase tracking-wider">
+                <label className="text-[13px] font-bold text-slate-500 mb-2 flex items-center gap-2 uppercase tracking-wider">
                   <User className="w-4 h-4 text-sky-400 group-hover:text-sky-600 transition-colors" />{' '}
                   ชื่อ (ภาษาอังกฤษ)
                 </label>
@@ -353,13 +353,13 @@ export default function UserSettingsPage() {
                   type="text"
                   value={firstNameEN}
                   readOnly
-                  className="w-full border-0 bg-slate-50/50 dark:bg-slate-800/80 rounded-xl px-4 py-3.5 text-sm font-medium text-slate-700 dark:text-slate-200 outline-none ring-1 ring-slate-200/60 dark:ring-slate-700 focus:ring-2 focus:ring-blue-500/20 shadow-inner cursor-default transition-all"
+                  className="w-full border-0 bg-slate-50/50 rounded-xl px-4 py-3.5 text-sm font-medium text-slate-700 outline-none ring-1 ring-slate-200/60 focus:ring-2 focus:ring-blue-500/20 shadow-inner cursor-default transition-all"
                 />
               </div>
 
               {/* Last Name EN */}
               <div className="group">
-                <label className="text-[13px] font-bold text-slate-500 dark:text-slate-400 mb-2 flex items-center gap-2 uppercase tracking-wider">
+                <label className="text-[13px] font-bold text-slate-500 mb-2 flex items-center gap-2 uppercase tracking-wider">
                   <User className="w-4 h-4 text-sky-400 group-hover:text-sky-600 transition-colors" />{' '}
                   นามสกุล (ภาษาอังกฤษ)
                 </label>
@@ -367,13 +367,13 @@ export default function UserSettingsPage() {
                   type="text"
                   value={lastNameEN}
                   readOnly
-                  className="w-full border-0 bg-slate-50/50 dark:bg-slate-800/80 rounded-xl px-4 py-3.5 text-sm font-medium text-slate-700 dark:text-slate-200 outline-none ring-1 ring-slate-200/60 dark:ring-slate-700 focus:ring-2 focus:ring-blue-500/20 shadow-inner cursor-default transition-all"
+                  className="w-full border-0 bg-slate-50/50 rounded-xl px-4 py-3.5 text-sm font-medium text-slate-700 outline-none ring-1 ring-slate-200/60 focus:ring-2 focus:ring-blue-500/20 shadow-inner cursor-default transition-all"
                 />
               </div>
 
               {/* ID Card Number */}
               <div className="group col-span-1 md:col-span-2">
-                <label className="text-[13px] font-bold text-slate-500 dark:text-slate-400 mb-2 flex items-center gap-2 uppercase tracking-wider">
+                <label className="text-[13px] font-bold text-slate-500 mb-2 flex items-center gap-2 uppercase tracking-wider">
                   <BadgeInfo className="w-4 h-4 text-indigo-400 group-hover:text-indigo-600 transition-colors" />{' '}
                   เลขบัตรประชาชน
                 </label>
@@ -381,13 +381,13 @@ export default function UserSettingsPage() {
                   type="text"
                   value={idCardNumber}
                   readOnly
-                  className="w-full border-0 bg-slate-50/50 dark:bg-slate-800/80 rounded-xl px-4 py-3.5 text-sm font-medium text-slate-700 dark:text-slate-200 outline-none ring-1 ring-slate-200/60 dark:ring-slate-700 focus:ring-2 focus:ring-blue-500/20 shadow-inner cursor-default transition-all"
+                  className="w-full border-0 bg-slate-50/50 rounded-xl px-4 py-3.5 text-sm font-medium text-slate-700 outline-none ring-1 ring-slate-200/60 focus:ring-2 focus:ring-blue-500/20 shadow-inner cursor-default transition-all"
                 />
               </div>
 
               {/* Date of Birth */}
               <div className="group">
-                <label className="text-[13px] font-bold text-slate-500 dark:text-slate-400 mb-2 flex items-center gap-2 uppercase tracking-wider">
+                <label className="text-[13px] font-bold text-slate-500 mb-2 flex items-center gap-2 uppercase tracking-wider">
                   <Calendar className="w-4 h-4 text-pink-400 group-hover:text-pink-600 transition-colors" />{' '}
                   วันเกิด
                 </label>
@@ -395,13 +395,13 @@ export default function UserSettingsPage() {
                   type="text"
                   value={dateOfBirth}
                   readOnly
-                  className="w-full border-0 bg-slate-50/50 dark:bg-slate-800/80 rounded-xl px-4 py-3.5 text-sm font-medium text-slate-700 dark:text-slate-200 outline-none ring-1 ring-slate-200/60 dark:ring-slate-700 focus:ring-2 focus:ring-blue-500/20 shadow-inner cursor-default transition-all"
+                  className="w-full border-0 bg-slate-50/50 rounded-xl px-4 py-3.5 text-sm font-medium text-slate-700 outline-none ring-1 ring-slate-200/60 focus:ring-2 focus:ring-blue-500/20 shadow-inner cursor-default transition-all"
                 />
               </div>
 
               {/* Email */}
               <div className="group">
-                <label className="text-[13px] font-bold text-slate-500 dark:text-slate-400 mb-2 flex items-center gap-2 uppercase tracking-wider">
+                <label className="text-[13px] font-bold text-slate-500 mb-2 flex items-center gap-2 uppercase tracking-wider">
                   <Mail className="w-4 h-4 text-emerald-400 group-hover:text-emerald-600 transition-colors" />{' '}
                   อีเมล
                 </label>
@@ -409,13 +409,13 @@ export default function UserSettingsPage() {
                   type="email"
                   value={email}
                   readOnly
-                  className="w-full border-0 bg-slate-50/50 dark:bg-slate-800/80 rounded-xl px-4 py-3.5 text-sm font-medium text-slate-700 dark:text-slate-200 outline-none ring-1 ring-slate-200/60 dark:ring-slate-700 focus:ring-2 focus:ring-blue-500/20 shadow-inner cursor-default transition-all"
+                  className="w-full border-0 bg-slate-50/50 rounded-xl px-4 py-3.5 text-sm font-medium text-slate-700 outline-none ring-1 ring-slate-200/60 focus:ring-2 focus:ring-blue-500/20 shadow-inner cursor-default transition-all"
                 />
               </div>
 
               {/* Department */}
               <div className="group">
-                <label className="text-[13px] font-bold text-slate-500 dark:text-slate-400 mb-2 flex items-center gap-2 uppercase tracking-wider">
+                <label className="text-[13px] font-bold text-slate-500 mb-2 flex items-center gap-2 uppercase tracking-wider">
                   <Building className="w-4 h-4 text-amber-400 group-hover:text-amber-600 transition-colors" />{' '}
                   แผนก
                 </label>
@@ -423,13 +423,13 @@ export default function UserSettingsPage() {
                   type="text"
                   value={department}
                   readOnly
-                  className="w-full border-0 bg-slate-50/50 dark:bg-slate-800/80 rounded-xl px-4 py-3.5 text-sm font-medium text-slate-700 dark:text-slate-200 outline-none ring-1 ring-slate-200/60 dark:ring-slate-700 focus:ring-2 focus:ring-blue-500/20 shadow-inner cursor-default transition-all"
+                  className="w-full border-0 bg-slate-50/50 rounded-xl px-4 py-3.5 text-sm font-medium text-slate-700 outline-none ring-1 ring-slate-200/60 focus:ring-2 focus:ring-blue-500/20 shadow-inner cursor-default transition-all"
                 />
               </div>
 
               {/* Position */}
               <div className="group">
-                <label className="text-[13px] font-bold text-slate-500 dark:text-slate-400 mb-2 flex items-center gap-2 uppercase tracking-wider">
+                <label className="text-[13px] font-bold text-slate-500 mb-2 flex items-center gap-2 uppercase tracking-wider">
                   <Briefcase className="w-4 h-4 text-purple-400 group-hover:text-purple-600 transition-colors" />{' '}
                   ตำแหน่ง
                 </label>
@@ -437,13 +437,13 @@ export default function UserSettingsPage() {
                   type="text"
                   value={position}
                   readOnly
-                  className="w-full border-0 bg-slate-50/50 dark:bg-slate-800/80 rounded-xl px-4 py-3.5 text-sm font-medium text-slate-700 dark:text-slate-200 outline-none ring-1 ring-slate-200/60 dark:ring-slate-700 focus:ring-2 focus:ring-blue-500/20 shadow-inner cursor-default transition-all"
+                  className="w-full border-0 bg-slate-50/50 rounded-xl px-4 py-3.5 text-sm font-medium text-slate-700 outline-none ring-1 ring-slate-200/60 focus:ring-2 focus:ring-blue-500/20 shadow-inner cursor-default transition-all"
                 />
               </div>
 
               {/* Hire Date */}
               <div className="group">
-                <label className="text-[13px] font-bold text-slate-500 dark:text-slate-400 mb-2 flex items-center gap-2 uppercase tracking-wider">
+                <label className="text-[13px] font-bold text-slate-500 mb-2 flex items-center gap-2 uppercase tracking-wider">
                   <Calendar className="w-4 h-4 text-pink-400 group-hover:text-pink-600 transition-colors" />{' '}
                   วันที่เริ่มทำงาน
                 </label>
@@ -451,13 +451,13 @@ export default function UserSettingsPage() {
                   type="text"
                   value={hireDate}
                   readOnly
-                  className="w-full border-0 bg-slate-50/50 dark:bg-slate-800/80 rounded-xl px-4 py-3.5 text-sm font-medium text-slate-700 dark:text-slate-200 outline-none ring-1 ring-slate-200/60 dark:ring-slate-700 focus:ring-2 focus:ring-blue-500/20 shadow-inner cursor-default transition-all"
+                  className="w-full border-0 bg-slate-50/50 rounded-xl px-4 py-3.5 text-sm font-medium text-slate-700 outline-none ring-1 ring-slate-200/60 focus:ring-2 focus:ring-blue-500/20 shadow-inner cursor-default transition-all"
                 />
               </div>
 
               {/* ID Card Address */}
               <div className="group col-span-1 md:col-span-2">
-                <label className="text-[13px] font-bold text-slate-500 dark:text-slate-400 mb-2 flex items-center gap-2 uppercase tracking-wider">
+                <label className="text-[13px] font-bold text-slate-500 mb-2 flex items-center gap-2 uppercase tracking-wider">
                   <Building className="w-4 h-4 text-amber-400 group-hover:text-amber-600 transition-colors" />{' '}
                   ที่อยู่ตามบัตรประชาชน
                 </label>
@@ -465,13 +465,13 @@ export default function UserSettingsPage() {
                   value={idCardAddress}
                   readOnly
                   rows={2}
-                  className="w-full border-0 bg-slate-50/50 dark:bg-slate-800/80 rounded-xl px-4 py-3.5 text-sm font-medium text-slate-700 dark:text-slate-200 outline-none ring-1 ring-slate-200/60 dark:ring-slate-700 focus:ring-2 focus:ring-blue-500/20 shadow-inner cursor-default transition-all resize-none"
+                  className="w-full border-0 bg-slate-50/50 rounded-xl px-4 py-3.5 text-sm font-medium text-slate-700 outline-none ring-1 ring-slate-200/60 focus:ring-2 focus:ring-blue-500/20 shadow-inner cursor-default transition-all resize-none"
                 />
               </div>
 
               {/* Current Address */}
               <div className="group col-span-1 md:col-span-2">
-                <label className="text-[13px] font-bold text-slate-500 dark:text-slate-400 mb-2 flex items-center gap-2 uppercase tracking-wider">
+                <label className="text-[13px] font-bold text-slate-500 mb-2 flex items-center gap-2 uppercase tracking-wider">
                   <Building className="w-4 h-4 text-amber-400 group-hover:text-amber-600 transition-colors" />{' '}
                   ที่อยู่ปัจจุบัน
                 </label>
@@ -479,13 +479,13 @@ export default function UserSettingsPage() {
                   value={currentAddress}
                   readOnly
                   rows={2}
-                  className="w-full border-0 bg-slate-50/50 dark:bg-slate-800/80 rounded-xl px-4 py-3.5 text-sm font-medium text-slate-700 dark:text-slate-200 outline-none ring-1 ring-slate-200/60 dark:ring-slate-700 focus:ring-2 focus:ring-blue-500/20 shadow-inner cursor-default transition-all resize-none"
+                  className="w-full border-0 bg-slate-50/50 rounded-xl px-4 py-3.5 text-sm font-medium text-slate-700 outline-none ring-1 ring-slate-200/60 focus:ring-2 focus:ring-blue-500/20 shadow-inner cursor-default transition-all resize-none"
                 />
               </div>
 
               {/* Gender */}
               <div className="group">
-                <label className="text-[13px] font-bold text-slate-500 dark:text-slate-400 mb-2 flex items-center gap-2 uppercase tracking-wider">
+                <label className="text-[13px] font-bold text-slate-500 mb-2 flex items-center gap-2 uppercase tracking-wider">
                   <User className="w-4 h-4 text-cyan-400 group-hover:text-cyan-600 transition-colors" />{' '}
                   เพศ
                 </label>
@@ -499,7 +499,7 @@ export default function UserSettingsPage() {
                         : 'ไม่ระบุ (Unspecified)'
                   }
                   readOnly
-                  className="w-full border-0 bg-slate-50/50 dark:bg-slate-800/80 rounded-xl px-4 py-3.5 text-sm font-medium text-slate-700 dark:text-slate-200 outline-none ring-1 ring-slate-200/60 dark:ring-slate-700 focus:ring-2 focus:ring-blue-500/20 shadow-inner cursor-default transition-all"
+                  className="w-full border-0 bg-slate-50/50 rounded-xl px-4 py-3.5 text-sm font-medium text-slate-700 outline-none ring-1 ring-slate-200/60 focus:ring-2 focus:ring-blue-500/20 shadow-inner cursor-default transition-all"
                 />
               </div>
             </div>

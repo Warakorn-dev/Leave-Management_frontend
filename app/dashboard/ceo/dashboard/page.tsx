@@ -416,7 +416,7 @@ export default function CEODashboard() {
           </div>
 
           {/* Pending Leaves Table Section */}
-          <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800 flex flex-col overflow-hidden">
+          <div className="bg-white rounded-2xl shadow-sm border border-slate-100 flex flex-col overflow-hidden">
             <div className="p-6 border-b border-slate-100">
               <h3 className="font-bold text-lg text-slate-800">
                 รายการคำขอล่าสุดที่รออนุมัติ
@@ -424,7 +424,7 @@ export default function CEODashboard() {
             </div>
             <div className="flex-1 overflow-auto">
               <table className="w-full text-left text-[14px]">
-                <thead className="bg-[#e0e7ff] dark:bg-indigo-900/40 text-[#4f46e5] dark:text-indigo-400">
+                <thead className="bg-[#e0e7ff] text-[#4f46e5]">
                   <tr>
                     <th className="py-3 px-4 font-bold whitespace-nowrap">
                       รหัสคำขอลา
@@ -480,7 +480,7 @@ export default function CEODashboard() {
                       return (
                         <tr
                           key={leave.id}
-                          className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors"
+                          className="hover:bg-slate-50 transition-colors"
                         >
                           <td className="py-3 px-4 text-sm font-semibold text-blue-600 whitespace-nowrap">
                             {leave.requestCode || '-'}

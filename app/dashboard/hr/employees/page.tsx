@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useState, useMemo } from 'react';
-import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { useEmployee } from '@/hooks/useEmployee';
 import { useDepartmentsQuery } from '@/hooks/useDepartment';
@@ -13,27 +12,30 @@ import {
   ChevronDown,
   SquarePen,
   Trash2,
+  Edit,
   Wallet,
   Power,
 } from 'lucide-react';
 import Swal from 'sweetalert2';
+import { Employee } from '@/lib/api/types';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import Link from 'next/link';
+import { DatePicker } from '@/components/DateAndTime';
 import { hrApi } from '@/lib/api';
-import { ActionButton, IconButton } from '@/components/ui/action-button';
 
 export default function EmployeeManagementPage() {
   const { user } = useAuth();
-  const router = useRouter();
   const {
     useEmployeesQuery,
     useDeleteEmployeeMutation,
     useCreateEmployeeMutation,
+    useUpdateEmployeeMutation,
     useUpdateEmployeeStatusMutation,
   } = useEmployee();
 
   const { data: employees = [], isLoading, refetch } = useEmployeesQuery();
   const { mutate: deleteEmployee } = useDeleteEmployeeMutation();
+  const { mutate: updateEmployee } = useUpdateEmployeeMutation();
   const { mutate: updateEmployeeStatus } = useUpdateEmployeeStatusMutation();
 
   const { data: departmentsData = [] } = useDepartmentsQuery();
@@ -41,6 +43,40 @@ export default function EmployeeManagementPage() {
 
   const [searchTerm, setSearchTerm] = useState('');
   const [departmentFilter, setDepartmentFilter] = useState('all');
+
+  // Edit Employee Modal State
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [editingEmployee, setEditingEmployee] = useState({
+    id: '',
+    employeeId: '',
+    username: '',
+    firstName: '',
+    lastName: '',
+    departmentId: '',
+    departmentName: '',
+    positionId: '',
+    positionName: '',
+    phone: '',
+    email: '',
+    address: '',
+    roleName: '',
+    joinDate: '',
+    gender: 'Unspecified',
+    firstNameEN: '',
+    lastNameEN: '',
+    idCardNumber: '',
+    dateOfBirth: '',
+    idCardAddress: '',
+    currentAddress: '',
+  });
+
+  const availableEditPositions = editingEmployee?.departmentId
+    ? positionsData.filter(
+        (p) =>
+          !p.department?.id ||
+          String(p.department?.id) === String(editingEmployee.departmentId),
+      )
+    : positionsData;
 
   // Leave Balance Modal State
   const [isBalanceModalOpen, setIsBalanceModalOpen] = useState(false);
@@ -224,7 +260,97 @@ export default function EmployeeManagementPage() {
   };
 
   const handleEditClick = (emp: any) => {
-    router.push(`/dashboard/hr/employees/edit?id=${emp.id}`);
+    setEditingEmployee({
+      id: emp.id,
+      employeeId: emp.employeeId,
+      username: emp.username || '',
+      firstName: emp.firstName || '',
+      lastName: emp.lastName || '',
+      departmentId: emp.departmentId || '',
+      departmentName: emp.departmentName || '',
+      positionId: emp.positionId || '',
+      positionName: emp.positionName || '',
+      phone: emp.phone || '',
+      email: emp.email || '',
+      address: emp.address || '',
+      roleName:
+        emp.role && typeof emp.role === 'string'
+          ? emp.role.toLowerCase() === 'hr'
+            ? 'HR'
+            : emp.role.toLowerCase() === 'ceo'
+              ? 'CEO'
+              : emp.role.charAt(0).toUpperCase() + emp.role.slice(1)
+          : 'User',
+      joinDate: emp.hireDate ? emp.hireDate.split('T')[0] : emp.joinDate || '',
+      gender: emp.gender || 'Unspecified',
+      firstNameEN: emp.firstNameEN || '',
+      lastNameEN: emp.lastNameEN || '',
+      idCardNumber: emp.idCardNumber || '',
+      dateOfBirth: emp.dateOfBirth ? emp.dateOfBirth.split('T')[0] : '',
+      idCardAddress: emp.idCardAddress || '',
+      currentAddress: emp.currentAddress || '',
+    });
+    setIsEditModalOpen(true);
+  };
+
+  const handleUpdateEmployee = () => {
+    if (
+      !editingEmployee.employeeId ||
+      !editingEmployee.firstName ||
+      !editingEmployee.lastName ||
+      !editingEmployee.email
+    ) {
+      Swal.fire('ข้อมูลไม่ครบถ้วน', 'กรุณากรอกข้อมูลที่จำเป็นให้ครบ', 'error');
+      return;
+    }
+
+    const empData: Partial<Employee> & {
+      username?: string;
+      employeeCode?: string;
+      hireDate?: string;
+      gender?: string;
+      phone?: string;
+      roleName?: string;
+    } = {
+      employeeCode: editingEmployee.employeeId,
+      username: editingEmployee.username,
+      firstName: editingEmployee.firstName,
+      lastName: editingEmployee.lastName,
+      email: editingEmployee.email,
+      phone: editingEmployee.phone,
+      departmentId: editingEmployee.departmentId,
+      positionId: editingEmployee.positionId,
+      roleName: editingEmployee.roleName,
+      hireDate: editingEmployee.joinDate,
+      gender: editingEmployee.gender,
+    };
+
+    console.log('Sending empData:', empData);
+
+    updateEmployee(
+      { id: editingEmployee.id, data: empData },
+      {
+        onSuccess: () => {
+          Swal.fire({
+            icon: 'success',
+            title: 'สำเร็จ',
+            text: 'อัปเดตข้อมูลพนักงานเรียบร้อยแล้ว',
+            showConfirmButton: false,
+            timer: 1500,
+          });
+          setIsEditModalOpen(false);
+          refetch();
+        },
+        onError: (err) => {
+          console.error('Update failed:', err);
+          Swal.fire(
+            'ข้อผิดพลาด',
+            err?.message || 'ไม่สามารถอัปเดตข้อมูลได้',
+            'error',
+          );
+        },
+      },
+    );
   };
 
   // Removed strict user check as DashboardShell already handles role-based routing
@@ -270,7 +396,7 @@ export default function EmployeeManagementPage() {
       </div>
 
       {/* Main Content Area */}
-      <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800 overflow-hidden">
+      <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
         {/* Toolbar */}
         <div className="p-4 border-b border-slate-100 flex flex-col sm:flex-row justify-between gap-4">
           <div className="relative w-full sm:max-w-xs">
@@ -405,10 +531,48 @@ export default function EmployeeManagementPage() {
 
                     <td className="py-4 px-6">
                       <div className="flex items-center justify-center gap-2">
-                        <IconButton action="view" icon={Power} label={emp.status === 'active' ? 'ระงับการใช้งาน' : 'เปิดการใช้งาน'} size="icon-sm" onClick={() => handleToggleStatus(emp)} />
-                        <IconButton action="edit" icon={SquarePen} label="แก้ไขพนักงาน" size="icon-sm" onClick={() => handleEditClick(emp)} />
-                        <IconButton action="view" icon={Wallet} label="ปรับปรุงยอดวันลา" size="icon-sm" onClick={() => handleOpenBalanceModal(emp)} />
-                        <IconButton action="delete" icon={Trash2} label="ลบพนักงาน" size="icon-sm" onClick={() => handleDelete(emp.id, `${emp.firstName} ${emp.lastName}`, emp.departmentName || '')} />
+                        <button
+                          onClick={() => handleToggleStatus(emp)}
+                          title={
+                            emp.status === 'active'
+                              ? 'ระงับการใช้งาน'
+                              : 'เปิดการใช้งาน'
+                          }
+                          className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors ${
+                            emp.status === 'active'
+                              ? 'bg-slate-100 text-slate-500 hover:bg-orange-100 hover:text-orange-600'
+                              : 'bg-red-100 text-red-600 hover:bg-green-100 hover:text-green-600'
+                          }`}
+                        >
+                          <Power className="w-4 h-4" strokeWidth={2} />
+                        </button>
+                        <button
+                          onClick={() => handleEditClick(emp)}
+                          title="แก้ไข"
+                          className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 hover:bg-blue-100 hover:text-blue-600 transition-colors"
+                        >
+                          <SquarePen className="w-4 h-4" strokeWidth={2} />
+                        </button>
+                        <button
+                          onClick={() => handleOpenBalanceModal(emp)}
+                          title="ปรับปรุงยอดวันลา"
+                          className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 hover:bg-amber-100 hover:text-amber-600 transition-colors"
+                        >
+                          <Wallet className="w-4 h-4" strokeWidth={2} />
+                        </button>
+                        <button
+                          onClick={() =>
+                            handleDelete(
+                              emp.id,
+                              `${emp.firstName} ${emp.lastName}`,
+                              emp.departmentName || '',
+                            )
+                          }
+                          title="ลบพนักงาน"
+                          className="p-1.5 bg-red-50 text-red-500 hover:bg-red-100 rounded-lg transition-colors cursor-pointer border border-red-100"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
                       </div>
                     </td>
                   </tr>
@@ -419,11 +583,393 @@ export default function EmployeeManagementPage() {
         </div>
       </div>
 
+      {/* Edit Employee Modal */}
+      <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
+        <DialogContent className="sm:max-w-[800px] p-0 overflow-y-auto max-h-[90vh] rounded-[24px]">
+          {/* Header */}
+          <div className="bg-[#091136] px-8 py-6 flex items-center gap-4 text-white">
+            <Edit className="w-8 h-8" strokeWidth={1.5} />
+            <h2 className="text-[26px] font-medium tracking-wide">
+              แก้ไขข้อมูลพนักงาน
+            </h2>
+          </div>
+
+          {/* Form Body */}
+          <div className="p-8 pb-10">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-8">
+              <div className="space-y-3">
+                <label className="block text-[#475569] font-medium text-[17px]">
+                  รหัสพนักงาน
+                </label>
+                <input
+                  type="text"
+                  placeholder="เช่น EMP-002"
+                  value={editingEmployee.employeeId}
+                  readOnly
+                  className="w-full bg-slate-100 border border-[#e2e8f0] px-5 py-3.5 rounded-xl text-[15px] text-slate-500 cursor-not-allowed transition-all"
+                />
+              </div>
+
+              <div className="space-y-3">
+                <label className="block text-[#475569] font-medium text-[17px]">
+                  ชื่อ
+                </label>
+                <input
+                  type="text"
+                  placeholder="ชื่อ"
+                  value={editingEmployee.firstName}
+                  onChange={(e) =>
+                    setEditingEmployee({
+                      ...editingEmployee,
+                      firstName: e.target.value,
+                    })
+                  }
+                  className="w-full bg-[#f8fafc] border border-[#e2e8f0] px-5 py-3.5 rounded-xl text-[15px] focus:outline-hidden focus:ring-2 focus:ring-blue-100 transition-all text-slate-800"
+                />
+              </div>
+
+              <div className="space-y-3">
+                <label className="block text-[#475569] font-medium text-[17px]">
+                  นามสกุล
+                </label>
+                <input
+                  type="text"
+                  placeholder="นามสกุล"
+                  value={editingEmployee.lastName}
+                  onChange={(e) =>
+                    setEditingEmployee({
+                      ...editingEmployee,
+                      lastName: e.target.value,
+                    })
+                  }
+                  className="w-full bg-[#f8fafc] border border-[#e2e8f0] px-5 py-3.5 rounded-xl text-[15px] focus:outline-hidden focus:ring-2 focus:ring-blue-100 transition-all text-slate-800"
+                />
+              </div>
+
+              <div className="space-y-3">
+                <label className="block text-[#475569] font-medium text-[17px]">
+                  ชื่อภาษาอังกฤษ (First Name)
+                </label>
+                <input
+                  type="text"
+                  placeholder="First Name"
+                  value={editingEmployee.firstNameEN}
+                  onChange={(e) =>
+                    setEditingEmployee({
+                      ...editingEmployee,
+                      firstNameEN: e.target.value,
+                    })
+                  }
+                  className="w-full bg-[#f8fafc] border border-[#e2e8f0] px-5 py-3.5 rounded-xl text-[15px] focus:outline-hidden focus:ring-2 focus:ring-blue-100 transition-all text-slate-800"
+                />
+              </div>
+
+              <div className="space-y-3">
+                <label className="block text-[#475569] font-medium text-[17px]">
+                  นามสกุลภาษาอังกฤษ (Last Name)
+                </label>
+                <input
+                  type="text"
+                  placeholder="Last Name"
+                  value={editingEmployee.lastNameEN}
+                  onChange={(e) =>
+                    setEditingEmployee({
+                      ...editingEmployee,
+                      lastNameEN: e.target.value,
+                    })
+                  }
+                  className="w-full bg-[#f8fafc] border border-[#e2e8f0] px-5 py-3.5 rounded-xl text-[15px] focus:outline-hidden focus:ring-2 focus:ring-blue-100 transition-all text-slate-800"
+                />
+              </div>
+
+              <div className="space-y-3">
+                <label className="block text-[#475569] font-medium text-[17px]">
+                  เลขบัตรประชาชน (ID Card Number)
+                </label>
+                <input
+                  type="text"
+                  placeholder="เลข 13 หลัก"
+                  value={editingEmployee.idCardNumber}
+                  onChange={(e) => {
+                    const digitsOnly = e.target.value.replace(/\D/g, '');
+                    if (digitsOnly.length <= 13) {
+                      setEditingEmployee({
+                        ...editingEmployee,
+                        idCardNumber: digitsOnly,
+                      });
+                    }
+                  }}
+                  maxLength={13}
+                  className="w-full bg-[#f8fafc] border border-[#e2e8f0] px-5 py-3.5 rounded-xl text-[15px] focus:outline-hidden focus:ring-2 focus:ring-blue-100 transition-all text-slate-800"
+                />
+              </div>
+
+              <div className="space-y-3">
+                <label className="block text-[#475569] font-medium text-[17px]">
+                  วันเกิด (Date of Birth)
+                </label>
+                <DatePicker
+                  selected={
+                    editingEmployee.dateOfBirth
+                      ? new Date(editingEmployee.dateOfBirth)
+                      : null
+                  }
+                  onChange={(date: Date | null) => {
+                    setEditingEmployee({
+                      ...editingEmployee,
+                      dateOfBirth: date ? date.toLocaleDateString('en-CA') : '',
+                    });
+                  }}
+                  placeholderText="เลือกวันเกิด"
+                />
+              </div>
+
+              <div className="space-y-3">
+                <label className="block text-[#475569] font-medium text-[17px]">
+                  ที่อยู่ตามบัตรประชาชน
+                </label>
+                <textarea
+                  placeholder="กรอกที่อยู่ตามบัตรประชาชน"
+                  value={editingEmployee.idCardAddress}
+                  onChange={(e) =>
+                    setEditingEmployee({
+                      ...editingEmployee,
+                      idCardAddress: e.target.value,
+                    })
+                  }
+                  rows={3}
+                  className="w-full bg-[#f8fafc] border border-[#e2e8f0] px-5 py-3.5 rounded-xl text-[15px] focus:outline-hidden focus:ring-2 focus:ring-blue-100 transition-all text-slate-800 resize-none"
+                ></textarea>
+              </div>
+
+              <div className="space-y-3">
+                <label className="block text-[#475569] font-medium text-[17px]">
+                  ที่อยู่ปัจจุบัน
+                </label>
+                <textarea
+                  placeholder="กรอกที่อยู่ปัจจุบัน"
+                  value={editingEmployee.currentAddress}
+                  onChange={(e) =>
+                    setEditingEmployee({
+                      ...editingEmployee,
+                      currentAddress: e.target.value,
+                    })
+                  }
+                  rows={3}
+                  className="w-full bg-[#f8fafc] border border-[#e2e8f0] px-5 py-3.5 rounded-xl text-[15px] focus:outline-hidden focus:ring-2 focus:ring-blue-100 transition-all text-slate-800 resize-none"
+                ></textarea>
+              </div>
+
+              <div className="space-y-3">
+                <label className="block text-[#475569] font-medium text-[17px]">
+                  แผนก
+                </label>
+                <div className="relative">
+                  <select
+                    value={editingEmployee.departmentId}
+                    onChange={(e) => {
+                      const selectedDept = departmentsData.find(
+                        (d) => String(d.id) === e.target.value,
+                      );
+                      setEditingEmployee({
+                        ...editingEmployee,
+                        departmentId: e.target.value,
+                        departmentName: selectedDept ? selectedDept.name : '',
+                        positionId: '',
+                        positionName: '',
+                      });
+                    }}
+                    className="w-full bg-[#f8fafc] border border-[#e2e8f0] px-5 py-3.5 rounded-xl text-[15px] appearance-none focus:outline-hidden focus:ring-2 focus:ring-blue-100 transition-all text-slate-800 cursor-pointer"
+                  >
+                    <option value="" disabled>
+                      -- กรุณาเลือกแผนก --
+                    </option>
+                    {departmentsData.map((dept: any) => (
+                      <option key={dept.id} value={dept.id}>
+                        {dept.name}
+                      </option>
+                    ))}
+                  </select>
+                  <ChevronDown
+                    className="absolute right-5 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-700 pointer-events-none"
+                    strokeWidth={2.5}
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                <label className="block text-[#475569] font-medium text-[17px]">
+                  เพศ
+                </label>
+                <div className="relative">
+                  <select
+                    value={editingEmployee.gender}
+                    onChange={(e) =>
+                      setEditingEmployee({
+                        ...editingEmployee,
+                        gender: e.target.value,
+                      })
+                    }
+                    className="w-full bg-[#f8fafc] border border-[#e2e8f0] px-5 py-3.5 rounded-xl text-[15px] appearance-none focus:outline-hidden focus:ring-2 focus:ring-blue-100 transition-all text-slate-800 cursor-pointer"
+                  >
+                    <option value="Unspecified">ไม่ระบุ</option>
+                    <option value="Male">ชาย</option>
+                    <option value="Female">หญิง</option>
+                  </select>
+                  <ChevronDown
+                    className="absolute right-5 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-700 pointer-events-none"
+                    strokeWidth={2.5}
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                <label className="block text-[#475569] font-medium text-[17px]">
+                  ตำแหน่ง
+                </label>
+                <div className="relative">
+                  <select
+                    value={editingEmployee.positionId}
+                    onChange={(e) => {
+                      const selectedPos = positionsData.find(
+                        (p) => String(p.id) === e.target.value,
+                      );
+                      const posName = selectedPos
+                        ? selectedPos.title || selectedPos.name || ''
+                        : '';
+                      const isLeaderOrManager =
+                        posName.toLowerCase().includes('leader') ||
+                        posName.toLowerCase().includes('manager');
+
+                      const deptName =
+                        selectedPos?.department?.name ||
+                        editingEmployee.departmentName ||
+                        '';
+                      const isHRDept =
+                        deptName.toLowerCase().includes('hr') ||
+                        deptName.toLowerCase().includes('human resource');
+
+                      let roleName = 'Employee';
+                      if (isHRDept) {
+                        roleName = 'HR';
+                      } else if (editingEmployee.roleName === 'CEO') {
+                        roleName = 'CEO';
+                      } else if (isLeaderOrManager) {
+                        roleName = 'Manager';
+                      }
+
+                      setEditingEmployee({
+                        ...editingEmployee,
+                        positionId: e.target.value,
+                        positionName: posName,
+                        roleName: roleName,
+                        ...(selectedPos?.department &&
+                        !editingEmployee.departmentId
+                          ? {
+                              departmentId: String(selectedPos.department.id),
+                              departmentName: selectedPos.department.name || '',
+                            }
+                          : {}),
+                      });
+                    }}
+                    className="w-full bg-[#f8fafc] border border-[#e2e8f0] px-5 py-3.5 rounded-xl text-[15px] appearance-none focus:outline-hidden focus:ring-2 focus:ring-blue-100 transition-all text-slate-800 cursor-pointer"
+                  >
+                    <option value="" disabled>
+                      -- กรุณาเลือกตำแหน่ง --
+                    </option>
+                    {availableEditPositions.map((pos: any) => (
+                      <option key={pos.id} value={pos.id}>
+                        {pos.title || pos.name}
+                      </option>
+                    ))}
+                  </select>
+                  <ChevronDown
+                    className="absolute right-5 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-700 pointer-events-none"
+                    strokeWidth={2.5}
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                <label className="block text-[#475569] font-medium text-[17px]">
+                  เบอร์โทรศัพท์
+                </label>
+                <input
+                  type="text"
+                  placeholder="098-456-7899"
+                  value={editingEmployee.phone}
+                  onChange={(e) =>
+                    setEditingEmployee({
+                      ...editingEmployee,
+                      phone: e.target.value,
+                    })
+                  }
+                  className="w-full bg-[#f8fafc] border border-[#e2e8f0] px-5 py-3.5 rounded-xl text-[15px] focus:outline-hidden focus:ring-2 focus:ring-blue-100 transition-all text-slate-800"
+                />
+              </div>
+
+              <div className="space-y-3">
+                <label className="block text-[#475569] font-medium text-[17px]">
+                  อีเมล
+                </label>
+                <input
+                  type="email"
+                  placeholder="example@nid.co.th"
+                  value={editingEmployee.email}
+                  onChange={(e) =>
+                    setEditingEmployee({
+                      ...editingEmployee,
+                      email: e.target.value,
+                    })
+                  }
+                  className="w-full bg-[#f8fafc] border border-[#e2e8f0] px-5 py-3.5 rounded-xl text-[15px] focus:outline-hidden focus:ring-2 focus:ring-blue-100 transition-all text-slate-800"
+                />
+              </div>
+
+              <div className="space-y-3 md:col-span-2 md:w-1/2 md:pr-6">
+                <label className="block text-[#475569] font-medium text-[17px]">
+                  วันที่เริ่มทำงาน
+                </label>
+                <DatePicker
+                  selected={
+                    editingEmployee.joinDate
+                      ? new Date(editingEmployee.joinDate)
+                      : null
+                  }
+                  onChange={(date: Date | null) =>
+                    setEditingEmployee({
+                      ...editingEmployee,
+                      joinDate: date ? date.toLocaleDateString('en-CA') : '',
+                    })
+                  }
+                  placeholderText="YYYY-MM-DD"
+                />
+              </div>
+            </div>
+
+            {/* Footer Buttons */}
+            <div className="flex justify-end items-center gap-4 mt-16 pb-2">
+              <button
+                onClick={() => setIsEditModalOpen(false)}
+                className="px-8 py-3.5 bg-[#f8fafc] border border-[#e2e8f0] hover:bg-[#f1f5f9] text-[#0f172a] rounded-xl font-medium text-[17px] transition-colors cursor-pointer"
+              >
+                ยกเลิก
+              </button>
+              <button
+                onClick={handleUpdateEmployee}
+                className="px-8 py-3.5 bg-[#2563eb] hover:bg-[#1d4ed8] text-white rounded-xl font-medium text-[17px] shadow-md shadow-blue-500/20 transition-all cursor-pointer"
+              >
+                บันทึกการแก้ไข
+              </button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Leave Balance Modal */}
       <Dialog open={isBalanceModalOpen} onOpenChange={setIsBalanceModalOpen}>
         <DialogContent
-          className="max-w-[800px] w-[90vw] p-0 overflow-hidden bg-white dark:bg-slate-900 rounded-3xl"
+          className="max-w-[800px] w-[90vw] p-0 overflow-hidden bg-white rounded-3xl"
           style={{ maxWidth: '800px' }}
         >
           <div className="bg-[#1e40af] px-10 py-8 text-white flex justify-between items-center shrink-0">
@@ -626,8 +1172,18 @@ export default function EmployeeManagementPage() {
             )}
 
             <div className="flex justify-end items-center gap-4 mt-8 pb-2">
-              <ActionButton action="cancel" onClick={() => setIsBalanceModalOpen(false)}>ยกเลิก</ActionButton>
-              <ActionButton action="save" onClick={handleSaveAllBalances}>บันทึกการแก้ไข</ActionButton>
+              <button
+                onClick={() => setIsBalanceModalOpen(false)}
+                className="px-8 py-3.5 bg-[#f8fafc] border border-[#e2e8f0] hover:bg-[#f1f5f9] text-[#0f172a] rounded-xl font-medium text-[17px] transition-colors cursor-pointer"
+              >
+                ยกเลิก
+              </button>
+              <button
+                onClick={handleSaveAllBalances}
+                className="px-8 py-3.5 bg-[#2563eb] hover:bg-[#1d4ed8] text-white rounded-xl font-medium text-[17px] shadow-md shadow-blue-500/20 transition-all cursor-pointer"
+              >
+                บันทึกการแก้ไข
+              </button>
             </div>
           </div>
         </DialogContent>

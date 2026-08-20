@@ -27,7 +27,6 @@ import {
   Building,
 } from 'lucide-react';
 import { Department } from '@/lib/api/types';
-import { ActionButton, IconButton } from '@/components/ui/action-button';
 
 const departmentSchema = z.object({
   code: z
@@ -255,8 +254,18 @@ export default function HRDepartments() {
                       </Badge>
                     </td>
                     <td className="py-4 px-5 text-right space-x-1">
-                      <IconButton action="edit" icon={Edit2} label="แก้ไขแผนก" size="icon-sm" onClick={() => handleEditOpen(d)} />
-                      <IconButton action="delete" icon={Trash2} label="ลบแผนก" size="icon-sm" onClick={() => handleDelete(d)} />
+                      <button
+                        onClick={() => handleEditOpen(d)}
+                        className="inline-flex p-2 rounded-lg border border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-650 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 cursor-pointer transition-all"
+                      >
+                        <Edit2 className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => handleDelete(d)}
+                        className="inline-flex p-2 rounded-lg border border-slate-200 dark:border-slate-800 hover:bg-red-50 dark:hover:bg-red-950/20 text-slate-650 dark:text-slate-400 hover:text-red-600 dark:hover:text-red-400 cursor-pointer transition-all"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
                     </td>
                   </tr>
                 ))}
@@ -370,8 +379,19 @@ export default function HRDepartments() {
             </div>
 
             <DialogFooter>
-              <ActionButton action="cancel" onClick={() => setDialogOpen(false)}>ยกเลิก</ActionButton>
-              <ActionButton action="save" type="submit">บันทึกข้อมูล</ActionButton>
+              <button
+                type="button"
+                onClick={() => setDialogOpen(false)}
+                className="px-4 py-2 text-sm font-semibold rounded-xl border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-850 text-slate-650 dark:text-slate-350 cursor-pointer"
+              >
+                ยกเลิก (Cancel)
+              </button>
+              <button
+                type="submit"
+                className="px-4 py-2 text-sm font-semibold rounded-xl text-white bg-indigo-600 hover:bg-indigo-500 cursor-pointer"
+              >
+                บันทึกข้อมูล (Save)
+              </button>
             </DialogFooter>
           </form>
         </DialogContent>

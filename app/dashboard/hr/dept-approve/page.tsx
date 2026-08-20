@@ -3,8 +3,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { Calendar as CalendarIcon, X, User, Check, Clock, AlertCircle } from "lucide-react";
 import Swal from "sweetalert2";
-import { ActionButton, IconButton } from "@/components/ui/action-button";
-import { isSameYearMonth } from "@/lib/api/utils";
 
 const getToken = () =>
   typeof window !== "undefined" ? sessionStorage.getItem("accessToken") : "";
@@ -143,7 +141,12 @@ export default function HRDeptApprovePage() {
   }, [selectedRequest]);
 
   // Filter by selected month
-  const requests = rawRequests.filter((r) => isSameYearMonth(r.startDate, selectedMonthRaw));
+  const requests = rawRequests.filter((r) => {
+    if (!r.startDate) return false;
+    const d = new Date(r.startDate);
+    const yyyyMM = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+    return yyyyMM === selectedMonthRaw;
+  });
 
   const handleMonthSelect = (monthIndex: number) => {
     setSelectedMonthRaw(`${tempYear}-${(monthIndex + 1).toString().padStart(2, "0")}`);
@@ -221,22 +224,22 @@ export default function HRDeptApprovePage() {
         <div className="mb-8 relative inline-block">
           <button
             onClick={() => setIsPickerOpen(!isPickerOpen)}
-            className="border border-gray-300 dark:border-slate-700 text-gray-700 dark:text-slate-200 text-sm font-bold py-2 px-5 rounded-full shadow-sm flex items-center gap-3 bg-white dark:bg-slate-800 hover:bg-gray-50 dark:hover:bg-slate-700/80 transition-all active:scale-95"
+            className="border border-gray-300 text-gray-700 text-sm font-bold py-2 px-5 rounded-full shadow-sm flex items-center gap-3 hover:bg-gray-50 transition-all active:scale-95"
           >
             {formatMonthYear(selectedMonthRaw)}
-            <CalendarIcon className="w-4 h-4 text-gray-700 dark:text-slate-200" strokeWidth={2.5} />
+            <CalendarIcon className="w-4 h-4 text-gray-700" strokeWidth={2.5} />
           </button>
 
           {isPickerOpen && (
             <>
               <div className="fixed inset-0 z-40" onClick={() => setIsPickerOpen(false)} />
-              <div className="absolute top-full left-0 mt-3 bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-gray-100 dark:border-slate-700 p-5 w-[340px] z-50 animate-in fade-in zoom-in-95 duration-200">
+              <div className="absolute top-full left-0 mt-3 bg-white rounded-2xl shadow-2xl border border-gray-100 p-5 w-[340px] z-50 animate-in fade-in zoom-in-95 duration-200">
                 <div className="flex items-center justify-between mb-5 px-1">
-                  <button onClick={() => setTempYear((y) => y - 1)} className="p-2 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-full transition-colors text-gray-500 dark:text-slate-400 hover:text-black dark:hover:text-white">
+                  <button onClick={() => setTempYear((y) => y - 1)} className="p-2 hover:bg-gray-100 rounded-full transition-colors text-gray-500 hover:text-black">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6" /></svg>
                   </button>
-                  <span className="font-bold text-lg text-black dark:text-white tracking-wide">{tempYear + 543}</span>
-                  <button onClick={() => setTempYear((y) => y + 1)} className="p-2 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-full transition-colors text-gray-500 dark:text-slate-400 hover:text-black dark:hover:text-white">
+                  <span className="font-bold text-lg text-black tracking-wide">{tempYear + 543}</span>
+                  <button onClick={() => setTempYear((y) => y + 1)} className="p-2 hover:bg-gray-100 rounded-full transition-colors text-gray-500 hover:text-black">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m9 18 6-6-6-6" /></svg>
                   </button>
                 </div>
@@ -244,7 +247,7 @@ export default function HRDeptApprovePage() {
                   {["ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."].map((m, i) => {
                     const isSelected = selectedMonthRaw === `${tempYear}-${(i + 1).toString().padStart(2, "0")}`;
                     return (
-                      <button key={m} onClick={() => handleMonthSelect(i)} className={`py-2.5 rounded-xl text-[14px] font-bold transition-all ${isSelected ? "bg-blue-600 text-white shadow-md shadow-blue-600/20" : "text-gray-600 dark:text-slate-300 hover:bg-blue-50 dark:hover:bg-blue-900/40 hover:text-blue-700 dark:hover:text-blue-300"}`}>
+                      <button key={m} onClick={() => handleMonthSelect(i)} className={`py-2.5 rounded-xl text-[14px] font-bold transition-all ${isSelected ? "bg-blue-600 text-white shadow-md" : "text-gray-600 hover:bg-blue-50 hover:text-blue-700"}`}>
                         {m}
                       </button>
                     );
@@ -303,9 +306,24 @@ export default function HRDeptApprovePage() {
                       </td>
                       <td className="py-6 px-6 text-right whitespace-nowrap">
                         <div className="flex items-center justify-end gap-2 pr-2">
-                          <ActionButton action="view" size="sm" onClick={() => setSelectedRequest(req)}>รายละเอียด</ActionButton>
-                          <ActionButton action="approve" size="sm" icon={Check} onClick={() => handleApproveClick(req)}>อนุมัติ</ActionButton>
-                          <ActionButton action="reject" size="sm" icon={X} onClick={() => handleRejectClick(req)}>ปฏิเสธ</ActionButton>
+                          <button
+                            onClick={() => setSelectedRequest(req)}
+                            className="bg-[#FFA000] hover:bg-[#F57C00] text-black text-[11px] font-bold py-1.5 px-3 rounded shadow-sm transition-colors"
+                          >
+                            รายละเอียด
+                          </button>
+                          <button
+                            onClick={() => handleApproveClick(req)}
+                            className="bg-[#00C853] hover:bg-[#00B04A] text-white text-[11px] font-bold py-1.5 px-3 rounded shadow-sm transition-colors"
+                          >
+                            อนุมัติ
+                          </button>
+                          <button
+                            onClick={() => handleRejectClick(req)}
+                            className="bg-[#FF0000] hover:bg-[#E50000] text-white text-[11px] font-bold py-1.5 px-3 rounded shadow-sm transition-colors"
+                          >
+                            ปฏิเสธ
+                          </button>
                         </div>
                       </td>
                     </tr>
@@ -325,7 +343,9 @@ export default function HRDeptApprovePage() {
             {/* Modal Header */}
             <div className="flex items-center justify-between px-6 py-5">
               <h2 className="text-[20px] font-bold text-black">รายละเอียดคำขอลา</h2>
-              <IconButton action="cancel" icon={X} label="ปิด" onClick={() => setSelectedRequest(null)} />
+              <button onClick={() => setSelectedRequest(null)} className="w-8 h-8 flex items-center justify-center text-white bg-red-500 rounded-full hover:bg-red-600 transition-colors">
+                <X className="w-5 h-5" strokeWidth={3} />
+              </button>
             </div>
 
             {/* Modal Body */}
@@ -425,8 +445,18 @@ export default function HRDeptApprovePage() {
                 ยื่นเมื่อ: {selectedRequest.createdAt ? new Date(selectedRequest.createdAt).toLocaleDateString("th-TH", { day: "numeric", month: "short", year: "numeric" }) : "-"}
               </span>
               <div className="flex items-center gap-3">
-                <ActionButton action="approve" icon={Check} onClick={() => handleApproveClick(selectedRequest, approverReason)}>อนุมัติ</ActionButton>
-                <ActionButton action="reject" icon={X} onClick={() => handleRejectClick(selectedRequest, approverReason)}>ปฏิเสธ</ActionButton>
+                <button
+                  onClick={() => handleApproveClick(selectedRequest, approverReason)}
+                  className="bg-[#00E676] hover:bg-[#00C853] text-white text-[13px] font-bold py-2 px-6 rounded-lg shadow-sm transition-colors"
+                >
+                  อนุมัติ
+                </button>
+                <button
+                  onClick={() => handleRejectClick(selectedRequest, approverReason)}
+                  className="bg-[#FF0000] hover:bg-[#E50000] text-white text-[13px] font-bold py-2 px-6 rounded-lg shadow-sm transition-colors"
+                >
+                  ปฏิเสธ
+                </button>
               </div>
             </div>
           </div>
@@ -439,7 +469,9 @@ export default function HRDeptApprovePage() {
           <div className="bg-white rounded-[24px] w-full max-w-4xl shadow-2xl flex flex-col max-h-[90vh] overflow-hidden border-2 border-blue-500" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 bg-[#FAFAFA]">
               <h2 className="text-[16px] font-bold text-black">ไฟล์เอกสารแนบ</h2>
-              <IconButton action="cancel" icon={X} label="ปิด" onClick={() => setPreviewAttachment(null)} />
+              <button onClick={() => setPreviewAttachment(null)} className="w-8 h-8 flex items-center justify-center text-white bg-red-500 rounded-full hover:bg-red-600 transition-colors">
+                <X className="w-5 h-5" strokeWidth={3} />
+              </button>
             </div>
             <div className="p-6 overflow-y-auto flex-1 flex items-center justify-center bg-gray-50/50">
               {previewAttachment.isImage ? (

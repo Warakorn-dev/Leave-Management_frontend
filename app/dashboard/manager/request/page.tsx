@@ -57,7 +57,9 @@ export default function ManagerRequestPage() {
       return false;
     }
 
+    const actualUserId = typeof window !== 'undefined' ? sessionStorage.getItem('userId') : '';
     return myLeaves.some((leave: any) => {
+      if (actualUserId && String(leave.userId) !== String(actualUserId)) return false;
       if (
         ['REJECTED', 'Rejected', 'CANCELLED', 'Cancelled'].includes(
           leave.status,

@@ -13,7 +13,6 @@ if (process.env.NODE_ENV === 'production' && !process.env.NEXT_PUBLIC_BACKEND_UR
 const nextConfig: NextConfig = {
   // Allows CI or a verification build to use an isolated generated-output directory.
   distDir: process.env.NEXT_DIST_DIR || '.next',
-  devIndicators: false,
   allowedDevOrigins: ['192.168.24.79', '192.168.24.134', 'localhost', '127.0.0.1'],
   async rewrites() {
     return [

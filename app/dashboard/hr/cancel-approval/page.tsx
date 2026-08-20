@@ -3,8 +3,6 @@
 import { useState, useEffect } from "react";
 import { useLeave } from "@/hooks/useLeave";
 import { Calendar as CalendarIcon, X, User, Check, Clock, AlertTriangle } from "lucide-react";
-import { ActionButton, IconButton } from "@/components/ui/action-button";
-import { isSameYearMonth } from "@/lib/api/utils";
 
 export default function HrCancelApprovalPage() {
   const [requests, setRequests] = useState<any[]>([]);
@@ -57,7 +55,12 @@ export default function HrCancelApprovalPage() {
   const { mutateAsync: verifyLeave } = useVerifyLeaveMutation();
 
   useEffect(() => {
-    const filtered = allCancellations.filter((r: any) => isSameYearMonth(r.startDate, selectedMonthRaw));
+    const filtered = allCancellations.filter((r: any) => {
+      if (!r.startDate) return false;
+      const d = new Date(r.startDate);
+      const yyyyMM = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+      return yyyyMM === selectedMonthRaw;
+    });
     const sorted = [...filtered].sort(
       (a: any, b: any) => new Date(b.createdAt || b.startDate).getTime() - new Date(a.createdAt || a.startDate).getTime()
     );
@@ -190,22 +193,22 @@ export default function HrCancelApprovalPage() {
         <div className="mb-8 relative inline-block">
           <button
             onClick={() => setIsPickerOpen(!isPickerOpen)}
-            className="border border-gray-300 dark:border-slate-700 text-gray-700 dark:text-slate-200 text-sm font-bold py-2 px-5 rounded-full shadow-sm flex items-center gap-3 bg-white dark:bg-slate-800 hover:bg-gray-50 dark:hover:bg-slate-700/80 transition-all active:scale-95"
+            className="border border-gray-300 text-gray-700 text-sm font-bold py-2 px-5 rounded-full shadow-sm flex items-center gap-3 hover:bg-gray-50 transition-all active:scale-95"
           >
             {formatMonthYear(selectedMonthRaw)}
-            <CalendarIcon className="w-4 h-4 text-gray-700 dark:text-slate-200" strokeWidth={2.5} />
+            <CalendarIcon className="w-4 h-4 text-gray-700" strokeWidth={2.5} />
           </button>
 
           {isPickerOpen && (
             <>
               <div className="fixed inset-0 z-40" onClick={() => setIsPickerOpen(false)}></div>
-              <div className="absolute top-full left-0 mt-3 bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-gray-100 dark:border-slate-700 p-5 w-[340px] z-50 animate-in fade-in zoom-in-95 duration-200">
+              <div className="absolute top-full left-0 mt-3 bg-white rounded-2xl shadow-2xl border border-gray-100 p-5 w-[340px] z-50 animate-in fade-in zoom-in-95 duration-200">
                 <div className="flex items-center justify-between mb-5 px-1">
-                  <button onClick={() => setTempYear((y) => y - 1)} className="p-2 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-full transition-colors text-gray-500 dark:text-slate-400 hover:text-black dark:hover:text-white">
+                  <button onClick={() => setTempYear((y) => y - 1)} className="p-2 hover:bg-gray-100 rounded-full transition-colors text-gray-500 hover:text-black">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6" /></svg>
                   </button>
-                  <span className="font-bold text-lg text-black dark:text-white tracking-wide">{tempYear + 543}</span>
-                  <button onClick={() => setTempYear((y) => y + 1)} className="p-2 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-full transition-colors text-gray-500 dark:text-slate-400 hover:text-black dark:hover:text-white">
+                  <span className="font-bold text-lg text-black tracking-wide">{tempYear + 543}</span>
+                  <button onClick={() => setTempYear((y) => y + 1)} className="p-2 hover:bg-gray-100 rounded-full transition-colors text-gray-500 hover:text-black">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m9 18 6-6-6-6" /></svg>
                   </button>
                 </div>
@@ -216,7 +219,7 @@ export default function HrCancelApprovalPage() {
                       <button
                         key={m}
                         onClick={() => handleMonthSelect(i)}
-                        className={`py-2.5 rounded-xl text-[14px] font-bold transition-all ${isSelected ? "bg-rose-600 text-white shadow-md shadow-rose-600/20" : "text-gray-600 dark:text-slate-300 hover:bg-rose-50 dark:hover:bg-rose-950/40 hover:text-rose-700 dark:hover:text-rose-300"}`}
+                        className={`py-2.5 rounded-xl text-[14px] font-bold transition-all ${isSelected ? "bg-rose-600 text-white shadow-md shadow-rose-600/20" : "text-gray-600 hover:bg-rose-50 hover:text-rose-700"}`}
                       >
                         {m}
                       </button>
@@ -277,27 +280,24 @@ export default function HrCancelApprovalPage() {
                     </td>
                     <td className="py-6 px-6 text-right whitespace-nowrap">
                       <div className="flex items-center justify-end gap-2 pr-6">
-                        <ActionButton
-                          action="view"
-                          size="sm"
+                        <button
                           onClick={() => setSelectedRequest(req)}
+                          className="bg-[#FFA000] hover:bg-[#F57C00] text-black text-[11px] font-bold py-1.5 w-[105px] text-center rounded shadow-sm transition-colors"
                         >
                           รายละเอียด
-                        </ActionButton>
-                        <ActionButton
-                          action="delete"
-                          size="sm"
+                        </button>
+                        <button
                           onClick={() => handleApproveClick(req.id)}
+                          className="bg-rose-600 hover:bg-rose-700 text-white text-[11px] font-bold py-1.5 w-[105px] text-center rounded shadow-sm transition-colors"
                         >
                           อนุมัติการยกเลิก
-                        </ActionButton>
-                        <ActionButton
-                          action="cancel"
-                          size="sm"
+                        </button>
+                        <button
                           onClick={() => handleRejectClick(req.id)}
+                          className="bg-gray-500 hover:bg-gray-600 text-white text-[11px] font-bold py-1.5 w-[105px] text-center rounded shadow-sm transition-colors"
                         >
                           ปฏิเสธ (คงสภาพ)
-                        </ActionButton>
+                        </button>
                       </div>
                     </td>
                   </tr>
@@ -319,13 +319,12 @@ export default function HrCancelApprovalPage() {
                 <h2 className="text-[18px] font-bold text-gray-900">รายละเอียดคำขอยกเลิกการลา</h2>
                 <p className="text-sm text-rose-600 font-medium mt-0.5">กรุณาตรวจสอบข้อมูลก่อนพิจารณา</p>
               </div>
-              <IconButton
-                action="cancel"
-                icon={X}
-                label="ปิด"
+              <button
                 onClick={() => setSelectedRequest(null)}
-                className="border-none bg-transparent hover:bg-rose-100 text-rose-500 hover:text-rose-600"
-              />
+                className="w-8 h-8 flex items-center justify-center text-white bg-red-500 rounded-full hover:bg-red-600 transition-colors shadow-sm"
+              >
+                <X className="w-5 h-5" strokeWidth={3} />
+              </button>
             </div>
 
             {/* Body */}
@@ -461,7 +460,9 @@ export default function HrCancelApprovalPage() {
                 <AlertTriangle className="w-5 h-5" />
                 ยืนยันการอนุมัติการยกเลิก
               </h3>
-              <IconButton action="cancel" icon={X} label="ปิด" onClick={() => { setShowApproveModal(false); setConfirmData(null); }} className="border-none bg-transparent hover:bg-white/20 text-white" />
+              <button onClick={() => { setShowApproveModal(false); setConfirmData(null); }} className="text-white/80 hover:text-white">
+                <X className="w-5 h-5" strokeWidth={3} />
+              </button>
             </div>
             <div className="p-6">
               <div className="bg-rose-50 border border-rose-200 rounded-xl p-4 mb-5">
@@ -497,7 +498,9 @@ export default function HrCancelApprovalPage() {
           <div className="bg-white rounded-2xl w-full max-w-[420px] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
             <div className="bg-gray-600 px-6 py-4 flex items-center justify-between">
               <h3 className="text-white font-bold text-lg">ปฏิเสธคำขอยกเลิก (คงสภาพ)</h3>
-              <IconButton action="cancel" icon={X} label="ปิด" onClick={() => { setShowRejectModal(false); setConfirmData(null); setRejectReasonInput(""); }} className="border-none bg-transparent hover:bg-white/20 text-white" />
+              <button onClick={() => { setShowRejectModal(false); setConfirmData(null); setRejectReasonInput(""); }} className="text-white/80 hover:text-white">
+                <X className="w-5 h-5" strokeWidth={3} />
+              </button>
             </div>
             <div className="p-6">
               <p className="text-gray-700 text-sm font-medium mb-1">คุณต้องการปฏิเสธคำขอยกเลิกนี้ ใช่หรือไม่?</p>
@@ -546,12 +549,12 @@ export default function HrCancelApprovalPage() {
           >
             <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 bg-[#FAFAFA]">
               <h2 className="text-[16px] font-bold text-black">ไฟล์เอกสารแนบ</h2>
-              <IconButton
-                action="cancel"
-                icon={X}
-                label="ปิด"
+              <button
                 onClick={() => setPreviewAttachment(null)}
-              />
+                className="w-8 h-8 flex items-center justify-center text-white bg-red-500 rounded-full hover:bg-red-600 transition-colors shadow-sm"
+              >
+                <X className="w-5 h-5" strokeWidth={3} />
+              </button>
             </div>
             <div className="p-6 overflow-y-auto flex-1 flex items-center justify-center bg-gray-50/50">
               {previewAttachment.isImage ? (

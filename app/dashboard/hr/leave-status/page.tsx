@@ -7,6 +7,7 @@ import {
   calculateLeaveDays,
 } from '@/lib/api/store';
 import { Mail, Bell, Settings } from 'lucide-react';
+import { getLeaveStatusText, getLeaveStatusBadgeColor } from '@/lib/api/utils';
 
 const getLeaveDetails = (req: any) => {
   if (req.startFormat === 'hourly' || req.leaveMode === 'hourly') {
@@ -46,30 +47,46 @@ const getLeaveDetails = (req: any) => {
 };
 
 const getStageStatus = (
-  currentStatus: string,
+  req: any,
   stage: 'HR' | 'MANAGER' | 'CEO',
 ) => {
+  const currentStatus = req.status || 'PENDING_VERIFY';
   if (currentStatus === 'CANCELLED' || currentStatus === 'Cancelled')
     return 'cancelled';
-  if (currentStatus === 'REJECTED') return 'rejected';
+
+  const approvals = req.approvals || [];
+  // approvals are sorted desc, so approvals[0] is the latest
+  const rejectedIndex = currentStatus === 'REJECTED' ? approvals.length : -1; 
+  // If rejected, approvals.length tells us how many steps it took. 
+  // 1 = HR rejected, 2 = Manager rejected (usually), 3 = CEO rejected.
 
   if (stage === 'HR') {
-    if (
-      currentStatus === 'PENDING_VERIFY' ||
-      currentStatus === 'PENDING_CANCELLATION'
-    )
-      return 'pending';
+    if (currentStatus === 'PENDING_VERIFY' || currentStatus === 'PENDING_CANCELLATION') return 'pending';
+    if (currentStatus === 'REJECTED') {
+      return approvals.length === 1 ? 'rejected' : 'approved';
+    }
     return 'approved';
   }
 
   if (stage === 'MANAGER') {
     if (currentStatus === 'PENDING_VERIFY') return 'waiting';
     if (currentStatus === 'PENDING_SUPERVISOR') return 'pending';
+    if (currentStatus === 'REJECTED') {
+      if (approvals.length === 1) return 'waiting'; // HR rejected, Manager never saw it
+      if (approvals.length === 2 && req.leaveType?.isSpecial) return 'waiting'; // HR -> CEO, Manager skipped
+      return approvals.length === 2 ? 'rejected' : 'approved';
+    }
     return 'approved';
   }
 
   if (stage === 'CEO') {
+    if (currentStatus === 'PENDING_VERIFY' || currentStatus === 'PENDING_SUPERVISOR') return 'waiting';
     if (currentStatus === 'PENDING_EXECUTIVE') return 'pending';
+    if (currentStatus === 'REJECTED') {
+      if (approvals.length === 1) return 'waiting';
+      if (approvals.length === 2 && !req.leaveType?.isSpecial) return 'waiting';
+      return 'rejected';
+    }
     if (currentStatus === 'APPROVED') return 'approved';
     return 'waiting';
   }
@@ -135,9 +152,9 @@ export default function LeaveStatusPage() {
             <div className="space-y-6">
               {requests.map((req) => {
                 const status = req.status || 'PENDING_VERIFY';
-                const hrStage = getStageStatus(status, 'HR');
-                const managerStage = getStageStatus(status, 'MANAGER');
-                const ceoStage = getStageStatus(status, 'CEO');
+                const hrStage = getStageStatus(req, 'HR');
+                const managerStage = getStageStatus(req, 'MANAGER');
+                const ceoStage = getStageStatus(req, 'CEO');
 
                 const isNormalLeave = req.leaveType?.isSpecial === false;
                 const showCEO =
@@ -159,43 +176,52 @@ export default function LeaveStatusPage() {
                     className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8"
                   >
                     {/* Header Box */}
-                    <div className="bg-[#F4F5F7] rounded-xl p-5 mb-10">
-                      <h3 className="text-[17px] font-bold text-black">
-                        {req.type}
-                      </h3>
-                      <p className="text-[14px] text-blue-500 font-semibold mt-1">
-                        {req.requestCode || '-'}
-                      </p>
-                      {req.startFormat === 'hourly' ||
-                      req.leaveMode === 'hourly' ? (
-                        <p className="text-[13px] text-gray-500 mt-1 font-medium">
-                          {new Date(req.startDate).toLocaleDateString('th-TH', {
-                            day: 'numeric',
-                            month: 'short',
-                            year: 'numeric',
-                          })}{' '}
-                          <span className="ml-1 text-blue-600 font-semibold">
-                            {getLeaveDetails(req)}
-                          </span>
+                    <div className="bg-[#F4F5F7] rounded-xl p-5 mb-10 flex flex-col md:flex-row md:items-start justify-between gap-4">
+                      <div>
+                        <h3 className="text-[17px] font-bold text-black">
+                          {req.type}
+                        </h3>
+                        <p className="text-[14px] text-blue-500 font-semibold mt-1">
+                          {req.requestCode || '-'}
                         </p>
-                      ) : (
-                        <p className="text-[13px] text-gray-500 mt-1 font-medium">
-                          {new Date(req.startDate).toLocaleDateString('th-TH', {
-                            day: 'numeric',
-                            month: 'short',
-                            year: 'numeric',
-                          })}{' '}
-                          ถึง{' '}
-                          {new Date(req.endDate).toLocaleDateString('th-TH', {
-                            day: 'numeric',
-                            month: 'short',
-                            year: 'numeric',
-                          })}{' '}
-                          <span className="ml-1 text-blue-600 font-semibold">
-                            {getLeaveDetails(req)}
-                          </span>
-                        </p>
-                      )}
+                        {req.startFormat === 'hourly' ||
+                        req.leaveMode === 'hourly' ? (
+                          <p className="text-[13px] text-gray-500 mt-1 font-medium">
+                            {new Date(req.startDate).toLocaleDateString('th-TH', {
+                              day: 'numeric',
+                              month: 'short',
+                              year: 'numeric',
+                            })}{' '}
+                            <span className="ml-1 text-blue-600 font-semibold">
+                              {getLeaveDetails(req)}
+                            </span>
+                          </p>
+                        ) : (
+                          <p className="text-[13px] text-gray-500 mt-1 font-medium">
+                            {new Date(req.startDate).toLocaleDateString('th-TH', {
+                              day: 'numeric',
+                              month: 'short',
+                              year: 'numeric',
+                            })}{' '}
+                            ถึง{' '}
+                            {new Date(req.endDate).toLocaleDateString('th-TH', {
+                              day: 'numeric',
+                              month: 'short',
+                              year: 'numeric',
+                            })}{' '}
+                            <span className="ml-1 text-blue-600 font-semibold">
+                              {getLeaveDetails(req)}
+                            </span>
+                          </p>
+                        )}
+                      </div>
+                      <div className="flex-shrink-0">
+                        <span
+                          className={`inline-block px-5 py-1.5 rounded-full text-[13px] font-bold text-white shadow-sm min-w-[120px] text-center ${getLeaveStatusBadgeColor(status)}`}
+                        >
+                          {getLeaveStatusText(status)}
+                        </span>
+                      </div>
                     </div>
 
                     {/* Timeline */}

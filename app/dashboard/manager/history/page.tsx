@@ -21,7 +21,7 @@ import Swal from 'sweetalert2';
 import { DatePicker } from '@/components/DateAndTime';
 import { LeaveTimePicker } from '@/components/LeaveTimePicker';
 import { uploadApi } from '@/lib/api';
-import { getLeaveStatusBadgeColor, getLeaveStatusText, isSameYearMonth } from '@/lib/api/utils';
+import { getLeaveStatusBadgeColor, getLeaveStatusText } from '@/lib/api/utils';
 
 const formatDate = (dateString: string) => {
   if (!dateString) return '-';
@@ -134,7 +134,10 @@ export default function LeaveHistoryPage() {
       }
 
       if (filterType === 'monthly') {
-        return isSameYearMonth(r.startDate, selectedMonthRaw);
+        if (!r.startDate) return false;
+        const d = new Date(r.startDate);
+        const yyyyMM = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+        return yyyyMM === selectedMonthRaw;
       } else {
         if (!selectedDate) return true;
         const selectedStr = `${selectedDate.getFullYear()}-${String(selectedDate.getMonth() + 1).padStart(2, '0')}-${String(selectedDate.getDate()).padStart(2, '0')}`;
