@@ -9,6 +9,7 @@ import { UserSidebar } from "@/components/sidebar-user";
 import { ManagerSidebar } from "@/components/ManagerSidebar";
 import { HRSidebar } from "@/components/HRSidebar";
 import { CEOSidebar } from "@/components/sidebar-ceo";
+import AIChatWidget from "@/components/AIChatWidget";
 
 export default function DashboardShell({ children }: { children: React.ReactNode }) {
   const [role, setRole] = useState<string | null>(null);
@@ -123,6 +124,9 @@ export default function DashboardShell({ children }: { children: React.ReactNode
           {children}
         </div>
       </main>
+
+      {/* AI Leave Assistant Widget — fixed position, available on all pages */}
+      <AIChatWidget />
     </div>
   );
 }

@@ -16,16 +16,23 @@ const nextConfig: NextConfig = {
   devIndicators: false,
   allowedDevOrigins: ['192.168.24.79', '192.168.24.134', 'localhost', '127.0.0.1'],
   async rewrites() {
-    return [
-      {
-        source: '/api/:path*',
-        destination: `${backendUrl}/api/:path*`,
-      },
-      {
-        source: '/uploads/:path*',
-        destination: `${backendUrl}/uploads/:path*`,
-      },
-    ];
+    return {
+      // beforeFiles: run BEFORE file-system checks
+      // These rewrites run first; if no match, Next.js serves its own routes
+      beforeFiles: [],
+      // afterFiles: run AFTER file-system checks (Next.js routes take priority)
+      afterFiles: [
+        {
+          source: '/api/:path*',
+          destination: `${backendUrl}/api/:path*`,
+        },
+        {
+          source: '/uploads/:path*',
+          destination: `${backendUrl}/uploads/:path*`,
+        },
+      ],
+      fallback: [],
+    };
   },
 };
 
