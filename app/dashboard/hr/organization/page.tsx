@@ -372,7 +372,7 @@ export default function OrganizationManagementPage() {
 
   // Derived state for filtering
   const filteredDepartments = useMemo(() => {
-    let result = departments.filter(
+    const result = departments.filter(
       (d) =>
         d.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         (d.code && d.code.toLowerCase().includes(searchTerm.toLowerCase())),
@@ -385,7 +385,7 @@ export default function OrganizationManagementPage() {
   }, [departments, searchTerm]);
 
   const filteredPositions = useMemo(() => {
-    let result = positions.filter((p) => {
+    const result = positions.filter((p) => {
       const matchSearch =
         (p.name || p.title || '')
           .toLowerCase()

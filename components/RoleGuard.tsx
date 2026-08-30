@@ -30,6 +30,8 @@ export default function RoleGuard({
           router.push('/dashboard/hr/dashboard');
         } else if (userRole === 'ceo') {
           router.push('/dashboard/ceo/dashboard');
+        } else if (userRole === 'admin') {
+          router.push('/dashboard/admin/dashboard');
         } else if (userRole === 'user') {
           router.push('/dashboard/user/status');
         } else {

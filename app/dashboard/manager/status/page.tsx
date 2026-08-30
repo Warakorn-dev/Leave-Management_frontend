@@ -130,12 +130,22 @@ export default function LeaveStatusPage() {
                 const managerStage = getStageStatus(status, 'MANAGER');
                 const ceoStage = getStageStatus(status, 'CEO');
 
+                const requesterRole = req.user?.role || req.employee?.role || '';
+                const requesterPosition = typeof req.user?.position === 'string' ? req.user?.position : req.user?.position?.name || req.employee?.position?.name || '';
+                const isRequesterManagerOrCEO = 
+                  ['Manager', 'CEO'].includes(requesterRole) || 
+                  requesterPosition.toLowerCase().includes('leader') || 
+                  requesterPosition.toLowerCase().includes('manager') ||
+                  requesterRole.toLowerCase().includes('leader');
+                
                 const isNormalLeave = req.leaveType?.isSpecial === false;
                 const showCEO =
                   !isNormalLeave ||
+                  isRequesterManagerOrCEO ||
                   status === 'PENDING_EXECUTIVE' ||
                   ceoStage === 'pending' ||
                   ceoStage === 'approved';
+                const showManager = !isRequesterManagerOrCEO;
                 const isFinalApproved = status === 'APPROVED';
                 const isFinalRejected = status === 'REJECTED';
                 const isCancelled = status === 'CANCELLED';
@@ -274,6 +284,7 @@ export default function LeaveStatusPage() {
                       </div>
 
                       {/* Step 3: Manager Approval */}
+                      {showManager && (
                       <div className="relative mb-10">
                         <div
                           className={`absolute -left-[31px] md:-left-[43px] w-4 h-4 rounded-full ring-[6px] ring-white z-10 top-0.5 ${
@@ -311,6 +322,7 @@ export default function LeaveStatusPage() {
                             </div>
                           )}
                       </div>
+                      )}
 
                       {/* Step 4: CEO Approval (if applicable) */}
                       {showCEO && (

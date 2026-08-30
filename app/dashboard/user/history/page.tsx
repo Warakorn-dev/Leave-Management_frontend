@@ -256,7 +256,8 @@ export default function LeaveHistoryPage() {
     }
   }, [requests, selectedRequest, isEditing]);
 
-  const handleDelete = async (isApprovedCancel = false) => {
+  const handleDelete = async () => {
+    const isApprovedCancel = selectedRequest?.status?.toLowerCase().includes('approved');
     const result = await Swal.fire({
       title: isApprovedCancel
         ? 'ยืนยันการขอยกเลิกวันลา'
@@ -594,7 +595,7 @@ export default function LeaveHistoryPage() {
 
       {/* Leave Details Modal */}
       {selectedRequest && !isEditing && (
-        <div className="fixed inset-0 z-[999] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200">
+        <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200">
           <div className="bg-white rounded-[24px] w-full max-w-[650px] shadow-2xl flex flex-col max-h-[90vh] animate-in zoom-in-95 duration-200 border-2 border-blue-500 overflow-hidden relative">
             {/* Header */}
             <div className="flex items-center justify-between px-6 py-5">
@@ -729,7 +730,7 @@ export default function LeaveHistoryPage() {
                             ? 'ครึ่งวันบ่าย'
                             : 'เต็มวัน'}
                     </p>
-                    <p className="flex items-center gap-2">
+                    <div className="flex items-center gap-2">
                       <span className="w-[26px] h-[26px] bg-yellow-100 text-yellow-600 flex items-center justify-center rounded-full shrink-0">
                         <svg
                           width="14"
@@ -744,45 +745,32 @@ export default function LeaveHistoryPage() {
                           <path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48" />
                         </svg>
                       </span>
-                      <span className="font-bold min-w-[80px]">เอกสารแนบ:</span>{' '}
-                      {selectedRequest.raw?.attachments &&
-                      selectedRequest.raw.attachments.length > 0 ? (
-                        <>
-                          <span className="text-blue-500 font-medium truncate max-w-[150px]">
-                            {selectedRequest.raw.attachments[0].fileType.includes(
-                              'image',
-                            )
-                              ? 'รูปภาพแนบ'
-                              : 'ไฟล์แนบ'}
-                          </span>
-                          <button
-                            className="ml-auto p-1.5 border border-gray-300 rounded-md hover:bg-gray-100 text-black"
-                            onClick={() => {
-                              const att = selectedRequest.raw.attachments[0];
-                              const isData = att.filePath.startsWith('data:');
-                              const fileSrc = isData
-                                ? att.filePath
-                                : att.filePath.startsWith('http')
-                                  ? att.filePath
-                                  : `/${att.filePath.replace(/^\/+/, '')}`;
-                              const isImage =
-                                att.fileType.includes('image') ||
-                                (!isData &&
-                                  att.filePath.match(/\.(jpeg|jpg|gif|png)$/i));
-
-                              setPreviewAttachment({ url: fileSrc, isImage });
-                            }}
-                          >
-                            <Download
-                              className="w-[14px] h-[14px]"
-                              strokeWidth={2.5}
-                            />
-                          </button>
-                        </>
+                      <span className="font-bold min-w-[80px]">เอกสารแนบ:</span>
+                      {selectedRequest.raw?.attachments && selectedRequest.raw.attachments.length > 0 ? (
+                        <div className="flex flex-col ml-2 gap-2 w-full max-w-[150px]">
+                          {selectedRequest.raw.attachments.map((att: any, idx: number) => {
+                            const isData = att.filePath?.startsWith('data:');
+                            const fileSrc = isData ? att.filePath : att.filePath?.startsWith('http') ? att.filePath : `/${att.filePath?.replace(/^\/+/, '')}`;
+                            const isImage = att.fileType?.startsWith('image/') || (!isData && att.filePath?.match(/\.(jpeg|jpg|gif|png)$/i));
+                            return (
+                              <div key={idx} className="flex items-center justify-between w-full">
+                                <span className="text-blue-500 font-medium truncate text-[13px]">
+                                  {isImage ? 'รูปภาพแนบ' : 'ไฟล์แนบ'} {selectedRequest.raw.attachments.length > 1 ? `(${idx + 1})` : ''}
+                                </span>
+                                <button
+                                  className="ml-2 p-1.5 border border-gray-300 rounded-md hover:bg-gray-100 text-black flex-shrink-0"
+                                  onClick={() => setPreviewAttachment({ url: fileSrc, isImage: !!isImage })}
+                                >
+                                  <Download className="w-[14px] h-[14px]" strokeWidth={2.5} />
+                                </button>
+                              </div>
+                            );
+                          })}
+                        </div>
                       ) : (
-                        <span className="text-gray-400">-</span>
+                        <span className="text-gray-400 ml-2">-</span>
                       )}
-                    </p>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -824,7 +812,11 @@ export default function LeaveHistoryPage() {
                 {(() => {
                   const raw = selectedRequest.raw || {};
                   const approvals: any[] = raw.approvals || [];
-                  const steps = [
+                  const requesterRole = selectedRequest.user?.role || raw.employee?.user?.role?.name || '';
+                  const requesterPosition = typeof selectedRequest.user?.position === 'string' ? selectedRequest.user?.position : selectedRequest.user?.position?.name || raw.employee?.position?.name || '';
+                  const isHrLeader = requesterRole === 'HR' && (requesterPosition.toLowerCase().includes('leader') || requesterPosition.toLowerCase().includes('manager'));
+                  const isRequesterManagerOrCEO = requesterRole === 'Manager' || requesterRole === 'CEO' || isHrLeader;
+                  const allSteps = [
                     {
                       role: 'HR',
                       label: 'ตรวจสอบ (HR)',
@@ -861,6 +853,9 @@ export default function LeaveHistoryPage() {
                       ],
                     },
                   ];
+                  const steps = isRequesterManagerOrCEO
+                    ? allSteps.filter((s) => s.role !== 'Manager')
+                    : allSteps;
 
                   const currentStatus = selectedRequest.status;
 
@@ -965,34 +960,45 @@ export default function LeaveHistoryPage() {
             </div>
 
             {/* Footer */}
-            {!selectedRequest.status.includes('Approved') &&
-              !['Cancelled', 'CANCELLED', 'PENDING_CANCELLATION'].includes(
-                selectedRequest.status,
-              ) && (
-                <div className="px-6 py-4 border-t border-gray-100 flex items-center justify-between bg-white mt-auto shrink-0">
-                  <span className="text-[13px] font-medium text-gray-300">
-                    วันที่ยื่นคำขอ :{' '}
-                    {selectedRequest.raw?.createdAt
-                      ? new Date(
-                          selectedRequest.raw.createdAt,
-                        ).toLocaleDateString('th-TH', {
-                          day: 'numeric',
-                          month: 'short',
-                          year: 'numeric',
-                          hour: '2-digit',
-                          minute: '2-digit',
-                        }) + ' น.'
-                      : '-'}
-                  </span>
+            <div className="px-6 py-4 border-t border-gray-100 flex items-center justify-between bg-white mt-auto shrink-0 rounded-b-[24px]">
+              <span className="text-[13px] font-medium text-gray-300">
+                วันที่ยื่นคำขอ :{' '}
+                {selectedRequest.raw?.createdAt
+                  ? new Date(selectedRequest.raw.createdAt).toLocaleDateString(
+                      'th-TH',
+                      {
+                        day: 'numeric',
+                        month: 'short',
+                        year: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                      },
+                    ) + ' น.'
+                  : '-'}
+              </span>
+
+              {!['cancelled', 'pending_cancellation'].includes(
+                selectedRequest.status.toLowerCase(),
+              ) &&
+                selectedRequest.raw?.startDate &&
+                new Date(selectedRequest.raw.startDate).setHours(0, 0, 0, 0) >
+                  new Date().setHours(0, 0, 0, 0) && (
                   <div className="flex items-center gap-5">
                     <button
-                      onClick={() => handleDelete()}
-                      className="text-gray-400 hover:text-red-500 font-bold text-[14px] flex items-center gap-1.5 transition-colors"
+                      onClick={handleDelete}
+                      className={`font-bold text-[14px] flex items-center gap-1.5 transition-colors ${
+                        selectedRequest.status.toLowerCase().includes('approved')
+                          ? 'text-red-500 hover:text-red-600 bg-red-50 hover:bg-red-100 px-4 py-2 rounded-lg'
+                          : 'text-gray-400 hover:text-red-500'
+                      }`}
                     >
                       <Trash2 className="w-4 h-4" strokeWidth={2.5} />
-                      ยกเลิกคำขอลา
+                      {selectedRequest.status.toLowerCase().includes('approved')
+                        ? 'ขอยกเลิกวันลา'
+                        : 'ยกเลิกการลา'}
                     </button>
-                    {['PENDING_VERIFY'].includes(selectedRequest.status) &&
+                    {!selectedRequest.status.toLowerCase().includes('approved') &&
+                      ['pending_verify'].includes(selectedRequest.status.toLowerCase()) &&
                       !selectedRequest.raw?.isViewedByHr && (
                         <button
                           onClick={handleEditClick}
@@ -1003,49 +1009,15 @@ export default function LeaveHistoryPage() {
                         </button>
                       )}
                   </div>
-                </div>
-              )}
-            {(selectedRequest.status.includes('Approved') ||
-              ['Cancelled', 'CANCELLED', 'PENDING_CANCELLATION'].includes(
-                selectedRequest.status,
-              )) && (
-              <div className="px-6 py-4 border-t border-gray-100 flex items-center justify-between bg-white mt-auto shrink-0">
-                <span className="text-[13px] font-medium text-gray-300">
-                  วันที่ยื่นคำขอ :{' '}
-                  {selectedRequest.raw?.createdAt
-                    ? new Date(
-                        selectedRequest.raw.createdAt,
-                      ).toLocaleDateString('th-TH', {
-                        day: 'numeric',
-                        month: 'short',
-                        year: 'numeric',
-                        hour: '2-digit',
-                        minute: '2-digit',
-                      }) + ' น.'
-                    : '-'}
-                </span>
-
-                {selectedRequest.status.includes('Approved') &&
-                  selectedRequest.raw?.startDate &&
-                  new Date(selectedRequest.raw.startDate).setHours(0, 0, 0, 0) >
-                    new Date().setHours(0, 0, 0, 0) && (
-                    <button
-                      onClick={() => handleDelete(true)}
-                      className="text-red-500 hover:text-red-600 font-bold text-[14px] flex items-center gap-1.5 transition-colors bg-red-50 hover:bg-red-100 px-4 py-2 rounded-lg"
-                    >
-                      <Trash2 className="w-4 h-4" strokeWidth={2.5} />
-                      ขอยกเลิกวันลา
-                    </button>
-                  )}
-              </div>
-            )}
+                )}
+            </div>
           </div>
         </div>
       )}
 
       {/* Edit Form Modal (Fullscreen) */}
       {isEditing && (
-        <div className="fixed inset-0 z-[999] bg-[#E2E4E9] overflow-y-auto">
+        <div className="fixed inset-0 z-[120] bg-[#E2E4E9] overflow-y-auto">
           {/* Top Banner (Inside Edit) */}
           <div className="bg-white flex flex-col md:flex-row md:items-center justify-between px-8 py-5 shadow-sm sticky top-0 z-10 gap-4 border-2 border-blue-500">
             <div>

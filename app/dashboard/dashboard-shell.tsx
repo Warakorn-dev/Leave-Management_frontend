@@ -10,6 +10,7 @@ import { UserSidebar } from "@/components/sidebar-user";
 import { ManagerSidebar } from "@/components/ManagerSidebar";
 import { HRSidebar } from "@/components/HRSidebar";
 import { CEOSidebar } from "@/components/sidebar-ceo";
+import { AdminSidebar } from "@/components/AdminSidebar";
 
 export default function DashboardShell({ children }: { children: React.ReactNode }) {
   const [role, setRole] = useState<string | null>(null);
@@ -65,6 +66,10 @@ export default function DashboardShell({ children }: { children: React.ReactNode
         router.push("/dashboard/ceo/dashboard");
         return;
       }
+      if (storedRole === "admin" && !pathname.startsWith("/dashboard/admin")) {
+        router.push("/dashboard/admin/dashboard");
+        return;
+      }
 
       setRole(storedRole);
       setUsername(storedName || storedRole);
@@ -76,6 +81,7 @@ export default function DashboardShell({ children }: { children: React.ReactNode
 
   const renderSidebar = () => {
     switch (role) {
+      case "admin": return <AdminSidebar onNavigate={() => setMobileMenuOpen(false)} />;
       case "manager": return <ManagerSidebar onNavigate={() => setMobileMenuOpen(false)} />;
       case "hr": return <HRSidebar onNavigate={() => setMobileMenuOpen(false)} />;
       case "ceo": return <CEOSidebar onNavigate={() => setMobileMenuOpen(false)} />;

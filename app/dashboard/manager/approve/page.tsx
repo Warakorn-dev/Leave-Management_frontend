@@ -117,7 +117,6 @@ export default function ManagerApprovePage() {
   const [tempYear, setTempYear] = useState(new Date().getFullYear());
 
   const [selectedRequest, setSelectedRequest] = useState<any>(null);
-  const [approverReason, setApproverReason] = useState("");
   const [previewAttachment, setPreviewAttachment] = useState<{ url: string; isImage: boolean } | null>(null);
 
   const refetch = useCallback(async () => {
@@ -136,9 +135,7 @@ export default function ManagerApprovePage() {
     refetch();
   }, [refetch]);
 
-  useEffect(() => {
-    setApproverReason("");
-  }, [selectedRequest]);
+
 
   // Filter by selected month
   const requests = rawRequests.filter((r) => {
@@ -424,19 +421,7 @@ export default function ManagerApprovePage() {
                 />
               </div>
 
-              {/* Approver comment */}
-              <div>
-                <h3 className="font-bold text-black text-[14px] mb-2">
-                  หมายเหตุผู้อนุมัติ <span className="text-gray-400 font-normal text-[13px]">(บังคับหากปฏิเสธ)</span>
-                </h3>
-                <input
-                  type="text"
-                  placeholder="ระบุหมายเหตุ..."
-                  value={approverReason}
-                  onChange={(e) => setApproverReason(e.target.value)}
-                  className="w-full border border-gray-300 rounded-xl p-3 text-[14px] outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-black"
-                />
-              </div>
+
             </div>
 
             {/* Modal Footer */}
@@ -446,13 +431,13 @@ export default function ManagerApprovePage() {
               </span>
               <div className="flex items-center gap-3">
                 <button
-                  onClick={() => handleApproveClick(selectedRequest, approverReason)}
+                  onClick={() => handleApproveClick(selectedRequest)}
                   className="bg-[#00E676] hover:bg-[#00C853] text-white text-[13px] font-bold py-2 px-6 rounded-lg shadow-sm transition-colors"
                 >
                   อนุมัติ
                 </button>
                 <button
-                  onClick={() => handleRejectClick(selectedRequest, approverReason)}
+                  onClick={() => handleRejectClick(selectedRequest)}
                   className="bg-[#FF0000] hover:bg-[#E50000] text-white text-[13px] font-bold py-2 px-6 rounded-lg shadow-sm transition-colors"
                 >
                   ปฏิเสธ

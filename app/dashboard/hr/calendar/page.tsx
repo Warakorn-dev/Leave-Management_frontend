@@ -218,14 +218,7 @@ export default function LeaveCalendarPage() {
             ปฏิทินวันลา{' '}
           </h1>
         </div>
-        <div>
-          <button
-            onClick={handleAddHoliday}
-            className="bg-[#28305c] hover:bg-[#1e2447] text-white font-bold py-2 px-4 rounded-xl shadow-sm hover:shadow transition-all text-sm"
-          >
-            + เพิ่มวันหยุดนักขัตฤกษ์
-          </button>
-        </div>
+
       </div>
 
       <div className="flex-1 p-6 md:p-8">

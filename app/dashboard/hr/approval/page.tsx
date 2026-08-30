@@ -28,7 +28,6 @@ export default function HrApprovePage() {
     reason: string;
   } | null>(null);
   const [rejectReasonInput, setRejectReasonInput] = useState('');
-  const [approverReason, setApproverReason] = useState('');
 
   const [previewAttachment, setPreviewAttachment] = useState<{
     url: string;
@@ -273,16 +272,14 @@ export default function HrApprovePage() {
     }
   };
 
+
+
   const onModalApprove = () => {
-    handleApproveClick(selectedRequest.id, approverReason);
+    handleApproveClick(selectedRequest.id);
   };
 
   const onModalReject = () => {
-    if (!approverReason.trim()) {
-      alert('กรุณาระบุเหตุผลในการปฏิเสธคำขอลา');
-      return;
-    }
-    handleRejectClick(selectedRequest.id, approverReason);
+    handleRejectClick(selectedRequest.id);
   };
 
   return (
@@ -676,23 +673,29 @@ export default function HrApprovePage() {
                     <div className="flex flex-wrap gap-3">
                       {selectedRequest.attachments.map(
                         (att: any, idx: number) => {
+                          const isData = att.filePath?.startsWith('data:');
+                          const fileSrc = isData
+                            ? att.filePath
+                            : att.filePath?.startsWith('http')
+                              ? att.filePath
+                              : `/${att.filePath?.replace(/^\/+/, '')}`;
                           const isImage =
                             att.fileType?.startsWith('image/') ||
-                            att.fileUrl?.match(/\.(jpeg|jpg|gif|png)$/i);
+                            att.filePath?.match(/\.(jpeg|jpg|gif|png)$/i);
                           return (
                             <div
                               key={idx}
                               className="relative group w-20 h-20 rounded-lg overflow-hidden border border-gray-200 cursor-pointer shadow-sm hover:shadow-md transition-shadow"
                               onClick={() =>
                                 setPreviewAttachment({
-                                  url: att.fileUrl,
+                                  url: fileSrc,
                                   isImage,
                                 })
                               }
                             >
                               {isImage ? (
                                 <img
-                                  src={att.fileUrl}
+                                  src={fileSrc}
                                   alt="attachment"
                                   className="w-full h-full object-cover"
                                 />
@@ -752,34 +755,22 @@ export default function HrApprovePage() {
                 </p>
               </div>
             ) : selectedRequest.currentHrReviewerId === user?.id ? (
-              <div className="bg-[#FAFAFA] border-t border-gray-200 px-6 py-5 shrink-0">
-                <h3 className="font-bold text-black text-[14px] mb-3">
-                  ตรวจสอบเอกสารและข้อมูลการลา
-                </h3>
-                <div className="flex flex-col sm:flex-row gap-3">
-                  <input
-                    type="text"
-                    placeholder="หมายเหตุเพิ่มเติม (ถ้ามี)..."
-                    value={approverReason}
-                    onChange={(e) => setApproverReason(e.target.value)}
-                    className="flex-1 border border-gray-300 rounded-xl p-3 text-[14px] outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-black"
-                  />
-                  <div className="flex gap-2">
-                    <button
-                      onClick={onModalApprove}
-                      className="flex-1 sm:flex-none bg-[#00C853] hover:bg-[#00B04A] text-white px-5 py-3 rounded-xl font-bold text-[14px] shadow-sm transition-colors flex items-center justify-center gap-1.5"
-                    >
-                      <Check className="w-[18px] h-[18px]" strokeWidth={3} />
-                      อนุมัติ (Verify)
-                    </button>
-                    <button
-                      onClick={onModalReject}
-                      className="flex-1 sm:flex-none bg-[#FF0000] hover:bg-[#E50000] text-white px-5 py-3 rounded-xl font-bold text-[14px] shadow-sm transition-colors flex items-center justify-center gap-1.5"
-                    >
-                      <X className="w-[18px] h-[18px]" strokeWidth={3} />
-                      ปฏิเสธ (Reject)
-                    </button>
-                  </div>
+              <div className="bg-[#FAFAFA] border-t border-gray-200 px-6 py-5 shrink-0 flex justify-end">
+                <div className="flex gap-2">
+                  <button
+                    onClick={onModalApprove}
+                    className="flex-1 sm:flex-none bg-[#00C853] hover:bg-[#00B04A] text-white px-5 py-3 rounded-xl font-bold text-[14px] shadow-sm transition-colors flex items-center justify-center gap-1.5"
+                  >
+                    <Check className="w-[18px] h-[18px]" strokeWidth={3} />
+                    อนุมัติ 
+                  </button>
+                  <button
+                    onClick={onModalReject}
+                    className="flex-1 sm:flex-none bg-[#FF0000] hover:bg-[#E50000] text-white px-5 py-3 rounded-xl font-bold text-[14px] shadow-sm transition-colors flex items-center justify-center gap-1.5"
+                  >
+                    <X className="w-[18px] h-[18px]" strokeWidth={3} />
+                    ปฏิเสธ 
+                  </button>
                 </div>
               </div>
             ) : null}

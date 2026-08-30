@@ -80,6 +80,15 @@ export default function HRReports() {
     return `${days} วัน`;
   };
 
+  // Helper to resolve department name if it's an object
+  const resolveDepartmentName = (l: any) => {
+    const dept = l.departmentName || l.department || l.employee?.departmentName || l.employee?.department || l.user?.departmentName || l.user?.department;
+    if (typeof dept === 'object' && dept !== null) {
+      return dept.name || '-';
+    }
+    return dept || '-';
+  };
+
   // Helper to fetch Sarabun Thai font as Base64 for jsPDF
   const loadThaiFontBase64 = async (): Promise<string | null> => {
     try {
@@ -103,7 +112,7 @@ export default function HRReports() {
     const matchesSearch =
       (l.employeeName || l.userId || '').toLowerCase().includes(search.toLowerCase()) ||
       (l.employeeId || '').toLowerCase().includes(search.toLowerCase()) ||
-      (l.departmentName || l.department || '').toLowerCase().includes(search.toLowerCase());
+      resolveDepartmentName(l).toLowerCase().includes(search.toLowerCase());
 
     const matchesStatus = statusFilter === 'all' || (l.status || '').toLowerCase() === statusFilter.toLowerCase();
     const matchesType = typeFilter === 'all' || l.leaveTypeId === typeFilter;
@@ -136,9 +145,9 @@ export default function HRReports() {
       'รหัสพนักงาน': l.employeeCode || l.employee?.employeeCode || (l.employeeId?.startsWith('EMP-') ? l.employeeId : `EMP-${String(l.employeeId || '').substring(0, 6).toUpperCase()}`),
       'ชื่อ': firstName,
       'นามสกุล': lastName,
-      'แผนกงาน': l.departmentName || l.department || '-',
+      'แผนกงาน': resolveDepartmentName(l),
       'วันที่ยื่นคำขอ': new Date(l.createdAt || 0).toLocaleDateString('th-TH'),
-      'ประเภทการลา': l.leaveTypeName || l.type || '-',
+      'ประเภทการลา': l.leaveTypeName || l.type || (leaveTypes.find(t => t.id === l.leaveTypeId)?.name) || '-',
       'วันที่ลา': formatDateDisplay(l.startDate, l.endDate, l),
       'ระยะเวลา': formatDurationText(l),
       'เหตุผลการลา': l.reason || '-',
@@ -196,8 +205,8 @@ export default function HRReports() {
       l.employeeCode || l.employee?.employeeCode || (l.employeeId?.startsWith('EMP-') ? l.employeeId : `EMP-${String(l.employeeId || '').substring(0, 6).toUpperCase()}`),
       firstName,
       lastName,
-      l.departmentName || l.department || '-',
-      l.leaveTypeName || l.type || '-',
+      resolveDepartmentName(l),
+      l.leaveTypeName || l.type || (leaveTypes.find(t => t.id === l.leaveTypeId)?.name) || '-',
       formatDateDisplay(l.startDate, l.endDate, l),
       formatDurationText(l),
       (l.status || '').toLowerCase().includes('approved') ? 'อนุมัติแล้ว' : (l.status || '').toLowerCase() === 'pending' ? 'รออนุมัติ' : 'ปฏิเสธ'
@@ -409,8 +418,10 @@ export default function HRReports() {
                   const empName = l.employeeName || l.userId || 'ไม่ระบุชื่อ';
                   const firstName = l.employee?.firstName || l.user?.firstName || (empName !== 'ไม่ระบุชื่อ' ? empName.split(' ')[0] : 'ไม่ระบุชื่อ');
                   const lastName = l.employee?.lastName || l.user?.lastName || (empName !== 'ไม่ระบุชื่อ' && empName.split(' ').length > 1 ? empName.split(' ').slice(1).join(' ') : '');
-                  const deptName = l.departmentName || l.department || '-';
-                  const shortTypeName = (l.leaveTypeName || l.type || '').split(' ')[0];
+                  const deptName = resolveDepartmentName(l);
+                  const foundType = leaveTypes.find(t => t.id === l.leaveTypeId);
+                  const typeName = l.leaveTypeName || l.type || foundType?.name || '';
+                  const shortTypeName = typeName ? typeName.split(' ')[0] : '-';
                   const datesDisplay = formatDateDisplay(l.startDate, l.endDate, l);
                   const durationDisplay = formatDurationText(l);
 

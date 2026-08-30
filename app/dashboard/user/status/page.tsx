@@ -132,9 +132,22 @@ export default function LeaveStatusPage() {
                 const ceoStage = getStageStatus(status, 'CEO');
 
                 const typeName = req.leaveType?.name || req.type || '';
-                const isNormalLeave =
-                  typeName === 'ลาป่วย' || typeName.includes('ลากิจ');
-                const showCEO = !isNormalLeave;
+                const isNormalLeave = typeName === 'ลาป่วย' || typeName.includes('ลากิจ');
+                const requesterRole = req.user?.role || req.employee?.role || '';
+                const requesterPosition = typeof req.user?.position === 'string' ? req.user?.position : req.user?.position?.name || req.employee?.position?.name || '';
+                const isRequesterManagerOrCEO = 
+                  ['Manager', 'CEO'].includes(requesterRole) || 
+                  requesterPosition.toLowerCase().includes('leader') || 
+                  requesterPosition.toLowerCase().includes('manager') ||
+                  requesterRole.toLowerCase().includes('leader');
+                
+                const showCEO =
+                  !isNormalLeave ||
+                  isRequesterManagerOrCEO ||
+                  status === 'PENDING_EXECUTIVE' ||
+                  ceoStage === 'pending' ||
+                  ceoStage === 'approved';
+                const showManager = !isRequesterManagerOrCEO;
                 const approverComment =
                   req.approverReason ||
                   req.approvals?.[req.approvals.length - 1]?.comment;
@@ -274,6 +287,7 @@ export default function LeaveStatusPage() {
                       </div>
 
                       {/* Step 3: Manager Approval */}
+                      {showManager && (
                       <div className="relative mb-10">
                         <div
                           className={`absolute -left-[31px] md:-left-[43px] w-4 h-4 rounded-full ring-[6px] ring-white z-10 top-0.5 ${
@@ -311,6 +325,7 @@ export default function LeaveStatusPage() {
                             </div>
                           )}
                       </div>
+                      )}
 
                       {/* Step 4: CEO Approval (if applicable) */}
                       {showCEO && (

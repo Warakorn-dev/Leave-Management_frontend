@@ -94,7 +94,7 @@ export default function CEODashboard() {
   let totalEmployees = 0;
   let leavesToday = 0;
   let remainingEmployees = 0;
-  let pendingCount = pendingCEOLeaves.length;
+  const pendingCount = pendingCEOLeaves.length;
 
   // Personal Stats
   let remainingVacation = 0;

@@ -32,6 +32,7 @@ export default function LeaveHistoryPage() {
   const [fromDate, setFromDate] = useState<Date | null>(new Date());
   const [toDate, setToDate] = useState<Date | null>(new Date());
   const [selectedRequest, setSelectedRequest] = useState<any>(null);
+
   const [viewMode, setViewMode] = useState<'department' | 'personal'>(
     'department',
   );
@@ -44,6 +45,10 @@ export default function LeaveHistoryPage() {
 
   const [isEditing, setIsEditing] = useState(false);
   const [editFile, setEditFile] = useState<File | null>(null);
+  const [previewAttachment, setPreviewAttachment] = useState<{
+    url: string;
+    isImage: boolean;
+  } | null>(null);
   const [editForm, setEditForm] = useState({
     type: '',
     startDate: '',
@@ -238,7 +243,7 @@ export default function LeaveHistoryPage() {
   ]);
 
   const handleDelete = async () => {
-    const isApprovedCancel = selectedRequest?.status?.includes('Approved');
+    const isApprovedCancel = selectedRequest?.status?.toLowerCase().includes('approved');
     const result = await Swal.fire({
       title: isApprovedCancel
         ? 'ยืนยันการขอยกเลิกวันลา'
@@ -1037,7 +1042,7 @@ export default function LeaveHistoryPage() {
                             ? 'ครึ่งวันบ่าย'
                             : 'เต็มวัน'}
                     </p>
-                    <p className="flex items-center gap-2">
+                    <div className="flex items-center gap-2">
                       <span className="w-[26px] h-[26px] bg-yellow-100 text-yellow-600 flex items-center justify-center rounded-full shrink-0">
                         <svg
                           width="14"
@@ -1053,43 +1058,27 @@ export default function LeaveHistoryPage() {
                         </svg>
                       </span>
                       <span className="font-bold min-w-[80px]">เอกสารแนบ:</span>
-                      {selectedRequest.raw?.attachmentUrl ||
-                      selectedRequest.raw?.attachment ? (
-                        <button
-                          onClick={() => {
-                            const urlOrBase64 =
-                              selectedRequest.raw.attachmentUrl ||
-                              selectedRequest.raw.attachment;
-                            if (urlOrBase64.startsWith('data:')) {
-                              const win = window.open();
-                              if (win) {
-                                if (
-                                  urlOrBase64.startsWith('data:application/pdf')
-                                ) {
-                                  win.document.write(
-                                    `<iframe src="${urlOrBase64}" frameborder="0" style="border:0; top:0px; left:0px; bottom:0px; right:0px; width:100%; height:100%;" allowfullscreen></iframe>`,
-                                  );
-                                } else {
-                                  win.document.write(
-                                    `<img src="${urlOrBase64}" style="max-width:100%; max-height:100%; display:block; margin:auto;" />`,
-                                  );
-                                }
-                              }
-                            } else {
-                              const fileUrl = urlOrBase64.startsWith('/')
-                                ? urlOrBase64
-                                : '/' + urlOrBase64.replace(/\\/g, '/');
-                              window.open(fileUrl, '_blank');
-                            }
-                          }}
-                          className="text-blue-600 font-bold hover:underline ml-2"
-                        >
-                          ดูเอกสารแนบ
-                        </button>
+                      {selectedRequest.raw?.attachments && selectedRequest.raw.attachments.length > 0 ? (
+                        <div className="flex flex-col ml-2 gap-1">
+                          {selectedRequest.raw.attachments.map((att: any, idx: number) => {
+                            const isData = att.filePath?.startsWith('data:');
+                            const fileSrc = isData ? att.filePath : att.filePath?.startsWith('http') ? att.filePath : `/${att.filePath?.replace(/^\/+/, '')}`;
+                            const isImage = att.fileType?.startsWith('image/') || (!isData && att.filePath?.match(/\.(jpeg|jpg|gif|png)$/i));
+                            return (
+                              <button
+                                key={idx}
+                                onClick={() => setPreviewAttachment({ url: fileSrc, isImage: !!isImage })}
+                                className="text-blue-600 font-bold hover:underline text-left text-[13px]"
+                              >
+                                ดูเอกสารแนบ {selectedRequest.raw.attachments.length > 1 ? `(${idx + 1})` : ''}
+                              </button>
+                            );
+                          })}
+                        </div>
                       ) : (
                         '-'
                       )}
-                    </p>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -1177,7 +1166,8 @@ export default function LeaveHistoryPage() {
             </div>
 
             {/* Footer */}
-            <div className="px-6 py-4 border-t border-gray-100 flex items-center justify-between bg-white">
+            {/* Footer */}
+            <div className="px-6 py-4 border-t border-gray-100 flex items-center justify-between bg-white mt-auto shrink-0 rounded-b-[24px]">
               <span className="text-[13px] font-medium text-gray-300">
                 วันที่ยื่นคำขอ :{' '}
                 {formatDate(
@@ -1185,25 +1175,38 @@ export default function LeaveHistoryPage() {
                 )}
               </span>
 
-              {['PENDING_VERIFY'].includes(selectedRequest.status) &&
-                viewMode === 'personal' && (
+              {viewMode === 'personal' &&
+                !['cancelled', 'pending_cancellation'].includes(
+                  selectedRequest.status.toLowerCase(),
+                ) &&
+                selectedRequest.raw?.startDate &&
+                new Date(selectedRequest.raw.startDate).setHours(0, 0, 0, 0) >
+                  new Date().setHours(0, 0, 0, 0) && (
                   <div className="flex items-center gap-5">
                     <button
                       onClick={handleDelete}
-                      className="text-gray-400 hover:text-red-500 font-bold text-[14px] flex items-center gap-1.5 transition-colors"
+                      className={`font-bold text-[14px] flex items-center gap-1.5 transition-colors ${
+                        selectedRequest.status.toLowerCase().includes('approved')
+                          ? 'text-red-500 hover:text-red-600 bg-red-50 hover:bg-red-100 px-4 py-2 rounded-lg'
+                          : 'text-gray-400 hover:text-red-500'
+                      }`}
                     >
                       <Trash2 className="w-4 h-4" strokeWidth={2.5} />
-                      ยกเลิกการลา
+                      {selectedRequest.status.toLowerCase().includes('approved')
+                        ? 'ขอยกเลิกวันลา'
+                        : 'ยกเลิกการลา'}
                     </button>
-                    {!selectedRequest.raw?.isViewedByHr && (
-                      <button
-                        onClick={handleEditClick}
-                        className="text-blue-600 hover:text-blue-700 font-bold text-[14px] flex items-center gap-1.5 transition-colors"
-                      >
-                        <Edit3 className="w-4 h-4" strokeWidth={2.5} />
-                        แก้ไขข้อมูล
-                      </button>
-                    )}
+                    {!selectedRequest.status.toLowerCase().includes('approved') &&
+                      ['pending_verify'].includes(selectedRequest.status.toLowerCase()) &&
+                      !selectedRequest.raw?.isViewedByHr && (
+                        <button
+                          onClick={handleEditClick}
+                          className="text-blue-600 hover:text-blue-700 font-bold text-[14px] flex items-center gap-1.5 transition-colors"
+                        >
+                          <Edit3 className="w-4 h-4" strokeWidth={2.5} />
+                          แก้ไขข้อมูล
+                        </button>
+                      )}
                   </div>
                 )}
             </div>
@@ -1620,6 +1623,45 @@ export default function LeaveHistoryPage() {
               </div>
             </div>
           )}
+        </div>
+      )}
+
+      {/* Preview Attachment Modal */}
+      {previewAttachment && (
+        <div
+          className="fixed inset-0 z-[140] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200"
+          onClick={() => setPreviewAttachment(null)}
+        >
+          <div
+            className="bg-white rounded-2xl shadow-xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between p-4 border-b border-gray-100 bg-white">
+              <h2 className="text-[16px] font-bold text-black">
+                เอกสารแนบ (Attachment)
+              </h2>
+              <button
+                onClick={() => setPreviewAttachment(null)}
+                className="w-8 h-8 flex items-center justify-center text-white bg-red-500 rounded-full hover:bg-red-600 transition-colors shadow-sm"
+              >
+                <X className="w-4 h-4" strokeWidth={2.5} />
+              </button>
+            </div>
+            <div className="p-6 overflow-y-auto flex-1 flex items-center justify-center bg-gray-50/50">
+              {previewAttachment.isImage ? (
+                <img
+                  src={previewAttachment.url}
+                  alt="Preview"
+                  className="max-w-full max-h-full object-contain rounded-lg shadow-sm"
+                />
+              ) : (
+                <iframe
+                  src={previewAttachment.url}
+                  className="w-full h-[75vh] bg-white rounded-lg shadow-sm border border-gray-200"
+                />
+              )}
+            </div>
+          </div>
         </div>
       )}
     </div>

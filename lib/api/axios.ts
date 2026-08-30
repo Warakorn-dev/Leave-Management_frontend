@@ -20,22 +20,41 @@ axiosInstance.interceptors.request.use(
         config.headers.Authorization = `Bearer ${token}`;
       }
     }
+    if (config.data instanceof FormData) {
+      delete config.headers['Content-Type'];
+    }
     return config;
   },
   (error) => Promise.reject(error)
 );
 
+let isRefreshing = false;
+let failedQueue: any[] = [];
+
+const processQueue = (error: any, token: string | null = null) => {
+  failedQueue.forEach(prom => {
+    if (error) {
+      prom.reject(error);
+    } else {
+      prom.resolve(token);
+    }
+  });
+  failedQueue = [];
+};
+
 // Response Interceptor: Global error handling
 axiosInstance.interceptors.response.use(
   (response) => response,
-  (error) => {
+  async (error) => {
+    const originalRequest = error.config;
+    
     if (error.response) {
       const status = error.response.status;
       const message = error.response.data?.message || 'Something went wrong';
 
       // Only show alerts on the client side
       if (typeof window !== 'undefined') {
-        if (status === 401) {
+        if (status === 401 && !originalRequest._retry) {
           if (message === 'ACCOUNT_DEACTIVATED' || message === 'ACCOUNT_SUSPENDED') {
             Swal.fire({
               icon: 'error',
@@ -50,7 +69,58 @@ axiosInstance.interceptors.response.use(
             });
             return Promise.reject(error);
           }
-          // Token expired or unauthorized
+
+          // Try to refresh token
+          const refreshToken = sessionStorage.getItem('refreshToken');
+          
+          if (refreshToken) {
+            if (isRefreshing) {
+              return new Promise(function(resolve, reject) {
+                failedQueue.push({ resolve, reject });
+              }).then(token => {
+                originalRequest.headers.Authorization = 'Bearer ' + token;
+                return axiosInstance(originalRequest);
+              }).catch(err => {
+                return Promise.reject(err);
+              });
+            }
+
+            originalRequest._retry = true;
+            isRefreshing = true;
+
+            try {
+              // Call API to refresh token
+              const res = await axios.post('/api/auth/refresh', {}, {
+                headers: { Authorization: `Bearer ${refreshToken}` }
+              });
+              
+              if (res.data?.accessToken) {
+                const newAccessToken = res.data.accessToken;
+                sessionStorage.setItem('accessToken', newAccessToken);
+                if (res.data.refreshToken) {
+                  sessionStorage.setItem('refreshToken', res.data.refreshToken);
+                }
+                
+                axiosInstance.defaults.headers.common['Authorization'] = 'Bearer ' + newAccessToken;
+                originalRequest.headers.Authorization = 'Bearer ' + newAccessToken;
+                
+                processQueue(null, newAccessToken);
+                return axiosInstance(originalRequest);
+              }
+            } catch (refreshError) {
+              processQueue(refreshError, null);
+              // Refresh failed, clear session and go to login
+              sessionStorage.clear();
+              if (window.location.pathname !== '/login') {
+                window.location.href = '/login';
+              }
+              return Promise.reject(refreshError);
+            } finally {
+              isRefreshing = false;
+            }
+          }
+
+          // No refresh token available, clear session and go to login
           sessionStorage.clear();
           if (window.location.pathname !== '/login') {
             window.location.href = '/login';
@@ -58,16 +128,16 @@ axiosInstance.interceptors.response.use(
         } else if (status === 403) {
           Swal.fire({
             icon: 'error',
-            title: 'Access Denied',
-            text: 'You do not have permission to perform this action.',
+            title: 'ปฏิเสธการเข้าถึง',
+            text: 'คุณไม่มีสิทธิ์ในการดำเนินการนี้',
           });
         } else if (status === 404) {
           console.warn('API Not Found:', error.config.url);
         } else if (status >= 500) {
           Swal.fire({
             icon: 'error',
-            title: 'Server Error',
-            text: 'Internal server error occurred. Please try again later.',
+            title: 'ข้อผิดพลาดจากเซิร์ฟเวอร์',
+            text: 'เกิดข้อผิดพลาดภายในระบบ กรุณาลองใหม่อีกครั้ง',
           });
         } else if (status === 422 || status === 400) {
           // Bad request or validation error
@@ -82,8 +152,8 @@ axiosInstance.interceptors.response.use(
       if (typeof window !== 'undefined' && window.location.pathname !== '/login') {
         Swal.fire({
           icon: 'error',
-          title: 'Network Error',
-          text: 'Cannot connect to the server. Please check your internet connection.',
+          title: 'ข้อผิดพลาดเครือข่าย',
+          text: 'ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้ กรุณาตรวจสอบอินเทอร์เน็ตของคุณ',
         });
       }
     } else {

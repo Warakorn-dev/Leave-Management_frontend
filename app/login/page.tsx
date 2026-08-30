@@ -77,6 +77,9 @@ export default function LoginPage() {
       if (response.accessToken) {
         sessionStorage.setItem("accessToken", response.accessToken);
       }
+      if (response.refreshToken) {
+        sessionStorage.setItem("refreshToken", response.refreshToken);
+      }
       sessionStorage.setItem("userId", user.id.toString());
       sessionStorage.setItem("role", user.role);
       sessionStorage.setItem("username", user.username || user.email);

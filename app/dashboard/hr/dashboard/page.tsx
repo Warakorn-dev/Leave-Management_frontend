@@ -51,9 +51,9 @@ export default function HRCompanyDashboard() {
 
   const statData = data?.data || data || {};
 
-  let totalEmployees = statData?.totalEmployees || 0;
-  let leavesToday = statData?.leavesToday || 0;
-  let remainingEmployees = statData?.remainingEmployees || 0;
+  const totalEmployees = statData?.totalEmployees || 0;
+  const leavesToday = statData?.leavesToday || 0;
+  const remainingEmployees = statData?.remainingEmployees || 0;
 
   const chartData = statData?.chartData || [];
   const activities = statData?.activities || [];

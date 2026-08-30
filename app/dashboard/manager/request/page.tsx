@@ -138,7 +138,7 @@ export default function ManagerRequestPage() {
 
       const [startH, startM] = startTime.split(':').map(Number);
       const [endH, endM] = endTime.split(':').map(Number);
-      let diffMinutes = endH * 60 + endM - (startH * 60 + startM);
+      const diffMinutes = endH * 60 + endM - (startH * 60 + startM);
       if (diffMinutes <= 0) {
         setErrorMsg('เวลาสิ้นสุดต้องมากกว่าเวลาเริ่มลา');
         setShowErrorModal(true);
