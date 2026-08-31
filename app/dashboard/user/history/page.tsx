@@ -1,20 +1,12 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import {
-  Mail,
-  Bell,
-  Settings,
   Calendar as CalendarIcon,
-  X,
-  User,
-  Download,
   Edit3,
   Trash2,
   Upload,
   Check,
-  Clock,
   Search,
 } from 'lucide-react';
 import { useLeave } from '@/hooks/useLeave';
@@ -24,6 +16,9 @@ import { DatePicker } from '@/components/DateAndTime';
 import { LeaveTimePicker } from '@/components/LeaveTimePicker';
 import { uploadApi } from '@/lib/api';
 import { getLeaveStatusText, getLeaveStatusBadgeColor } from '@/lib/api/utils';
+import { LeaveDayAvailabilityPreview } from '@/components/LeaveDayAvailabilityPreview';
+import { buildTakenMap, isDayUnavailable } from '@/lib/leavePortions';
+import { LeaveDetailModal } from '@/components/LeaveDetailModal';
 
 export default function LeaveHistoryPage() {
   const [requests, setRequests] = useState<any[]>([]);
@@ -38,14 +33,10 @@ export default function LeaveHistoryPage() {
   const [selectedRequest, setSelectedRequest] = useState<any>(null);
   const [searchCode, setSearchCode] = useState('');
 
-  const router = useRouter();
   const [showConfirmEdit, setShowConfirmEdit] = useState(false);
-  const [previewAttachment, setPreviewAttachment] = useState<{
-    url: string;
-    isImage: boolean;
-  } | null>(null);
 
   const [isEditing, setIsEditing] = useState(false);
+  const [editHasConflict, setEditHasConflict] = useState(false);
   const [editAttachment, setEditAttachment] = useState<File | null>(null);
   const [editForm, setEditForm] = useState({
     type: '',
@@ -106,6 +97,28 @@ export default function LeaveHistoryPage() {
   const { mutateAsync: updateLeave } = useUpdateLeaveMutation();
   const { useLeaveBalancesQuery } = useLeaveBalance();
   const { data: allBalances = [] } = useLeaveBalancesQuery();
+
+  const currentUserId =
+    typeof window !== 'undefined' ? sessionStorage.getItem('userId') : '';
+
+  // Half-day slots this employee has booked, excluding the request being edited.
+  const editTakenMap = useMemo(
+    () =>
+      buildTakenMap(
+        Array.isArray(allLeaves) ? allLeaves : [],
+        currentUserId,
+        selectedRequest?.id,
+      ),
+    [allLeaves, currentUserId, selectedRequest?.id],
+  );
+
+  const isEditDateDisabled = (date: any) =>
+    isDayUnavailable(
+      date,
+      editForm.leaveMode as any,
+      (editForm.period as any) ?? 'full',
+      editTakenMap,
+    );
 
   useEffect(() => {
     const storedUsername = sessionStorage.getItem('username');
@@ -356,6 +369,7 @@ export default function LeaveHistoryPage() {
           : '',
     });
     setEditAttachment(null);
+    setEditHasConflict(false);
     setIsEditing(true);
   };
 
@@ -380,6 +394,15 @@ export default function LeaveHistoryPage() {
         !editForm.reason
       ) {
         alert('กรุณากรอกข้อมูลให้ครบถ้วน');
+        return;
+      }
+      if (editHasConflict) {
+        Swal.fire({
+          icon: 'warning',
+          title: 'ช่วงวันที่ทับซ้อนกับการลาอื่น',
+          text: 'บางวันในช่วงที่เลือกทับซ้อนกับการลาอื่นของคุณ กรุณาปรับช่วงวันที่ หรือเปลี่ยนรูปแบบการลาให้ตรงกับช่วงเวลาที่ยังว่าง',
+          confirmButtonColor: '#3085d6',
+        });
         return;
       }
     }
@@ -595,424 +618,58 @@ export default function LeaveHistoryPage() {
 
       {/* Leave Details Modal */}
       {selectedRequest && !isEditing && (
-        <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-white rounded-[24px] w-full max-w-[650px] shadow-2xl flex flex-col max-h-[90vh] animate-in zoom-in-95 duration-200 border-2 border-blue-500 overflow-hidden relative">
-            {/* Header */}
-            <div className="flex items-center justify-between px-6 py-5">
-              <h2 className="text-[20px] font-bold text-black">
-                รายละเอียดคำขอลา (Leave Request Details)
-              </h2>
-              <button
-                onClick={() => setSelectedRequest(null)}
-                className="w-8 h-8 flex items-center justify-center text-white bg-red-500 rounded-full hover:bg-red-600 transition-colors shadow-sm"
-              >
-                <X className="w-5 h-5" strokeWidth={3} />
-              </button>
-            </div>
-
-            {/* Body */}
-            <div
-              className="px-6 pb-6 overflow-y-auto flex-1
-             space-y-4"
-            >
-              {/* Employee Info */}
-              <div className="border border-gray-300 rounded-xl p-5 flex gap-4 bg-white">
-                <div className="w-[38px] h-[38px] rounded-full bg-fuchsia-100/50 border border-fuchsia-200 text-fuchsia-500 flex items-center justify-center shrink-0">
-                  <User className="w-5 h-5" strokeWidth={2} />
-                </div>
-                <div className="flex-1">
-                  <h3 className="font-bold text-[15px] text-black mb-3">
-                    ข้อมูลพนักงาน (Employee Info)
-                  </h3>
-                  <div className="text-[14px] text-gray-800 space-y-2">
-                    <p className="flex items-center gap-2">
-                      <span className="font-bold min-w-[90px]">ชื่อ:</span>{' '}
-                      {username}
-                    </p>
-                    <p className="flex items-center gap-2">
-                      <span className="font-bold min-w-[90px]">
-                        แผนก|ตำแหน่ง:
-                      </span>{' '}
-                      {selectedRequest.raw?.user?.department?.name ||
-                        sessionStorage.getItem('department') ||
-                        '-'}{' '}
-                      |{' '}
-                      {selectedRequest.raw?.user?.position?.name ||
-                        sessionStorage.getItem('positionName') ||
-                        '-'}
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Leave Info */}
-              <div className="border border-gray-300 rounded-xl p-5 bg-white">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="w-[32px] h-[32px] rounded-full bg-blue-50 border border-blue-100 flex items-center justify-center text-blue-500">
-                    <CalendarIcon
-                      className="w-[18px] h-[18px]"
-                      strokeWidth={2.5}
-                    />
-                  </div>
-                  <h3 className="font-bold text-[15px] text-black">
-                    รายละเอียดการลา (Leave Information)
-                  </h3>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-[14px] text-gray-800 pl-[44px]">
-                  <div className="space-y-3">
-                    <p className="flex gap-2">
-                      <span className="font-bold min-w-[80px]">
-                        ประเภทการลา:
-                      </span>{' '}
-                      {selectedRequest.type}
-                    </p>
-                    <p className="flex gap-2">
-                      <span className="font-bold min-w-[80px]">ช่วงเวลา:</span>
-                      {(() => {
-                        const raw = selectedRequest.raw || {};
-                        const mode = raw.startFormat || raw.leaveMode;
-                        const start = raw.startDate;
-                        const end = raw.endDate;
-                        let timeAddon = '';
-                        if (
-                          mode === 'hourly' ||
-                          (raw.leaveHours &&
-                            raw.leaveHours < 8 &&
-                            mode !== 'full' &&
-                            mode !== 'full_day' &&
-                            mode !== 'half_day' &&
-                            mode !== 'morning' &&
-                            mode !== 'afternoon')
-                        ) {
-                          let startT = raw.startTime;
-                          if (!startT && start && start.includes('T')) {
-                            startT = new Date(start).toLocaleTimeString(
-                              'th-TH',
-                              { hour: '2-digit', minute: '2-digit' },
-                            );
-                          }
-                          let endT = raw.endTime;
-                          if (!endT && end && end.includes('T')) {
-                            endT = new Date(end).toLocaleTimeString('th-TH', {
-                              hour: '2-digit',
-                              minute: '2-digit',
-                            });
-                          }
-                          if (startT && endT && startT !== endT) {
-                            timeAddon = ` (${startT} - ${endT} น.)`;
-                          }
-                        }
-                        return `${selectedRequest.dateStr}${timeAddon}`;
-                      })()}{' '}
-                      (
-                      {selectedRequest.days.includes('ชั่วโมง')
-                        ? selectedRequest.days
-                        : `${selectedRequest.days.replace(' วัน', '')} วัน`}
-                      )
-                    </p>
-                  </div>
-                  <div className="space-y-3">
-                    <p className="flex items-center gap-2">
-                      <span className="w-[26px] h-[26px] bg-green-100 text-green-600 flex items-center justify-center rounded-full shrink-0">
-                        <Clock
-                          className="w-[14px] h-[14px]"
-                          strokeWidth={2.5}
-                        />
-                      </span>
-                      <span className="font-bold min-w-[80px]">
-                        รูปแบบการลา:
-                      </span>{' '}
-                      {selectedRequest.raw?.startFormat === 'hourly'
-                        ? `รายชั่วโมง (${selectedRequest.raw?.leaveHours || 1} ชม.)`
-                        : selectedRequest.raw?.startFormat === 'morning'
-                          ? 'ครึ่งวันเช้า'
-                          : selectedRequest.raw?.startFormat === 'afternoon'
-                            ? 'ครึ่งวันบ่าย'
-                            : 'เต็มวัน'}
-                    </p>
-                    <div className="flex items-center gap-2">
-                      <span className="w-[26px] h-[26px] bg-yellow-100 text-yellow-600 flex items-center justify-center rounded-full shrink-0">
-                        <svg
-                          width="14"
-                          height="14"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2.5"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        >
-                          <path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48" />
-                        </svg>
-                      </span>
-                      <span className="font-bold min-w-[80px]">เอกสารแนบ:</span>
-                      {selectedRequest.raw?.attachments && selectedRequest.raw.attachments.length > 0 ? (
-                        <div className="flex flex-col ml-2 gap-2 w-full max-w-[150px]">
-                          {selectedRequest.raw.attachments.map((att: any, idx: number) => {
-                            const isData = att.filePath?.startsWith('data:');
-                            const fileSrc = isData ? att.filePath : att.filePath?.startsWith('http') ? att.filePath : `/${att.filePath?.replace(/^\/+/, '')}`;
-                            const isImage = att.fileType?.startsWith('image/') || (!isData && att.filePath?.match(/\.(jpeg|jpg|gif|png)$/i));
-                            return (
-                              <div key={idx} className="flex items-center justify-between w-full">
-                                <span className="text-blue-500 font-medium truncate text-[13px]">
-                                  {isImage ? 'รูปภาพแนบ' : 'ไฟล์แนบ'} {selectedRequest.raw.attachments.length > 1 ? `(${idx + 1})` : ''}
-                                </span>
-                                <button
-                                  className="ml-2 p-1.5 border border-gray-300 rounded-md hover:bg-gray-100 text-black flex-shrink-0"
-                                  onClick={() => setPreviewAttachment({ url: fileSrc, isImage: !!isImage })}
-                                >
-                                  <Download className="w-[14px] h-[14px]" strokeWidth={2.5} />
-                                </button>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      ) : (
-                        <span className="text-gray-400 ml-2">-</span>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Reason */}
-              <div>
-                <h3 className="font-bold text-black text-[14px] mb-2">
-                  เหตุผลการลา
-                </h3>
-                <textarea
-                  readOnly
-                  value={selectedRequest.reason}
-                  className="w-full border border-gray-300 rounded-xl p-3 text-[14px] text-gray-500 bg-white outline-none cursor-default resize-none min-h-[60px]"
-                  rows={2}
-                />
-              </div>
-
-              {/* Approval Timeline */}
-              <div className="mt-2">
-                <h3
-                  className={`font-bold flex items-center gap-2 text-[15px] mb-3 ${selectedRequest.status === 'APPROVED' ? 'text-[#00A859]' : selectedRequest.status === 'REJECTED' ? 'text-red-500' : 'text-yellow-600'}`}
+        <LeaveDetailModal
+          leave={selectedRequest.raw ?? selectedRequest}
+          onClose={() => setSelectedRequest(null)}
+          fallbackName={username}
+          fallbackDepartment={
+            typeof window !== 'undefined'
+              ? sessionStorage.getItem('department') || undefined
+              : undefined
+          }
+          fallbackPosition={
+            typeof window !== 'undefined'
+              ? sessionStorage.getItem('position') || undefined
+              : undefined
+          }
+          footer={
+            !['cancelled', 'pending_cancellation'].includes(
+              selectedRequest.status.toLowerCase(),
+            ) &&
+            selectedRequest.raw?.startDate &&
+            new Date(selectedRequest.raw.startDate).setHours(0, 0, 0, 0) >
+              new Date().setHours(0, 0, 0, 0) ? (
+              <>
+                <button
+                  onClick={handleDelete}
+                  className={`font-bold text-[14px] flex items-center gap-1.5 transition-colors ${
+                    selectedRequest.status.toLowerCase().includes('approved')
+                      ? 'text-red-500 hover:text-red-600 bg-red-50 hover:bg-red-100 px-4 py-2 rounded-lg'
+                      : 'text-gray-400 hover:text-red-500'
+                  }`}
                 >
-                  การอนุมัติ (Approval Timeline)
-                </h3>
-
-                {/* Overall Status */}
-                <div className="flex items-center gap-3 mb-4 p-3 bg-[#F8F9FA] border border-gray-200 rounded-xl">
-                  <span className="text-[12px] font-bold text-black">
-                    สถานะปัจจุบัน:
-                  </span>
-                  <span
-                    className={`px-3 py-1.5 rounded-full text-sm font-bold text-white shadow-sm ${getLeaveStatusBadgeColor(selectedRequest.status)}`}
-                  >
-                    {getLeaveStatusText(selectedRequest.status)}
-                  </span>
-                </div>
-
-                {/* Timeline Steps */}
-                {(() => {
-                  const raw = selectedRequest.raw || {};
-                  const approvals: any[] = raw.approvals || [];
-                  const requesterRole = selectedRequest.user?.role || raw.employee?.user?.role?.name || '';
-                  const requesterPosition = typeof selectedRequest.user?.position === 'string' ? selectedRequest.user?.position : selectedRequest.user?.position?.name || raw.employee?.position?.name || '';
-                  const isHrLeader = requesterRole === 'HR' && (requesterPosition.toLowerCase().includes('leader') || requesterPosition.toLowerCase().includes('manager'));
-                  const isRequesterManagerOrCEO = requesterRole === 'Manager' || requesterRole === 'CEO' || isHrLeader;
-                  const allSteps = [
-                    {
-                      role: 'HR',
-                      label: 'ตรวจสอบ (HR)',
-                      statuses: [
-                        'PENDING_VERIFY',
-                        'REVIEWING_HR',
-                        'PENDING_SUPERVISOR',
-                        'PENDING_EXECUTIVE',
-                        'APPROVED',
-                        'REJECTED',
-                        'CANCELLED',
-                        'PENDING_CANCELLATION',
-                      ],
-                    },
-                    {
-                      role: 'Manager',
-                      label: 'หัวหน้างาน (Manager)',
-                      statuses: [
-                        'PENDING_SUPERVISOR',
-                        'PENDING_EXECUTIVE',
-                        'APPROVED',
-                        'REJECTED',
-                        'CANCELLED',
-                      ],
-                    },
-                    {
-                      role: 'CEO',
-                      label: 'ผู้บริหาร (CEO)',
-                      statuses: [
-                        'PENDING_EXECUTIVE',
-                        'APPROVED',
-                        'REJECTED',
-                        'CANCELLED',
-                      ],
-                    },
-                  ];
-                  const steps = isRequesterManagerOrCEO
-                    ? allSteps.filter((s) => s.role !== 'Manager')
-                    : allSteps;
-
-                  const currentStatus = selectedRequest.status;
-
-                  return (
-                    <div className="space-y-3">
-                      {steps.map((step, idx) => {
-                        const approval = approvals.find(
-                          (a: any) =>
-                            a.role === step.role ||
-                            a.approverRole === step.role,
-                        );
-                        const isReached = step.statuses.includes(currentStatus);
-
-                        let dotColor = 'bg-gray-300';
-                        let labelColor = 'text-gray-400';
-                        let statusText = 'รอดำเนินการ';
-                        let statusBg = 'bg-gray-100 text-gray-400';
-
-                        if (approval) {
-                          if (approval.status === 'APPROVED') {
-                            dotColor = 'bg-emerald-500';
-                            labelColor = 'text-gray-800';
-                            statusText = 'ผ่าน';
-                            statusBg = 'bg-emerald-100 text-emerald-700';
-                          } else if (approval.status === 'REJECTED') {
-                            dotColor = 'bg-red-500';
-                            labelColor = 'text-gray-800';
-                            statusText = 'ตีกลับ';
-                            statusBg = 'bg-red-100 text-red-600';
-                          } else {
-                            dotColor = 'bg-blue-400';
-                            labelColor = 'text-gray-700';
-                            statusText = 'กำลังตรวจ';
-                            statusBg = 'bg-blue-100 text-blue-600';
-                          }
-                        } else if (isReached && idx === 0) {
-                          dotColor =
-                            currentStatus === 'REVIEWING_HR'
-                              ? 'bg-blue-400 animate-pulse'
-                              : 'bg-emerald-400';
-                          labelColor = 'text-gray-700';
-                          statusText =
-                            currentStatus === 'REVIEWING_HR'
-                              ? 'กำลังตรวจ'
-                              : 'ผ่านแล้ว';
-                          statusBg =
-                            currentStatus === 'REVIEWING_HR'
-                              ? 'bg-blue-100 text-blue-600'
-                              : 'bg-emerald-100 text-emerald-700';
-                        }
-
-                        return (
-                          <div
-                            key={step.role}
-                            className="flex items-start gap-3"
-                          >
-                            <div className="flex flex-col items-center shrink-0">
-                              <div
-                                className={`w-3 h-3 rounded-full mt-1 ${dotColor}`}
-                              />
-                              {idx < steps.length - 1 && (
-                                <div className="w-px h-8 bg-gray-200 mt-1" />
-                              )}
-                            </div>
-                            <div className="flex-1 pb-2">
-                              <div className="flex items-center gap-2 flex-wrap">
-                                <span
-                                  className={`text-[13px] font-bold ${labelColor}`}
-                                >
-                                  {step.label}
-                                </span>
-                                <span
-                                  className={`px-2 py-0.5 rounded-full text-[11px] font-bold ${statusBg}`}
-                                >
-                                  {statusText}
-                                </span>
-                                {approval?.createdAt && (
-                                  <span className="text-[11px] text-gray-400">
-                                    {new Date(
-                                      approval.createdAt,
-                                    ).toLocaleDateString('th-TH', {
-                                      day: 'numeric',
-                                      month: 'short',
-                                      year: 'numeric',
-                                    })}
-                                  </span>
-                                )}
-                              </div>
-                              {approval?.comment && (
-                                <p className="text-[12px] text-gray-500 mt-1 pl-1">
-                                  เหตุผล: {approval.comment}
-                                </p>
-                              )}
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  );
-                })()}
-              </div>
-            </div>
-
-            {/* Footer */}
-            <div className="px-6 py-4 border-t border-gray-100 flex items-center justify-between bg-white mt-auto shrink-0 rounded-b-[24px]">
-              <span className="text-[13px] font-medium text-gray-300">
-                วันที่ยื่นคำขอ :{' '}
-                {selectedRequest.raw?.createdAt
-                  ? new Date(selectedRequest.raw.createdAt).toLocaleDateString(
-                      'th-TH',
-                      {
-                        day: 'numeric',
-                        month: 'short',
-                        year: 'numeric',
-                        hour: '2-digit',
-                        minute: '2-digit',
-                      },
-                    ) + ' น.'
-                  : '-'}
-              </span>
-
-              {!['cancelled', 'pending_cancellation'].includes(
-                selectedRequest.status.toLowerCase(),
-              ) &&
-                selectedRequest.raw?.startDate &&
-                new Date(selectedRequest.raw.startDate).setHours(0, 0, 0, 0) >
-                  new Date().setHours(0, 0, 0, 0) && (
-                  <div className="flex items-center gap-5">
+                  <Trash2 className="w-4 h-4" strokeWidth={2.5} />
+                  {selectedRequest.status.toLowerCase().includes('approved')
+                    ? 'ขอยกเลิกวันลา'
+                    : 'ยกเลิกการลา'}
+                </button>
+                {!selectedRequest.status.toLowerCase().includes('approved') &&
+                  ['pending_verify'].includes(
+                    selectedRequest.status.toLowerCase(),
+                  ) &&
+                  !selectedRequest.raw?.isViewedByHr && (
                     <button
-                      onClick={handleDelete}
-                      className={`font-bold text-[14px] flex items-center gap-1.5 transition-colors ${
-                        selectedRequest.status.toLowerCase().includes('approved')
-                          ? 'text-red-500 hover:text-red-600 bg-red-50 hover:bg-red-100 px-4 py-2 rounded-lg'
-                          : 'text-gray-400 hover:text-red-500'
-                      }`}
+                      onClick={handleEditClick}
+                      className="text-blue-600 hover:text-blue-700 font-bold text-[14px] flex items-center gap-1.5 transition-colors"
                     >
-                      <Trash2 className="w-4 h-4" strokeWidth={2.5} />
-                      {selectedRequest.status.toLowerCase().includes('approved')
-                        ? 'ขอยกเลิกวันลา'
-                        : 'ยกเลิกการลา'}
+                      <Edit3 className="w-4 h-4" strokeWidth={2.5} />
+                      แก้ไขข้อมูล
                     </button>
-                    {!selectedRequest.status.toLowerCase().includes('approved') &&
-                      ['pending_verify'].includes(selectedRequest.status.toLowerCase()) &&
-                      !selectedRequest.raw?.isViewedByHr && (
-                        <button
-                          onClick={handleEditClick}
-                          className="text-blue-600 hover:text-blue-700 font-bold text-[14px] flex items-center gap-1.5 transition-colors"
-                        >
-                          <Edit3 className="w-4 h-4" strokeWidth={2.5} />
-                          แก้ไขข้อมูล
-                        </button>
-                      )}
-                  </div>
-                )}
-            </div>
-          </div>
-        </div>
+                  )}
+              </>
+            ) : null
+          }
+        />
       )}
 
       {/* Edit Form Modal (Fullscreen) */}
@@ -1205,6 +862,7 @@ export default function LeaveHistoryPage() {
                               setEditForm({ ...editForm, startDate: '' });
                             }
                           }}
+                          shouldDisableDate={isEditDateDisabled}
                           placeholderText="วว/ดด/ปปปป"
                         />
                         {editForm.leaveMode === 'half_day' && (
@@ -1269,9 +927,24 @@ export default function LeaveHistoryPage() {
                               setEditForm({ ...editForm, endDate: '' });
                             }
                           }}
+                          shouldDisableDate={isEditDateDisabled}
                           placeholderText="วว/ดด/ปปปป"
                         />
                       </div>
+                      <LeaveDayAvailabilityPreview
+                        startDate={editForm.startDate}
+                        endDate={editForm.endDate}
+                        leaveMode={editForm.leaveMode as any}
+                        period={
+                          editForm.leaveMode === 'half_day'
+                            ? (editForm.period as any)
+                            : 'full'
+                        }
+                        leaves={Array.isArray(allLeaves) ? allLeaves : []}
+                        currentUserId={currentUserId}
+                        excludeRequestId={selectedRequest?.id}
+                        onConflictChange={setEditHasConflict}
+                      />
                     </>
                   )}
                 </div>
@@ -1384,44 +1057,7 @@ export default function LeaveHistoryPage() {
           )}
         </div>
       )}
-      {/* Preview Attachment Modal */}
-      {previewAttachment && (
-        <div
-          className="fixed inset-0 z-[140] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200"
-          onClick={() => setPreviewAttachment(null)}
-        >
-          <div
-            className="bg-white rounded-[24px] w-full max-w-4xl shadow-2xl flex flex-col max-h-[90vh] animate-in zoom-in-95 duration-200 border-2 border-blue-500 overflow-hidden relative"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 bg-[#FAFAFA]">
-              <h2 className="text-[16px] font-bold text-black">
-                ไฟล์เอกสารแนบ (Attachment)
-              </h2>
-              <button
-                onClick={() => setPreviewAttachment(null)}
-                className="w-8 h-8 flex items-center justify-center text-white bg-red-500 rounded-full hover:bg-red-600 transition-colors shadow-sm"
-              >
-                <X className="w-5 h-5" strokeWidth={3} />
-              </button>
-            </div>
-            <div className="p-6 overflow-y-auto flex-1 flex items-center justify-center bg-gray-50/50">
-              {previewAttachment.isImage ? (
-                <img
-                  src={previewAttachment.url}
-                  alt="Preview"
-                  className="max-w-full max-h-[70vh] object-contain rounded-lg shadow-sm border border-gray-200"
-                />
-              ) : (
-                <iframe
-                  src={previewAttachment.url}
-                  className="w-full h-[75vh] bg-white rounded-lg shadow-sm border border-gray-200"
-                />
-              )}
-            </div>
-          </div>
-        </div>
-      )}
+
     </div>
   );
 }

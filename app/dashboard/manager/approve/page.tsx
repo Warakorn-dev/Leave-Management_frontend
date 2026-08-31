@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Calendar as CalendarIcon, X, User, Check, Clock, AlertCircle } from "lucide-react";
+import { Calendar as CalendarIcon } from "lucide-react";
 import Swal from "sweetalert2";
+import { LeaveDetailModal } from "@/components/LeaveDetailModal";
 
 const getToken = () =>
   typeof window !== "undefined" ? sessionStorage.getItem("accessToken") : "";
@@ -117,7 +118,6 @@ export default function ManagerApprovePage() {
   const [tempYear, setTempYear] = useState(new Date().getFullYear());
 
   const [selectedRequest, setSelectedRequest] = useState<any>(null);
-  const [previewAttachment, setPreviewAttachment] = useState<{ url: string; isImage: boolean } | null>(null);
 
   const refetch = useCallback(async () => {
     setIsLoading(true);
@@ -334,140 +334,29 @@ export default function ManagerApprovePage() {
 
       {/* Details Modal */}
       {selectedRequest && (
-        <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-white rounded-[24px] w-full max-w-[650px] shadow-2xl flex flex-col max-h-[90vh] animate-in zoom-in-95 duration-200 border-2 border-blue-500 overflow-hidden">
-
-            {/* Modal Header */}
-            <div className="flex items-center justify-between px-6 py-5">
-              <h2 className="text-[20px] font-bold text-black">รายละเอียดคำขอลา</h2>
-              <button onClick={() => setSelectedRequest(null)} className="w-8 h-8 flex items-center justify-center text-white bg-red-500 rounded-full hover:bg-red-600 transition-colors">
-                <X className="w-5 h-5" strokeWidth={3} />
+        <LeaveDetailModal
+          leave={selectedRequest}
+          onClose={() => setSelectedRequest(null)}
+          footer={
+            <>
+              <button
+                onClick={() => handleApproveClick(selectedRequest)}
+                className="bg-[#00E676] hover:bg-[#00C853] text-white text-[13px] font-bold py-2 px-6 rounded-lg shadow-sm transition-colors"
+              >
+                อนุมัติ
               </button>
-            </div>
-
-            {/* Modal Body */}
-            <div className="px-6 pb-4 overflow-y-auto flex-1 space-y-4">
-
-              {/* Employee Info */}
-              <div className="border border-gray-200 rounded-xl p-5 flex gap-4">
-                <div className="w-10 h-10 rounded-full bg-fuchsia-100 border border-fuchsia-200 text-fuchsia-500 flex items-center justify-center shrink-0">
-                  <User className="w-5 h-5" strokeWidth={2} />
-                </div>
-                <div className="flex-1">
-                  <h3 className="font-bold text-[15px] text-black mb-3">ข้อมูลพนักงาน</h3>
-                  <div className="text-[14px] text-gray-700 space-y-1.5">
-                    <p><span className="font-bold min-w-[90px] inline-block">ชื่อ-นามสกุล:</span>{selectedRequest.firstName} {selectedRequest.lastName}</p>
-                    <p><span className="font-bold min-w-[90px] inline-block">รหัสพนักงาน:</span>{selectedRequest.empCode}</p>
-                    <p><span className="font-bold min-w-[90px] inline-block">แผนก | ตำแหน่ง:</span>{selectedRequest.department} | {selectedRequest.position}</p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Leave Info */}
-              <div className="border border-gray-200 rounded-xl p-5">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="w-8 h-8 rounded-full bg-blue-50 border border-blue-100 flex items-center justify-center text-blue-500">
-                    <CalendarIcon className="w-[18px] h-[18px]" strokeWidth={2.5} />
-                  </div>
-                  <h3 className="font-bold text-[15px] text-black">รายละเอียดการลา</h3>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-[14px] text-gray-700 pl-[44px]">
-                  <div className="space-y-2">
-                    <p><span className="font-bold">รหัสการลา:</span> <span className="text-blue-500 font-semibold">{selectedRequest.requestCode || "-"}</span></p>
-                    <p><span className="font-bold">ประเภทการลา:</span> {selectedRequest.type}</p>
-                    <p><span className="font-bold">ช่วงเวลา:</span> {selectedRequest.dateRange}</p>
-                  </div>
-                  <div className="space-y-2">
-                    <p className="flex items-center gap-2">
-                      <Clock className="w-4 h-4 text-green-500 shrink-0" />
-                      <span className="font-bold">รูปแบบ:</span>
-                      {selectedRequest.startFormat === "hourly" ? `รายชั่วโมง (${selectedRequest.leaveHours} ชม.)` : selectedRequest.startFormat === "morning" ? "ครึ่งวันเช้า" : selectedRequest.startFormat === "afternoon" ? "ครึ่งวันบ่าย" : "เต็มวัน"}
-                    </p>
-                    {selectedRequest.leaveType?.isSpecial && (
-                      <p className="flex items-center gap-2 text-purple-600">
-                        <AlertCircle className="w-4 h-4 shrink-0" />
-                        <span className="font-bold">ต้องผ่านการอนุมัติจาก CEO</span>
-                      </p>
-                    )}
-                    <p>
-                      <span className="font-bold">เอกสารแนบ:</span>{" "}
-                      {selectedRequest.attachments?.length > 0 ? (
-                        <button
-                          onClick={() => {
-                            const att = selectedRequest.attachments[0];
-                            const isData = att.filePath.startsWith("data:");
-                            const fileSrc = isData ? att.filePath : `/${att.filePath.replace(/^\/+/, '')}`;
-                            const isImage = att.fileType?.includes("image") || att.filePath?.match(/\.(jpeg|jpg|gif|png)$/i);
-                            setPreviewAttachment({ url: fileSrc, isImage: Boolean(isImage) });
-                          }}
-                          className="text-blue-600 font-bold hover:underline"
-                        >
-                          ดูเอกสารแนบ
-                        </button>
-                      ) : "-"}
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Reason */}
-              <div>
-                <h3 className="font-bold text-black text-[14px] mb-2">เหตุผลการลา</h3>
-                <textarea
-                  readOnly
-                  value={selectedRequest.reason || "-"}
-                  rows={2}
-                  className="w-full border border-gray-300 rounded-xl p-3 text-[14px] text-gray-500 bg-white outline-none cursor-default resize-none"
-                />
-              </div>
-
-
-            </div>
-
-            {/* Modal Footer */}
-            <div className="px-6 py-4 border-t border-gray-100 bg-white flex justify-between items-center shrink-0">
-              <span className="text-[12px] text-gray-400">
-                ยื่นเมื่อ: {selectedRequest.createdAt ? new Date(selectedRequest.createdAt).toLocaleDateString("th-TH", { day: "numeric", month: "short", year: "numeric" }) : "-"}
-              </span>
-              <div className="flex items-center gap-3">
-                <button
-                  onClick={() => handleApproveClick(selectedRequest)}
-                  className="bg-[#00E676] hover:bg-[#00C853] text-white text-[13px] font-bold py-2 px-6 rounded-lg shadow-sm transition-colors"
-                >
-                  อนุมัติ
-                </button>
-                <button
-                  onClick={() => handleRejectClick(selectedRequest)}
-                  className="bg-[#FF0000] hover:bg-[#E50000] text-white text-[13px] font-bold py-2 px-6 rounded-lg shadow-sm transition-colors"
-                >
-                  ปฏิเสธ
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
+              <button
+                onClick={() => handleRejectClick(selectedRequest)}
+                className="bg-[#FF0000] hover:bg-[#E50000] text-white text-[13px] font-bold py-2 px-6 rounded-lg shadow-sm transition-colors"
+              >
+                ปฏิเสธ
+              </button>
+            </>
+          }
+        />
       )}
 
-      {/* Attachment Preview */}
-      {previewAttachment && (
-        <div className="fixed inset-0 z-[140] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200" onClick={() => setPreviewAttachment(null)}>
-          <div className="bg-white rounded-[24px] w-full max-w-4xl shadow-2xl flex flex-col max-h-[90vh] overflow-hidden border-2 border-blue-500" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 bg-[#FAFAFA]">
-              <h2 className="text-[16px] font-bold text-black">ไฟล์เอกสารแนบ</h2>
-              <button onClick={() => setPreviewAttachment(null)} className="w-8 h-8 flex items-center justify-center text-white bg-red-500 rounded-full hover:bg-red-600 transition-colors">
-                <X className="w-5 h-5" strokeWidth={3} />
-              </button>
-            </div>
-            <div className="p-6 overflow-y-auto flex-1 flex items-center justify-center bg-gray-50/50">
-              {previewAttachment.isImage ? (
-                <img src={previewAttachment.url} alt="Preview" className="max-w-full max-h-[70vh] object-contain rounded-lg shadow-sm border border-gray-200" />
-              ) : (
-                <iframe src={previewAttachment.url} className="w-full h-[75vh] bg-white rounded-lg shadow-sm border border-gray-200" />
-              )}
-            </div>
-          </div>
-        </div>
-      )}
+
     </div>
   );
 }

@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { LogOut, PieChart, Users, Activity, Shield, Key, ClipboardList, HardDrive, Settings, Menu, ChevronLeft, User } from "lucide-react";
+import { LogOut, PieChart, Users, Activity, Shield, Key, ClipboardList, HardDrive, Settings, Menu, ChevronLeft, User, List } from "lucide-react";
 
 export function AdminSidebar({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = usePathname();
@@ -41,6 +41,7 @@ export function AdminSidebar({ onNavigate }: { onNavigate?: () => void }) {
   const menuItems = [
     { name: "ภาพรวมระบบ", href: "/dashboard/admin/dashboard", icon: PieChart },
     { name: "จัดการผู้ใช้งาน", href: "/dashboard/admin/users", icon: Users },
+    { name: "รายชื่อผู้ใช้งาน", href: "/dashboard/admin/users-list", icon: List },
     { name: "ตั้งค่าความปลอดภัย", href: "/dashboard/admin/security", icon: Shield },
     { name: "ประวัติระบบ", href: "/dashboard/admin/audit-logs", icon: ClipboardList },
     { name: "จัดการสิทธิ์", href: "/dashboard/admin/roles", icon: Key },

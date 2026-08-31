@@ -144,9 +144,7 @@ export default function LeaveStatusPage() {
                 const showCEO =
                   !isNormalLeave ||
                   isRequesterManagerOrCEO ||
-                  status === 'PENDING_EXECUTIVE' ||
-                  ceoStage === 'pending' ||
-                  ceoStage === 'approved';
+                  status === 'PENDING_EXECUTIVE';
                 const showManager = !isRequesterManagerOrCEO;
                 const approverComment =
                   req.approverReason ||

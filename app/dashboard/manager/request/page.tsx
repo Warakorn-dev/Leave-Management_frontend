@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useLeave } from '@/hooks/useLeave';
 import { useLeaveBalance } from '@/hooks/useLeaveBalance';
 import { Upload, Check, X } from 'lucide-react';
@@ -8,6 +8,8 @@ import { DatePicker } from '@/components/DateAndTime';
 import { useRouter } from 'next/navigation';
 import { LeaveTimePicker } from '@/components/LeaveTimePicker';
 import { userApi, uploadApi } from '@/lib/api';
+import { LeaveDayAvailabilityPreview } from '@/components/LeaveDayAvailabilityPreview';
+import { buildTakenMap, isDayUnavailable } from '@/lib/leavePortions';
 
 export default function ManagerRequestPage() {
   const [type, setType] = useState('');
@@ -34,6 +36,7 @@ export default function ManagerRequestPage() {
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const [showErrorModal, setShowErrorModal] = useState(false);
+  const [hasRangeConflict, setHasRangeConflict] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const router = useRouter();
 
@@ -45,41 +48,17 @@ export default function ManagerRequestPage() {
   const { data: holidaysData = [] } = useHolidaysQuery();
   const { data: myLeaves = [] } = useLeavesQuery();
 
-  const isDateDisabled = (date: any) => {
-    if (!date) return false;
-    let checkDateStr = '';
-    if (typeof date.isValid === 'function' && date.isValid()) {
-      checkDateStr = date.format('YYYY-MM-DD');
-    } else if (date instanceof Date) {
-      const d = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
-      checkDateStr = d.toISOString().split('T')[0];
-    } else {
-      return false;
-    }
+  const currentUserId =
+    typeof window !== 'undefined' ? sessionStorage.getItem('userId') : '';
 
-    const actualUserId = typeof window !== 'undefined' ? sessionStorage.getItem('userId') : '';
-    return myLeaves.some((leave: any) => {
-      if (actualUserId && String(leave.userId) !== String(actualUserId)) return false;
-      if (
-        ['REJECTED', 'Rejected', 'CANCELLED', 'Cancelled'].includes(
-          leave.status,
-        )
-      )
-        return false;
-      const start = new Date(leave.startDate);
-      const startStr = new Date(
-        start.getTime() - start.getTimezoneOffset() * 60000,
-      )
-        .toISOString()
-        .split('T')[0];
-      const end = new Date(leave.endDate);
-      const endStr = new Date(end.getTime() - end.getTimezoneOffset() * 60000)
-        .toISOString()
-        .split('T')[0];
+  const takenMap = useMemo(
+    () => buildTakenMap(Array.isArray(myLeaves) ? myLeaves : [], currentUserId),
+    [myLeaves, currentUserId],
+  );
 
-      return checkDateStr >= startStr && checkDateStr <= endStr;
-    });
-  };
+  // Disable a day only when there is no room left for the chosen mode/period.
+  const isDateDisabled = (date: any) =>
+    isDayUnavailable(date, leaveMode, period, takenMap);
 
   useEffect(() => {
     const fetchUserProfile = async () => {
@@ -157,6 +136,13 @@ export default function ManagerRequestPage() {
       }
       if (new Date(startDate) > new Date(endDate)) {
         setErrorMsg('วันที่สิ้นสุดต้องมากกว่าหรือเท่ากับวันที่เริ่มต้น');
+        setShowErrorModal(true);
+        return;
+      }
+      if (hasRangeConflict) {
+        setErrorMsg(
+          'บางวันในช่วงที่เลือกทับซ้อนกับการลาเดิมของคุณ กรุณาปรับช่วงวันที่ หรือเปลี่ยนรูปแบบการลาให้ตรงกับช่วงเวลาที่ยังว่าง (ดูรายละเอียดรายวันในแบบฟอร์ม)',
+        );
         setShowErrorModal(true);
         return;
       }
@@ -502,6 +488,16 @@ export default function ManagerRequestPage() {
                       placeholderText="วว/ดด/ปปปป"
                     />
                   </div>
+                  <LeaveDayAvailabilityPreview
+                    startDate={startDate}
+                    endDate={endDate}
+                    leaveMode={leaveMode}
+                    period={leaveMode === 'half_day' ? period : 'full'}
+                    leaves={Array.isArray(myLeaves) ? myLeaves : []}
+                    currentUserId={currentUserId}
+                    holidays={holidaysData}
+                    onConflictChange={setHasRangeConflict}
+                  />
                 </>
               )}
             </div>

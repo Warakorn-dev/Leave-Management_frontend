@@ -168,9 +168,7 @@ export default function LeaveStatusPage() {
                 const showCEO =
                   !isNormalLeave ||
                   isRequesterManagerOrCEO ||
-                  status === 'PENDING_EXECUTIVE' ||
-                  ceoStage === 'pending' ||
-                  ceoStage === 'approved';
+                  status === 'PENDING_EXECUTIVE';
                 const showManager = !isRequesterManagerOrCEO;
                 const isFinalApproved = status === 'APPROVED';
                 const isFinalRejected = status === 'REJECTED';
