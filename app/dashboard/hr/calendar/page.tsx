@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useLeave } from '@/hooks/useLeave';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, CalendarDays } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import Swal from 'sweetalert2';
 import { holidayApi } from '@/lib/api';
@@ -212,13 +212,18 @@ export default function LeaveCalendarPage() {
   return (
     <div className="min-h-[calc(100vh-4rem)] bg-[#E2E4E9] font-sans text-slate-800 flex flex-col relative pb-8">
       {/* Top Banner */}
-      <div className="bg-white flex items-center justify-between px-8 py-5 shadow-sm z-10">
+      <div className="bg-white flex items-center gap-4 px-8 py-5 shadow-sm z-10 shrink-0">
+        <div className="w-11 h-11 bg-blue-100 text-blue-600 rounded-xl flex items-center justify-center shrink-0">
+          <CalendarDays className="w-6 h-6" strokeWidth={2} />
+        </div>
         <div>
           <h1 className="text-xl font-bold text-black tracking-tight">
-            ปฏิทินวันลา{' '}
+            ปฏิทินวันลา
           </h1>
+          <p className="text-xs text-gray-500 mt-1 font-medium">
+            ภาพรวมวันลาของพนักงานทั้งบริษัทในรูปแบบปฏิทิน
+          </p>
         </div>
-
       </div>
 
       <div className="flex-1 p-6 md:p-8">

@@ -312,26 +312,25 @@ export default function LeaveSummaryView() {
   };
 
   return (
-    <div className="min-h-screen bg-[#f8fafc] font-sans text-slate-800 p-4 md:p-8">
-      <div className="max-w-[1200px] mx-auto space-y-6">
-        {/* Header Area for Summary */}
-        <div className="bg-white rounded-3xl p-8 border border-slate-100 shadow-sm relative overflow-hidden">
-          <div className="absolute right-0 top-0 w-64 h-64 bg-indigo-50 rounded-full blur-3xl -z-10 translate-x-1/2 -translate-y-1/4"></div>
-          <div className="flex items-start gap-5">
-            <div className="w-14 h-14 bg-indigo-100 text-indigo-600 rounded-2xl flex items-center justify-center shadow-inner mt-1">
-              <FileSpreadsheet size={28} strokeWidth={1.5} />
-            </div>
-            <div className="flex-1">
-              <h1 className="text-2xl font-bold text-slate-900 mb-2">
-                สรุปการลา (Leave Summary)
-              </h1>
-              <p className="text-slate-500 text-sm max-w-xl leading-relaxed">
-                ดูภาพรวมสถิติการลางานของพนักงานในองค์กรแบบรวมกลุ่ม
-                สามารถดูจำนวนวันที่ลาไปของแต่ละประเภทในแต่ละช่วงเวลาได้
-              </p>
-            </div>
-          </div>
+    <div className="min-h-[calc(100vh-4rem)] bg-[#E2E4E9] font-sans text-slate-800 flex flex-col">
+      {/* Top Banner */}
+      <div className="bg-white flex items-center gap-4 px-8 py-5 shadow-sm z-10 shrink-0">
+        <div className="w-11 h-11 bg-blue-100 text-blue-600 rounded-xl flex items-center justify-center shrink-0">
+          <FileSpreadsheet className="w-6 h-6" strokeWidth={2} />
         </div>
+        <div>
+          <h1 className="text-xl font-bold text-black tracking-tight">
+            สรุปการลา (Leave Summary)
+          </h1>
+          <p className="text-xs text-gray-500 mt-1 font-medium">
+            ดูภาพรวมสถิติการลางานของพนักงานในองค์กรแบบรวมกลุ่ม
+            สามารถดูจำนวนวันที่ลาไปของแต่ละประเภทในแต่ละช่วงเวลาได้
+          </p>
+        </div>
+      </div>
+
+      <div className="flex-1 p-4 md:p-8">
+        <div className="max-w-[1200px] mx-auto space-y-6">
 
         {/* Advanced Filter and Action Bar */}
         <div className="bg-white rounded-2xl shadow-sm border border-slate-100 z-50 relative overflow-visible">
@@ -717,6 +716,7 @@ export default function LeaveSummaryView() {
           </div>
         </div>
       )}
+      </div>
     </div>
   );
 }

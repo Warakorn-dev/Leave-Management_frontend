@@ -179,22 +179,26 @@ export default function HRLeaveTypes() {
   );
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6 bg-white dark:bg-slate-900 p-6 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800">
-        <div className="flex items-start gap-4">
-          <div className="p-3 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 rounded-xl shrink-0 mt-1 sm:mt-0">
-            <FileText className="w-6 h-6" />
-          </div>
-          <div>
-            <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
-              ประเภทการลา (Leave Policies)
-            </h1>
-            <p className="text-sm text-slate-500 dark:text-slate-400 mt-1.5">
-              ตั้งเกณฑ์โควตาการลาประจำปีของพนักงาน
-              กำหนดการบังคับแนบหลักฐานสำหรับแต่ละประเภท
-            </p>
-          </div>
+    <div className="min-h-[calc(100vh-4rem)] bg-[#E2E4E9] font-sans text-slate-800 flex flex-col">
+      {/* Top Banner */}
+      <div className="bg-white flex items-center gap-4 px-8 py-5 shadow-sm z-10 shrink-0">
+        <div className="w-11 h-11 bg-blue-100 text-blue-600 rounded-xl flex items-center justify-center shrink-0">
+          <FileText className="w-6 h-6" strokeWidth={2} />
         </div>
+        <div>
+          <h1 className="text-xl font-bold text-black tracking-tight">
+            ประเภทการลา (Leave Policies)
+          </h1>
+          <p className="text-xs text-gray-500 mt-1 font-medium">
+            ตั้งเกณฑ์โควตาการลาประจำปีของพนักงาน
+            กำหนดการบังคับแนบหลักฐานสำหรับแต่ละประเภท
+          </p>
+        </div>
+      </div>
+
+      <div className="flex-1 p-6 md:p-8">
+        <div className="max-w-7xl mx-auto space-y-6">
+      <div className="flex justify-end">
         <button
           onClick={handleAddOpen}
           className="inline-flex items-center justify-center space-x-2 px-5 py-2.5 rounded-xl text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 cursor-pointer shadow-md shadow-indigo-500/20 transition-all shrink-0 w-full sm:w-auto"
@@ -539,6 +543,8 @@ export default function HRLeaveTypes() {
           </form>
         </DialogContent>
       </Dialog>
+        </div>
+      </div>
     </div>
   );
 }

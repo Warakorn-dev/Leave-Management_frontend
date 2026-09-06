@@ -6,7 +6,7 @@ import {
   LeaveRequest,
   calculateLeaveDays,
 } from '@/lib/api/store';
-import { Mail, Bell, Settings } from 'lucide-react';
+import { Mail, Bell, Settings, Activity } from 'lucide-react';
 import { getLeaveStatusText, getLeaveStatusBadgeColor } from '@/lib/api/utils';
 
 const getLeaveDetails = (req: any) => {
@@ -131,11 +131,17 @@ export default function LeaveStatusPage() {
   return (
     <div className="min-h-[calc(100vh-4rem)] bg-[#E2E4E9] font-sans text-slate-800 flex flex-col">
       {/* Top Banner */}
-      <div className="bg-white flex items-center justify-between px-8 py-5 shadow-sm z-10">
+      <div className="bg-white flex items-center gap-4 px-8 py-5 shadow-sm z-10 shrink-0">
+        <div className="w-11 h-11 bg-blue-100 text-blue-600 rounded-xl flex items-center justify-center shrink-0">
+          <Activity className="w-6 h-6" strokeWidth={2} />
+        </div>
         <div>
           <h1 className="text-xl font-bold text-black tracking-tight">
             ตรวจสอบสถานะการลา
           </h1>
+          <p className="text-xs text-gray-500 mt-1 font-medium">
+            ติดตามความคืบหน้าและสถานะการอนุมัติคำขอลาของคุณ
+          </p>
         </div>
       </div>
 

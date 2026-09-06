@@ -30,15 +30,18 @@ export function CEOSidebar({ onNavigate }: { onNavigate?: () => void }) {
   }, []);
 
   useEffect(() => {
-    const userId = sessionStorage.getItem("userId");
     setUsername(sessionStorage.getItem("username") || "");
     const storedPic = sessionStorage.getItem("profilePic");
     if (storedPic) setProfilePic(storedPic);
 
-    if (userId) {
-      fetch(`/api/users/${userId}`)
+    const token = sessionStorage.getItem("accessToken");
+    if (token) {
+      fetch("/api/leave/me", {
+        headers: { Authorization: `Bearer ${token}` }
+      })
         .then(r => r.json())
-        .then(user => {
+        .then(res => {
+          const user = res.data || res;
           if (user) {
             const name = [user.firstName, user.lastName].filter(Boolean).join(" ");
             if (name) setFullName(name);

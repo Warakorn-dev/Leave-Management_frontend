@@ -56,20 +56,29 @@ export default function AdminUsersListPage() {
 
   return (
     <RoleGuard allowedRoles={["admin"]}>
-      <div className="p-6 max-w-7xl mx-auto space-y-6">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="min-h-[calc(100vh-4rem)] bg-[#E2E4E9] font-sans text-slate-800 flex flex-col">
+        {/* Top Banner */}
+        <div className="bg-white flex items-center gap-4 px-8 py-5 shadow-sm z-10 shrink-0">
+          <div className="w-11 h-11 bg-blue-100 text-blue-600 rounded-xl flex items-center justify-center shrink-0">
+            <Users className="w-6 h-6" strokeWidth={2} />
+          </div>
           <div>
-            <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
-              <Users className="w-6 h-6" /> รายชื่อผู้ใช้งานทั้งหมด
+            <h1 className="text-xl font-bold text-black tracking-tight">
+              รายชื่อผู้ใช้งานทั้งหมด
             </h1>
-            <p className="text-slate-500">
+            <p className="text-xs text-gray-500 mt-1 font-medium">
               ดูรายชื่อผู้ใช้งานทุกบัญชีในระบบ (แสดงเฉพาะข้อมูล ไม่สามารถแก้ไข)
             </p>
           </div>
+        </div>
+
+        <div className="flex-1 p-6">
+          <div className="max-w-7xl mx-auto space-y-6">
+        <div className="flex justify-end">
           <input
             type="text"
             placeholder="ค้นหาด้วยชื่อผู้ใช้ อีเมล หรือชื่อ-สกุล..."
-            className="px-4 py-2 border border-slate-300 rounded-lg w-full sm:w-72"
+            className="px-4 py-2 border border-slate-300 rounded-lg w-full sm:w-72 bg-white"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
@@ -149,6 +158,8 @@ export default function AdminUsersListPage() {
           <div className="p-4 border-t text-sm text-slate-500">
             ทั้งหมด {loading ? "-" : filtered.length} รายชื่อ
             {!loading && search && ` (จากทั้งหมด ${users.length})`}
+          </div>
+        </div>
           </div>
         </div>
       </div>

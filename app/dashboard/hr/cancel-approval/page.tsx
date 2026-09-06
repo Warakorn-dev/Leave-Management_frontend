@@ -160,22 +160,24 @@ export default function HrCancelApprovalPage() {
   };
 
   return (
-    <div className="min-h-[calc(100vh-4rem)] bg-[#E2E4E9] font-sans text-slate-800 p-6 md:p-10 flex flex-col items-center">
-
-      <div className="w-full max-w-[1200px] bg-white rounded-xl shadow-md border border-gray-100 p-8 md:p-12 animate-in fade-in slide-in-from-bottom-4 duration-500">
-
-        {/* Header */}
-        <div className="mb-6">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="w-9 h-9 rounded-xl bg-rose-100 flex items-center justify-center">
-              <AlertTriangle className="w-5 h-5 text-rose-600" strokeWidth={2.5} />
-            </div>
-            <h1 className="text-2xl font-bold text-gray-800 tracking-tight">ตรวจสอบคำขอยกเลิกการลา</h1>
-          </div>
-          <p className="text-sm text-gray-400 font-medium pl-12">
+    <div className="min-h-[calc(100vh-4rem)] bg-[#E2E4E9] font-sans text-slate-800 flex flex-col">
+      {/* Top Banner */}
+      <div className="bg-white flex items-center gap-4 px-8 py-5 shadow-sm z-10 shrink-0">
+        <div className="w-11 h-11 bg-rose-100 text-rose-600 rounded-xl flex items-center justify-center shrink-0">
+          <AlertTriangle className="w-6 h-6" strokeWidth={2} />
+        </div>
+        <div>
+          <h1 className="text-xl font-bold text-black tracking-tight">
+            ตรวจสอบคำขอยกเลิกการลา
+          </h1>
+          <p className="text-xs text-gray-500 mt-1 font-medium">
             พิจารณาอนุมัติหรือปฏิเสธคำขอยกเลิกใบลาที่ได้รับการอนุมัติแล้ว
           </p>
         </div>
+      </div>
+
+      <div className="flex-1 p-6 md:p-10 flex flex-col items-center">
+      <div className="w-full max-w-[1200px] bg-white rounded-xl shadow-md border border-gray-100 p-8 md:p-12 animate-in fade-in slide-in-from-bottom-4 duration-500">
 
         {/* Info Banner */}
         <div className="mb-6 bg-rose-50 border border-rose-200 rounded-xl p-4 flex items-start gap-3">
@@ -436,6 +438,7 @@ export default function HrCancelApprovalPage() {
       )}
 
 
+      </div>
     </div>
   );
 }

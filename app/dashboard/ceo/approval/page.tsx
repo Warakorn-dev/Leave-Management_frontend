@@ -261,19 +261,24 @@ export default function CEOApproval() {
   };
 
   return (
-    <div className="space-y-6 max-w-[1200px] mx-auto pb-10">
-      {/* Header */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white dark:bg-slate-900 p-6 rounded-3xl shadow-sm border border-slate-100 dark:border-slate-800">
+    <div className="min-h-[calc(100vh-4rem)] bg-[#E2E4E9] font-sans text-slate-800 flex flex-col">
+      {/* Top Banner */}
+      <div className="bg-white flex items-center gap-4 px-8 py-5 shadow-sm z-10 shrink-0">
+        <div className="w-11 h-11 bg-blue-100 text-blue-600 rounded-xl flex items-center justify-center shrink-0">
+          <CheckCircle2 className="w-6 h-6" strokeWidth={2} />
+        </div>
         <div>
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
-            <CheckCircle2 className="w-6 h-6 text-indigo-600" />
+          <h1 className="text-xl font-bold text-black tracking-tight">
             รายการคำขออนุมัติการลา (CEO)
           </h1>
-          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+          <p className="text-xs text-gray-500 mt-1 font-medium">
             อนุมัติหรือปฏิเสธคำขอลาที่ต้องผ่านการพิจารณาจากผู้บริหาร
           </p>
         </div>
       </div>
+
+      <div className="flex-1 p-6 md:p-8">
+        <div className="space-y-6 max-w-[1200px] mx-auto pb-4">
 
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
@@ -699,6 +704,8 @@ export default function CEOApproval() {
           </div>
         </div>
       )}
+        </div>
+      </div>
     </div>
   );
 }

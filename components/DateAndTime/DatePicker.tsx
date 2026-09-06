@@ -211,20 +211,34 @@ export default function DatePicker({
   const { data: holidaysData = [] } = useHolidaysQuery();
 
   const handleDateChange = (newValue) => {
-    if (onChange) {
-      if (newValue && dayjs.isDayjs(newValue)) {
-        if (props.views && props.views.length === 2 && props.views.includes('year') && props.views.includes('month')) {
-           // If it's a month picker (like ThaiMonthPicker), return YYYY-MM
-           onChange(newValue.format('YYYY-MM'));
-        } else if (selected !== undefined) {
-           // If used as ThaiDatePicker, return a Date object
-           onChange(newValue.toDate());
-        } else {
-           onChange(newValue);
-        }
+    if (!onChange) return;
+
+    // dayjs.isDayjs() only checks the object is a dayjs instance — it says
+    // nothing about whether the date it holds is valid. MUI still calls
+    // onChange with an *invalid* dayjs object while the user is mid-typing a
+    // section (e.g. a year that doesn't parse under the BBBB/Buddhist-era
+    // format this picker uses). Treating that as a real selection used to
+    // format it to the literal string "Invalid Date" and store that in state,
+    // which made the field render as empty — wiping out whatever had been
+    // typed, and doing so independently of any other field on the page.
+    if (newValue && dayjs.isDayjs(newValue) && newValue.isValid()) {
+      if (props.views && props.views.length === 2 && props.views.includes('year') && props.views.includes('month')) {
+         // If it's a month picker (like ThaiMonthPicker), return YYYY-MM
+         onChange(newValue.format('YYYY-MM'));
+      } else if (selected !== undefined) {
+         // If used as ThaiDatePicker, return a Date object
+         onChange(newValue.toDate());
       } else {
-        onChange(newValue);
+         onChange(newValue);
       }
+      return;
+    }
+
+    // A genuine clear (user emptied the field) comes through as exactly
+    // `null`; forward that. An invalid-but-incomplete dayjs object should not
+    // clear whatever value is already committed.
+    if (newValue === null) {
+      onChange(null);
     }
   };
 

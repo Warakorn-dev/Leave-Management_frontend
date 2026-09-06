@@ -211,14 +211,24 @@ export default function HRDeptApprovePage() {
   };
 
   return (
-    <div className="min-h-[calc(100vh-4rem)] bg-[#E2E4E9] font-sans text-slate-800 p-6 md:p-10 flex flex-col items-center">
-      <div className="w-full max-w-[1200px] bg-white rounded-xl shadow-md border border-gray-100 p-8 md:p-12 animate-in fade-in slide-in-from-bottom-4 duration-500">
-
-        {/* Header */}
-        <div className="mb-6">
-          <h1 className="text-2xl font-bold text-gray-800 mb-2 tracking-tight">รายการคำขอรออนุมัติ (หัวหน้าแผนก HR)</h1>
-          <p className="text-sm text-gray-400 font-medium">พิจารณาอนุมัติหรือปฏิเสธคำขอลาของพนักงานในแผนกของคุณ</p>
+    <div className="min-h-[calc(100vh-4rem)] bg-[#E2E4E9] font-sans text-slate-800 flex flex-col">
+      {/* Top Banner */}
+      <div className="bg-white flex items-center gap-4 px-8 py-5 shadow-sm z-10 shrink-0">
+        <div className="w-11 h-11 bg-blue-100 text-blue-600 rounded-xl flex items-center justify-center shrink-0">
+          <CalendarIcon className="w-6 h-6" strokeWidth={2} />
         </div>
+        <div>
+          <h1 className="text-xl font-bold text-black tracking-tight">
+            รายการคำขอรออนุมัติ (หัวหน้าแผนก HR)
+          </h1>
+          <p className="text-xs text-gray-500 mt-1 font-medium">
+            พิจารณาอนุมัติหรือปฏิเสธคำขอลาของพนักงานในแผนกของคุณ
+          </p>
+        </div>
+      </div>
+
+      <div className="flex-1 p-6 md:p-10 flex flex-col items-center">
+      <div className="w-full max-w-[1200px] bg-white rounded-xl shadow-md border border-gray-100 p-8 md:p-12 animate-in fade-in slide-in-from-bottom-4 duration-500">
 
         {/* Month Picker */}
         <div className="mb-8 relative inline-block">
@@ -377,6 +387,7 @@ export default function HRDeptApprovePage() {
       )}
 
 
+      </div>
     </div>
   );
 }

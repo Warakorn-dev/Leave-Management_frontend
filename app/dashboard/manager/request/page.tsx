@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useLeave } from '@/hooks/useLeave';
 import { useLeaveBalance } from '@/hooks/useLeaveBalance';
-import { Upload, Check, X } from 'lucide-react';
+import { Upload, Check, X, FilePlus2 } from 'lucide-react';
 import { DatePicker } from '@/components/DateAndTime';
 import { useRouter } from 'next/navigation';
 import { LeaveTimePicker } from '@/components/LeaveTimePicker';
@@ -221,7 +221,10 @@ export default function ManagerRequestPage() {
   return (
     <div className="min-h-[calc(100vh-4rem)] bg-[#E2E4E9] font-sans text-slate-800 flex flex-col">
       {/* Top Banner */}
-      <div className="bg-white flex items-center justify-between px-8 py-5 shadow-sm z-10">
+      <div className="bg-white flex items-center gap-4 px-8 py-5 shadow-sm z-10 shrink-0">
+        <div className="w-11 h-11 bg-blue-100 text-blue-600 rounded-xl flex items-center justify-center shrink-0">
+          <FilePlus2 className="w-6 h-6" strokeWidth={2} />
+        </div>
         <div>
           <h1 className="text-xl font-bold text-black tracking-tight">
             แบบฟอร์มยื่นลา (Leave Request)

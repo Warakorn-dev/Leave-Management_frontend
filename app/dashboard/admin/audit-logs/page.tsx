@@ -45,22 +45,31 @@ export default function AdminAuditLogsPage() {
 
   return (
     <RoleGuard allowedRoles={["admin"]}>
-      <div className="p-6 max-w-7xl mx-auto space-y-6">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
-              <ClipboardList className="w-6 h-6" /> ประวัติการใช้งานระบบ (Audit Logs)
-            </h1>
-            <p className="text-slate-500">ติดตามและตรวจสอบการกระทำทั้งหมดภายในระบบ</p>
+      <div className="min-h-[calc(100vh-4rem)] bg-[#E2E4E9] font-sans text-slate-800 flex flex-col">
+        {/* Top Banner */}
+        <div className="bg-white flex items-center gap-4 px-8 py-5 shadow-sm z-10 shrink-0">
+          <div className="w-11 h-11 bg-blue-100 text-blue-600 rounded-xl flex items-center justify-center shrink-0">
+            <ClipboardList className="w-6 h-6" strokeWidth={2} />
           </div>
           <div>
-            <button 
+            <h1 className="text-xl font-bold text-black tracking-tight">
+              ประวัติการใช้งานระบบ (Audit Logs)
+            </h1>
+            <p className="text-xs text-gray-500 mt-1 font-medium">
+              ติดตามและตรวจสอบการกระทำทั้งหมดภายในระบบ
+            </p>
+          </div>
+        </div>
+
+        <div className="flex-1 p-6">
+          <div className="max-w-7xl mx-auto space-y-6">
+        <div className="flex justify-end">
+            <button
               onClick={handleExportCSV}
               className="flex items-center gap-2 bg-slate-800 hover:bg-slate-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
             >
               <Download className="w-4 h-4" /> ดาวน์โหลด CSV
             </button>
-          </div>
         </div>
 
         <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
@@ -136,6 +145,8 @@ export default function AdminAuditLogsPage() {
                 ถัดไป
               </button>
             </div>
+          </div>
+        </div>
           </div>
         </div>
       </div>

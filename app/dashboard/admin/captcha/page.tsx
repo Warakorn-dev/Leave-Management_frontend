@@ -41,23 +41,32 @@ export default function AdminCaptchaPage() {
 
   return (
     <RoleGuard allowedRoles={["admin"]}>
-      <div className="p-6 max-w-4xl mx-auto space-y-6">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
-              <Activity className="w-6 h-6 text-orange-500" /> ตรวจสอบระบบ CAPTCHA
-            </h1>
-            <p className="text-slate-500">ติดตามและเคลียร์พื้นที่ฐานข้อมูลแคปช่า (CAPTCHA)</p>
+      <div className="min-h-[calc(100vh-4rem)] bg-[#E2E4E9] font-sans text-slate-800 flex flex-col">
+        {/* Top Banner */}
+        <div className="bg-white flex items-center gap-4 px-8 py-5 shadow-sm z-10 shrink-0">
+          <div className="w-11 h-11 bg-blue-100 text-blue-600 rounded-xl flex items-center justify-center shrink-0">
+            <Activity className="w-6 h-6" strokeWidth={2} />
           </div>
           <div>
-            <button 
+            <h1 className="text-xl font-bold text-black tracking-tight">
+              ตรวจสอบระบบ CAPTCHA
+            </h1>
+            <p className="text-xs text-gray-500 mt-1 font-medium">
+              ติดตามและเคลียร์พื้นที่ฐานข้อมูลแคปช่า (CAPTCHA)
+            </p>
+          </div>
+        </div>
+
+        <div className="flex-1 p-6">
+          <div className="max-w-4xl mx-auto space-y-6">
+        <div className="flex justify-end">
+            <button
               onClick={handlePurge}
               disabled={purging || loading}
               className="flex items-center gap-2 bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 px-4 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
             >
               <Trash2 className="w-4 h-4" /> {purging ? "กำลังล้างข้อมูล..." : "ล้างข้อมูลที่หมดอายุแล้ว"}
             </button>
-          </div>
         </div>
 
         {loading ? (
@@ -96,6 +105,8 @@ export default function AdminCaptchaPage() {
 
         <div className="bg-blue-50 border border-blue-200 rounded-xl p-5 text-sm text-blue-800">
           <strong>คำแนะนำ:</strong> ภาพแคปช่า (CAPTCHAs) จะถูกตรวจสอบและทำเครื่องหมายว่าถูกใช้งานแล้วเมื่อผู้ใช้ล็อกอินสำเร็จ อย่างไรก็ตามแคปช่าที่ถูกสร้างขึ้นแต่ผู้ใช้ไม่ได้กดล็อกอินจะสะสมในฐานข้อมูลและหมดอายุไปเอง ควรใช้ปุ่ม "ล้างข้อมูล" เป็นครั้งคราวเพื่อคืนพื้นที่และทำให้ฐานข้อมูลทำงานได้เร็วขึ้น
+        </div>
+          </div>
         </div>
       </div>
     </RoleGuard>

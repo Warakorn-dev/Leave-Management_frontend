@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import {
   Calendar as CalendarIcon,
+  BookOpen,
   Edit3,
   Trash2,
   Upload,
@@ -459,7 +460,10 @@ export default function LeaveHistoryPage() {
   return (
     <div className="min-h-[calc(100vh-4rem)] bg-[#F8F9FA] font-sans text-slate-800 flex flex-col relative">
       {/* Top Banner */}
-      <div className="bg-white flex items-center justify-between px-8 py-5 shadow-sm z-10">
+      <div className="bg-white flex items-center gap-4 px-8 py-5 shadow-sm z-10 shrink-0">
+        <div className="w-11 h-11 bg-blue-100 text-blue-600 rounded-xl flex items-center justify-center shrink-0">
+          <BookOpen className="w-6 h-6" strokeWidth={2} />
+        </div>
         <div>
           <h1 className="text-xl font-bold text-black tracking-tight">
             ประวัติการลา (Leave History)
