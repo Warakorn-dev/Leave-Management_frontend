@@ -14,6 +14,7 @@ import {
   Trash2,
 } from 'lucide-react';
 import { userApi } from '@/lib/api';
+import Swal from 'sweetalert2';
 
 export default function HRSettingsPage() {
   const [username, setUsername] = useState('');
@@ -128,10 +129,7 @@ export default function HRSettingsPage() {
         const result = event.target?.result as string;
         try {
           await userApi.updateAvatar(result);
-        } catch (err) {
-          console.error(err);
-        }
-        setTimeout(() => {
+          
           setProfilePic(result);
           try {
             sessionStorage.setItem('profilePic', result);
@@ -139,8 +137,27 @@ export default function HRSettingsPage() {
             console.warn('Quota exceeded');
           }
           setIsUploading(false);
-          window.location.reload();
-        }, 1000);
+          
+          Swal.fire({
+            icon: 'success',
+            title: 'สำเร็จ',
+            text: 'อัปเดตรูปโปรไฟล์สำเร็จ',
+            timer: 1500,
+            showConfirmButton: false,
+          }).then(() => {
+            window.location.reload();
+          });
+        } catch (err: any) {
+          console.error(err);
+          setIsUploading(false);
+          const errorMessage = err.response?.data?.message || 'เกิดข้อผิดพลาดในการอัปโหลดรูปภาพ';
+          Swal.fire({
+            icon: 'error',
+            title: 'เกิดข้อผิดพลาด',
+            text: errorMessage,
+            confirmButtonColor: '#3085d6',
+          });
+        }
       };
       reader.readAsDataURL(e.target.files[0]);
     }
@@ -153,10 +170,26 @@ export default function HRSettingsPage() {
       setProfilePic(null);
       sessionStorage.removeItem('profilePic');
       setIsUploading(false);
-      window.location.reload();
-    } catch (err) {
+      
+      Swal.fire({
+        icon: 'success',
+        title: 'สำเร็จ',
+        text: 'ลบรูปโปรไฟล์สำเร็จ',
+        timer: 1500,
+        showConfirmButton: false,
+      }).then(() => {
+        window.location.reload();
+      });
+    } catch (err: any) {
       console.error(err);
       setIsUploading(false);
+      const errorMessage = err.response?.data?.message || 'เกิดข้อผิดพลาดในการลบรูปภาพ';
+      Swal.fire({
+        icon: 'error',
+        title: 'เกิดข้อผิดพลาด',
+        text: errorMessage,
+        confirmButtonColor: '#3085d6',
+      });
     }
   };
 
@@ -190,26 +223,19 @@ export default function HRSettingsPage() {
   };
 
   return (
-    <div className="min-h-[calc(100vh-4rem)] bg-gradient-to-br from-slate-50 to-slate-100 font-sans text-slate-800 flex flex-col relative overflow-hidden">
-      {/* Decorative Background Elements */}
-      <div className="absolute top-[-10%] left-[-10%] w-96 h-96 bg-blue-400/20 rounded-full blur-3xl mix-blend-multiply opacity-50 animate-blob"></div>
-      <div className="absolute top-[20%] right-[-10%] w-[30rem] h-[30rem] bg-indigo-400/20 rounded-full blur-3xl mix-blend-multiply opacity-50 animate-blob animation-delay-2000"></div>
-      <div className="absolute bottom-[-20%] left-[20%] w-80 h-80 bg-purple-400/20 rounded-full blur-3xl mix-blend-multiply opacity-50 animate-blob animation-delay-4000"></div>
-
+    <div className="min-h-[calc(100vh-4rem)] bg-[#E2E4E9] font-sans text-slate-800 flex flex-col relative overflow-hidden">
       {/* Top Banner */}
-      <div className="bg-white/80 backdrop-blur-md border-b border-white/20 flex items-center justify-between px-8 py-6 shadow-sm z-10 sticky top-0">
-        <div className="flex items-center gap-4">
-          <div className="w-10 h-10 bg-gradient-to-tr from-blue-600 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/30 text-white">
-            <User className="w-5 h-5" />
-          </div>
-          <div>
-            <h1 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-slate-900 to-slate-600 tracking-tight">
-              ข้อมูลส่วนตัว
-            </h1>
-            <p className="text-sm text-slate-500 font-medium">
-              จัดการข้อมูลและบัญชีผู้ใช้ของคุณ
-            </p>
-          </div>
+      <div className="bg-white flex items-center gap-4 px-8 py-5 shadow-sm z-10 shrink-0">
+        <div className="w-11 h-11 bg-blue-100 text-blue-600 rounded-xl flex items-center justify-center shrink-0">
+          <User className="w-6 h-6" strokeWidth={2} />
+        </div>
+        <div>
+          <h1 className="text-xl font-bold text-black tracking-tight">
+            ข้อมูลส่วนตัว
+          </h1>
+          <p className="text-xs text-gray-500 mt-1 font-medium">
+            จัดการข้อมูลและบัญชีผู้ใช้ของคุณ
+          </p>
         </div>
       </div>
 

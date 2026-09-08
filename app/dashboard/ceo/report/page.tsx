@@ -26,6 +26,7 @@ import {
   User,
   Calendar as CalendarIcon,
   Clock,
+  BarChart3,
 } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { th } from 'date-fns/locale';
@@ -432,14 +433,24 @@ export default function CEOReport() {
   };
 
   return (
-    <div className="p-6 md:p-8 w-full min-h-full bg-[#F8F9FA]">
-      <div className="space-y-6 max-w-7xl mx-auto pb-10">
-        {/* Title */}
+    <div className="min-h-[calc(100vh-4rem)] bg-[#E2E4E9] font-sans text-slate-800 flex flex-col">
+      {/* Top Banner */}
+      <div className="bg-white flex items-center gap-4 px-8 py-5 shadow-sm z-10 shrink-0">
+        <div className="w-11 h-11 bg-blue-100 text-blue-600 rounded-xl flex items-center justify-center shrink-0">
+          <BarChart3 className="w-6 h-6" strokeWidth={2} />
+        </div>
         <div>
-          <h1 className="text-3xl font-black tracking-tight text-slate-800 bg-white inline-block px-8 py-3 rounded-t-xl rounded-br-3xl shadow-sm">
+          <h1 className="text-xl font-bold text-black tracking-tight">
             รายงานการลา (CEO Insights)
           </h1>
+          <p className="text-xs text-gray-500 mt-1 font-medium">
+            ภาพรวมสถิติและแนวโน้มการลางานของทั้งองค์กร
+          </p>
         </div>
+      </div>
+
+      <div className="flex-1 p-6 md:p-8 w-full">
+        <div className="space-y-6 max-w-7xl mx-auto pb-4">
 
         {/* Top 3 Cards Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -1213,6 +1224,7 @@ export default function CEOReport() {
               </div>
             );
           })()}
+        </div>
       </div>
     </div>
   );

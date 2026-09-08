@@ -12,8 +12,16 @@ export default function LoginPage() {
   const router = useRouter();
   const [theme, setTheme] = useState<'gray' | 'dark'>('dark');
   const [username, setUsername] = useState("");
+  // This page has no server data to render (auth lives client-side only, per
+  // this app's architecture) and its interactive bits — Base UI's Input
+  // primitives and the theme read from localStorage — occasionally render
+  // slightly differently between the SSR pass and the first client render,
+  // which React reports as a hydration mismatch. Rendering the real markup
+  // only after mount sidesteps that instead of chasing the exact diff.
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
+    setMounted(true);
     const savedTheme = localStorage.getItem('auth-theme') as 'gray' | 'dark' | null;
     if (savedTheme) {
       setTheme(savedTheme);
@@ -77,6 +85,9 @@ export default function LoginPage() {
       if (response.accessToken) {
         sessionStorage.setItem("accessToken", response.accessToken);
       }
+      if (response.refreshToken) {
+        sessionStorage.setItem("refreshToken", response.refreshToken);
+      }
       sessionStorage.setItem("userId", user.id.toString());
       sessionStorage.setItem("role", user.role);
       sessionStorage.setItem("username", user.username || user.email);
@@ -136,6 +147,10 @@ export default function LoginPage() {
   ];
 
   const isDark = theme === 'dark';
+
+  if (!mounted) {
+    return <div className="min-h-screen bg-[#020519]" />;
+  }
 
   return (
     <div className={`flex min-h-screen items-center justify-center relative overflow-hidden font-sans transition-colors duration-500 ${isDark ? 'bg-[#020519]' : 'bg-white'}`}>

@@ -93,7 +93,7 @@ export const LeaveTimePicker: React.FC<LeaveTimePickerProps> = ({
     const startTotal = startH * 60 + startM;
     const endTotal = endH * 60 + endM;
 
-    let totalMinutes = endTotal - startTotal;
+    const totalMinutes = endTotal - startTotal;
     
     if (totalMinutes <= 0) {
       return { error: true, text: 'เวลาสิ้นสุดต้องมากกว่าเวลาเริ่ม' };
@@ -115,7 +115,7 @@ export const LeaveTimePicker: React.FC<LeaveTimePickerProps> = ({
     const hours = Math.floor(netMinutes / 60);
     const mins = netMinutes % 60;
     
-    let textParts = [];
+    const textParts = [];
     if (hours > 0) textParts.push(`${hours} ชั่วโมง`);
     if (mins > 0) textParts.push(`${mins} นาที`);
 

@@ -264,30 +264,30 @@ export default function AddEmployeePage() {
   if (!user || user.role.toLowerCase() !== 'hr') return null;
 
   return (
-    <div className="max-w-[1000px] mx-auto min-h-screen pb-12 px-3 sm:px-5 md:px-8 pt-4 md:pt-6">
-      {/* Header Section */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 md:mb-8 gap-3">
-        <div className="flex items-start gap-3">
-          <Link
-            href="/dashboard/hr/employees"
-            className="mt-1.5 text-slate-400 hover:text-blue-500 transition-colors"
-          >
-            <ArrowLeft className="w-6 h-6 sm:w-8 sm:h-8" strokeWidth={2} />
-          </Link>
-          <div>
-            <h1 className="text-2xl sm:text-[32px] font-bold text-slate-700 leading-tight flex items-center gap-2 sm:gap-3">
-              <UserPlus
-                className="w-6 h-6 sm:w-8 sm:h-8 text-blue-500"
-                strokeWidth={2}
-              />
-              เพิ่มพนักงานใหม่
-            </h1>
-            <p className="text-slate-400 text-sm mt-1">
-              ลงทะเบียนข้อมูลพนักงานและสร้างบัญชีผู้ใช้งานระบบ
-            </p>
-          </div>
+    <div className="min-h-[calc(100vh-4rem)] bg-[#E2E4E9] font-sans text-slate-800 flex flex-col">
+      {/* Top Banner */}
+      <div className="bg-white flex items-center gap-4 px-8 py-5 shadow-sm z-10 shrink-0">
+        <Link
+          href="/dashboard/hr/employees"
+          className="text-slate-400 hover:text-blue-500 transition-colors shrink-0"
+        >
+          <ArrowLeft className="w-6 h-6" strokeWidth={2} />
+        </Link>
+        <div className="w-11 h-11 bg-blue-100 text-blue-600 rounded-xl flex items-center justify-center shrink-0">
+          <UserPlus className="w-6 h-6" strokeWidth={2} />
+        </div>
+        <div>
+          <h1 className="text-xl font-bold text-black tracking-tight">
+            เพิ่มพนักงานใหม่
+          </h1>
+          <p className="text-xs text-gray-500 mt-1 font-medium">
+            ลงทะเบียนข้อมูลพนักงานและสร้างบัญชีผู้ใช้งานระบบ
+          </p>
         </div>
       </div>
+
+      <div className="flex-1 p-6 md:p-8">
+        <div className="max-w-[1000px] mx-auto">
 
       {/* Main Content Area */}
       <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden p-5 sm:p-8 md:p-10">
@@ -407,28 +407,6 @@ export default function AddEmployeePage() {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 md:gap-x-8 gap-y-5 md:gap-y-6">
             <div className="space-y-3">
               <label className="block text-[#475569] font-medium text-[17px]">
-                เพศ (Gender)
-              </label>
-              <div className="relative">
-                <select
-                  name="gender"
-                  value={formData.gender}
-                  onChange={handleChange}
-                  className="w-full bg-[#f8fafc] border border-[#e2e8f0] px-5 py-3.5 rounded-xl text-[15px] text-slate-800 appearance-none focus:outline-none focus:ring-2 focus:ring-blue-100 transition-all cursor-pointer"
-                >
-                  <option value="Unspecified">ไม่ระบุ (Unspecified)</option>
-                  <option value="Male">ชาย (Male)</option>
-                  <option value="Female">หญิง (Female)</option>
-                </select>
-                <ChevronDown
-                  className="absolute right-5 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-700 pointer-events-none"
-                  strokeWidth={2.5}
-                />
-              </div>
-            </div>
-
-            <div className="space-y-3">
-              <label className="block text-[#475569] font-medium text-[17px]">
                 คำนำหน้าชื่อ (Title) <span className="text-red-500">*</span>
               </label>
               <div className="relative">
@@ -445,6 +423,28 @@ export default function AddEmployeePage() {
                   <option value="นาย ">นาย</option>
                   <option value="นาง ">นาง</option>
                   <option value="นางสาว ">นางสาว</option>
+                </select>
+                <ChevronDown
+                  className="absolute right-5 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-700 pointer-events-none"
+                  strokeWidth={2.5}
+                />
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <label className="block text-[#475569] font-medium text-[17px]">
+                เพศ (Gender)
+              </label>
+              <div className="relative">
+                <select
+                  name="gender"
+                  value={formData.gender}
+                  onChange={handleChange}
+                  className="w-full bg-[#f8fafc] border border-[#e2e8f0] px-5 py-3.5 rounded-xl text-[15px] text-slate-800 appearance-none focus:outline-none focus:ring-2 focus:ring-blue-100 transition-all cursor-pointer"
+                >
+                  <option value="Unspecified">ไม่ระบุ (Unspecified)</option>
+                  <option value="Male">ชาย (Male)</option>
+                  <option value="Female">หญิง (Female)</option>
                 </select>
                 <ChevronDown
                   className="absolute right-5 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-700 pointer-events-none"
@@ -550,34 +550,6 @@ export default function AddEmployeePage() {
 
             <div className="space-y-3">
               <label className="block text-[#475569] font-medium text-[17px]">
-                ที่อยู่ตามบัตรประชาชน (ID Card Address)
-              </label>
-              <textarea
-                name="idCardAddress"
-                placeholder="กรอกที่อยู่ตามบัตรประชาชน"
-                value={formData.idCardAddress}
-                onChange={handleChange as any}
-                rows={3}
-                className="w-full bg-[#f8fafc] border border-[#e2e8f0] px-5 py-3.5 rounded-xl text-[15px] text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-100 transition-all placeholder:text-[#94a3b8] resize-none"
-              ></textarea>
-            </div>
-
-            <div className="space-y-3">
-              <label className="block text-[#475569] font-medium text-[17px]">
-                ที่อยู่ปัจจุบัน (Current Address)
-              </label>
-              <textarea
-                name="currentAddress"
-                placeholder="กรอกที่อยู่ปัจจุบัน"
-                value={formData.currentAddress}
-                onChange={handleChange as any}
-                rows={3}
-                className="w-full bg-[#f8fafc] border border-[#e2e8f0] px-5 py-3.5 rounded-xl text-[15px] text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-100 transition-all placeholder:text-[#94a3b8] resize-none"
-              ></textarea>
-            </div>
-
-            <div className="space-y-3">
-              <label className="block text-[#475569] font-medium text-[17px]">
                 แผนก (Department)
               </label>
               <div className="relative">
@@ -634,22 +606,6 @@ export default function AddEmployeePage() {
 
             <div className="space-y-3">
               <label className="block text-[#475569] font-medium text-[17px]">
-                อีเมล (Email) <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="email"
-                name="email"
-                placeholder="example@nid.co.th"
-                value={formData.email}
-                onChange={handleChange}
-                autoComplete="off"
-                className="w-full bg-[#f8fafc] border border-[#e2e8f0] px-5 py-3.5 rounded-xl text-[15px] text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-100 transition-all placeholder:text-[#94a3b8]"
-                required
-              />
-            </div>
-
-            <div className="space-y-3">
-              <label className="block text-[#475569] font-medium text-[17px]">
                 เบอร์โทรศัพท์ (Phone Number)
               </label>
               <div className="relative">
@@ -684,7 +640,51 @@ export default function AddEmployeePage() {
               </div>
             </div>
 
-            <div className="space-y-3 md:col-span-2 md:w-1/2 md:pr-4">
+            <div className="space-y-3">
+              <label className="block text-[#475569] font-medium text-[17px]">
+                อีเมล (Email) <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="email"
+                name="email"
+                placeholder="example@nid.co.th"
+                value={formData.email}
+                onChange={handleChange}
+                autoComplete="off"
+                className="w-full bg-[#f8fafc] border border-[#e2e8f0] px-5 py-3.5 rounded-xl text-[15px] text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-100 transition-all placeholder:text-[#94a3b8]"
+                required
+              />
+            </div>
+
+            <div className="space-y-3">
+              <label className="block text-[#475569] font-medium text-[17px]">
+                ที่อยู่ตามบัตรประชาชน (ID Card Address)
+              </label>
+              <textarea
+                name="idCardAddress"
+                placeholder="กรอกที่อยู่ตามบัตรประชาชน"
+                value={formData.idCardAddress}
+                onChange={handleChange as any}
+                rows={3}
+                className="w-full bg-[#f8fafc] border border-[#e2e8f0] px-5 py-3.5 rounded-xl text-[15px] text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-100 transition-all placeholder:text-[#94a3b8] resize-none"
+              ></textarea>
+            </div>
+
+            <div className="space-y-3">
+              <label className="block text-[#475569] font-medium text-[17px]">
+                ที่อยู่ปัจจุบัน (Current Address)
+              </label>
+              <textarea
+                name="currentAddress"
+                placeholder="กรอกที่อยู่ปัจจุบัน"
+                value={formData.currentAddress}
+                onChange={handleChange as any}
+                rows={3}
+                className="w-full bg-[#f8fafc] border border-[#e2e8f0] px-5 py-3.5 rounded-xl text-[15px] text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-100 transition-all placeholder:text-[#94a3b8] resize-none"
+              ></textarea>
+            </div>
+
+            <div className="space-y-3 md:col-span-2 md:w-[calc(50%-1rem)]">
               <label className="block text-[#475569] font-medium text-[17px]">
                 วันที่เริ่มทำงาน (Start Date)
               </label>
@@ -721,6 +721,8 @@ export default function AddEmployeePage() {
             </button>
           </div>
         </form>
+      </div>
+        </div>
       </div>
     </div>
   );

@@ -164,40 +164,26 @@ export default function HolidayManagementPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] pb-12">
-      {/* Header */}
-      <div className="bg-white border-b border-slate-200 sticky top-0 z-20">
-        <div className="px-8 py-6">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
-                <CalendarIcon className="w-6 h-6 text-blue-600" />
-              </div>
-              <div>
-                <h1 className="text-2xl font-bold text-slate-800">
-                  จัดการวันหยุดบริษัท
-                </h1>
-                <p className="text-sm text-slate-500 mt-1">
-                  เพิ่ม แก้ไข หรือลบวันหยุดประจำปีของบริษัท
-                </p>
-              </div>
-            </div>
-
-            <button
-              onClick={handleOpenCreateModal}
-              className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-lg transition-colors font-medium shadow-sm hover:shadow-md"
-            >
-              <Plus className="w-5 h-5" />
-              <span>เพิ่มวันหยุดใหม่</span>
-            </button>
-          </div>
+    <div className="min-h-[calc(100vh-4rem)] bg-[#E2E4E9] font-sans text-slate-800 flex flex-col pb-12">
+      {/* Top Banner */}
+      <div className="bg-white flex items-center gap-4 px-8 py-5 shadow-sm z-10 shrink-0">
+        <div className="w-11 h-11 bg-blue-100 text-blue-600 rounded-xl flex items-center justify-center shrink-0">
+          <CalendarIcon className="w-6 h-6" strokeWidth={2} />
+        </div>
+        <div>
+          <h1 className="text-xl font-bold text-black tracking-tight">
+            จัดการวันหยุดบริษัท
+          </h1>
+          <p className="text-xs text-gray-500 mt-1 font-medium">
+            เพิ่ม แก้ไข หรือลบวันหยุดประจำปีของบริษัท
+          </p>
         </div>
       </div>
 
       <div className="p-8 max-w-7xl mx-auto">
         {/* Filters */}
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 mb-6">
-          <div className="relative">
+        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 mb-6 flex flex-col sm:flex-row gap-3">
+          <div className="relative flex-1">
             <Search className="w-5 h-5 text-slate-400 absolute left-4 top-1/2 -translate-y-1/2" />
             <input
               type="text"
@@ -207,6 +193,13 @@ export default function HolidayManagementPage() {
               className="w-full bg-slate-50 border-0 rounded-xl pl-12 pr-4 py-3.5 text-sm font-medium text-slate-700 outline-none ring-1 ring-slate-200 focus:ring-2 focus:ring-blue-500/20 transition-all"
             />
           </div>
+          <button
+            onClick={handleOpenCreateModal}
+            className="flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-lg transition-colors font-medium shadow-sm hover:shadow-md shrink-0"
+          >
+            <Plus className="w-5 h-5" />
+            <span>เพิ่มวันหยุดใหม่</span>
+          </button>
         </div>
 
         {/* Content Table */}
@@ -326,8 +319,9 @@ export default function HolidayManagementPage() {
                 <label className="block text-sm font-bold text-slate-700 mb-1.5">
                   วันที่ <span className="text-red-500">*</span>
                 </label>
-                <div className="relative">
+                <div className="w-full bg-slate-50 border border-slate-200 rounded-xl focus-within:ring-2 focus-within:ring-blue-500/20 transition-all [&_.MuiOutlinedInput-notchedOutline]:border-none [&_.MuiInputBase-root]:bg-transparent [&_.MuiInputBase-root]:h-[46px] [&_.MuiInputBase-input]:font-medium [&_.MuiInputBase-input]:text-sm [&_.MuiInputBase-input]:text-slate-700 [&_.MuiInputBase-input]:px-4 [&_.MuiInputBase-input]:py-3 [&_.MuiInputBase-input]:cursor-pointer [&_.MuiIconButton-root]:mr-1 [&_.MuiSvgIcon-root]:w-5 [&_.MuiSvgIcon-root]:h-5 [&_.MuiSvgIcon-root]:text-slate-500 relative">
                   <DatePicker
+                    borderless
                     selected={formData.date}
                     onChange={(date: Date | null) =>
                       date && setFormData({ ...formData, date })
@@ -385,8 +379,9 @@ export default function HolidayManagementPage() {
                 <label className="block text-sm font-bold text-slate-700 mb-1.5">
                   วันที่ <span className="text-red-500">*</span>
                 </label>
-                <div className="relative">
+                <div className="w-full bg-slate-50 border border-slate-200 rounded-xl focus-within:ring-2 focus-within:ring-blue-500/20 transition-all [&_.MuiOutlinedInput-notchedOutline]:border-none [&_.MuiInputBase-root]:bg-transparent [&_.MuiInputBase-root]:h-[46px] [&_.MuiInputBase-input]:font-medium [&_.MuiInputBase-input]:text-sm [&_.MuiInputBase-input]:text-slate-700 [&_.MuiInputBase-input]:px-4 [&_.MuiInputBase-input]:py-3 [&_.MuiInputBase-input]:cursor-pointer [&_.MuiIconButton-root]:mr-1 [&_.MuiSvgIcon-root]:w-5 [&_.MuiSvgIcon-root]:h-5 [&_.MuiSvgIcon-root]:text-slate-500 relative">
                   <DatePicker
+                    borderless
                     selected={formData.date}
                     onChange={(date: Date | null) =>
                       date && setFormData({ ...formData, date })

@@ -77,11 +77,11 @@ export default function HRPersonalDashboard() {
       )
     : null;
 
-  let remainingVacation =
+  const remainingVacation =
     data?.remainingVacation ?? vacationBal?.remainingDays ?? 0;
-  let personalPending = data?.pendingApprovals ?? 0;
-  let personalApproved = data?.approvedThisYear ?? 0;
-  let personalRejected = data?.rejectedRequests ?? 0;
+  const personalPending = data?.pendingApprovals ?? 0;
+  const personalApproved = data?.approvedThisYear ?? 0;
+  const personalRejected = data?.rejectedRequests ?? 0;
 
   const chartData = data?.chartData || [];
   const announcements = data?.announcements || [];

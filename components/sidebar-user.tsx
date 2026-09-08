@@ -89,7 +89,7 @@ export function UserSidebar({ onNavigate }: { onNavigate?: () => void }) {
   };
 
   const menuItems = [
-    { name: "Dashboard", href: "/dashboard/user", icon: PieChart },
+    { name: "Dashboard", href: "/dashboard/user/dashboard", icon: PieChart },
     { name: "สร้างคำขอลา", href: "/dashboard/user/request", icon: FileEdit },
     { name: "สถานะการลา", href: "/dashboard/user/status", icon: Activity },
     { name: "ประวัติการลา", href: "/dashboard/user/history", icon: BookOpen },

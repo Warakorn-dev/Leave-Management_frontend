@@ -38,20 +38,54 @@ class AdapterDayjsBuddhist extends AdapterDayjs {
 }
 
 // Common styles to enforce EPP's premium purple design
-const pickerStyles = {
-  '& .MuiOutlinedInput-root': {
-    borderRadius: 2,
-    bgcolor: 'background.paper',
-    height: 38,
-    transition: 'all 0.2s',
-    '&:hover': {
-      borderColor: '#6b38fb',
+const getPickerStyles = (borderless = false, customSx = {}) => {
+  if (borderless) {
+    return {
+      '& .MuiOutlinedInput-root': {
+        bgcolor: 'transparent !important',
+        height: '100%',
+        minHeight: 0,
+        boxShadow: 'none !important',
+        '& fieldset': {
+          border: 'none !important',
+        },
+        '& .MuiOutlinedInput-notchedOutline': {
+          border: 'none !important',
+        },
+        '&:hover': {
+          borderColor: 'transparent !important',
+        },
+        '&:hover fieldset': {
+          border: 'none !important',
+        },
+        '&.Mui-focused': {
+          borderColor: 'transparent !important',
+          boxShadow: 'none !important',
+        },
+        '&.Mui-focused fieldset': {
+          border: 'none !important',
+        },
+      },
+      ...customSx,
+    };
+  }
+
+  return {
+    '& .MuiOutlinedInput-root': {
+      borderRadius: 2,
+      bgcolor: 'background.paper',
+      height: 38,
+      transition: 'all 0.2s',
+      '&:hover': {
+        borderColor: '#6b38fb',
+      },
+      '&.Mui-focused': {
+        borderColor: '#6b38fb',
+        boxShadow: '0 0 0 2px rgba(107, 56, 251, 0.2)',
+      },
     },
-    '&.Mui-focused': {
-      borderColor: '#6b38fb',
-      boxShadow: '0 0 0 2px rgba(107, 56, 251, 0.2)',
-    },
-  },
+    ...customSx,
+  };
 };
 
 const layoutStyles = (theme) => ({
@@ -176,6 +210,10 @@ export interface DatePickerProps {
   disabled?: boolean;
   minDate?: any;
   maxDate?: any;
+  borderless?: boolean;
+  className?: string;
+  sx?: any;
+  slotProps?: any;
   [key: string]: any;
 }
 
@@ -192,6 +230,10 @@ export default function DatePicker({
   disabled = false,
   minDate,
   maxDate,
+  borderless = false,
+  className,
+  sx,
+  slotProps,
   ...props
 }: DatePickerProps) {
   const actualValue = value !== undefined ? value : selected;
@@ -211,24 +253,45 @@ export default function DatePicker({
   const { data: holidaysData = [] } = useHolidaysQuery();
 
   const handleDateChange = (newValue) => {
-    if (onChange) {
-      if (newValue && dayjs.isDayjs(newValue)) {
-        if (props.views && props.views.length === 2 && props.views.includes('year') && props.views.includes('month')) {
-           // If it's a month picker (like ThaiMonthPicker), return YYYY-MM
-           onChange(newValue.format('YYYY-MM'));
-        } else if (selected !== undefined) {
-           // If used as ThaiDatePicker, return a Date object
-           onChange(newValue.toDate());
-        } else {
-           onChange(newValue);
-        }
+    if (!onChange) return;
+
+    // dayjs.isDayjs() only checks the object is a dayjs instance — it says
+    // nothing about whether the date it holds is valid. MUI still calls
+    // onChange with an *invalid* dayjs object while the user is mid-typing a
+    // section (e.g. a year that doesn't parse under the BBBB/Buddhist-era
+    // format this picker uses). Treating that as a real selection used to
+    // format it to the literal string "Invalid Date" and store that in state,
+    // which made the field render as empty — wiping out whatever had been
+    // typed, and doing so independently of any other field on the page.
+    if (newValue && dayjs.isDayjs(newValue) && newValue.isValid()) {
+      if (props.views && props.views.length === 2 && props.views.includes('year') && props.views.includes('month')) {
+         // If it's a month picker (like ThaiMonthPicker), return YYYY-MM
+         onChange(newValue.format('YYYY-MM'));
+      } else if (selected !== undefined) {
+         // If used as ThaiDatePicker, return a Date object
+         onChange(newValue.toDate());
       } else {
-        onChange(newValue);
+         onChange(newValue);
       }
+      return;
+    }
+
+    // A genuine clear (user emptied the field) comes through as exactly
+    // `null`; forward that. An invalid-but-incomplete dayjs object should not
+    // clear whatever value is already committed.
+    if (newValue === null) {
+      onChange(null);
     }
   };
 
   const renderPicker = () => {
+    const resolvedViews = props.views || ['year', 'month', 'day'];
+    const resolvedOpenTo =
+      props.openTo ||
+      (resolvedViews.includes('day')
+        ? 'day'
+        : resolvedViews[resolvedViews.length - 1]);
+
     switch (variant) {
       case 'inline':
         return (
@@ -239,6 +302,8 @@ export default function DatePicker({
               disabled={disabled}
               minDate={parsedMinDate}
               maxDate={parsedMaxDate}
+              views={resolvedViews}
+              openTo={resolvedOpenTo}
               slots={{
                 day: CustomDay,
               }}
@@ -260,22 +325,29 @@ export default function DatePicker({
             format={format}
             minDate={parsedMinDate}
             maxDate={parsedMaxDate}
+            views={resolvedViews}
+            openTo={resolvedOpenTo}
             slots={{
               day: CustomDay,
             }}
             slotProps={{
+              ...slotProps,
               toolbar: {
                 toolbarTitle: 'BASIC',
                 hidden: false,
+                ...slotProps?.toolbar,
               },
               textField: {
                 size: 'small',
                 fullWidth: fullWidth,
                 placeholder: actualPlaceholder,
-                sx: pickerStyles,
+                className: className,
+                sx: getPickerStyles(borderless, slotProps?.textField?.sx || sx),
+                ...slotProps?.textField,
               },
               layout: {
                 sx: layoutStyles,
+                ...slotProps?.layout,
               },
               dialog: {
                 PaperProps: {
@@ -284,8 +356,9 @@ export default function DatePicker({
                     overflow: 'hidden',
                   },
                 },
+                ...slotProps?.dialog,
               },
-              day: { holidays: holidaysData } as any,
+              day: { holidays: holidaysData, ...slotProps?.day } as any,
             }}
             {...props}
           />
@@ -300,20 +373,26 @@ export default function DatePicker({
             format={format}
             minDate={parsedMinDate}
             maxDate={parsedMaxDate}
+            views={resolvedViews}
+            openTo={resolvedOpenTo}
             slots={{
               day: CustomDay,
             }}
             slotProps={{
+              ...slotProps,
               textField: {
                 size: 'small',
                 fullWidth: fullWidth,
                 placeholder: actualPlaceholder,
-                sx: pickerStyles,
+                className: className,
+                sx: getPickerStyles(borderless, slotProps?.textField?.sx || sx),
+                ...slotProps?.textField,
               },
               layout: {
                 sx: layoutStyles,
+                ...slotProps?.layout,
               },
-              day: { holidays: holidaysData } as any,
+              day: { holidays: holidaysData, ...slotProps?.day } as any,
             }}
             {...props}
           />
@@ -323,7 +402,14 @@ export default function DatePicker({
 
   return (
     <LocalizationProvider dateAdapter={AdapterDayjsBuddhist} adapterLocale="th">
-      <Box sx={{ width: '100%' }}>
+      <Box
+        sx={{
+          width: '100%',
+          height: borderless ? '100%' : 'auto',
+          display: borderless ? 'flex' : 'block',
+          alignItems: borderless ? 'center' : undefined,
+        }}
+      >
         {label && (
           <Typography
             variant="body2"

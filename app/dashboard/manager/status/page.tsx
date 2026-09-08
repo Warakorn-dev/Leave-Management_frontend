@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { Activity } from 'lucide-react';
 import { useLeave } from '@/hooks/useLeave';
 import { getLeaveStatusBadgeColor, getLeaveStatusText } from '@/lib/api/utils';
 
@@ -101,11 +102,17 @@ export default function LeaveStatusPage() {
   return (
     <div className="min-h-[calc(100vh-4rem)] bg-[#F8F9FA] font-sans text-slate-800 flex flex-col">
       {/* Top Banner */}
-      <div className="bg-white flex items-center justify-between px-8 py-5 shadow-sm z-10">
+      <div className="bg-white flex items-center gap-4 px-8 py-5 shadow-sm z-10 shrink-0">
+        <div className="w-11 h-11 bg-blue-100 text-blue-600 rounded-xl flex items-center justify-center shrink-0">
+          <Activity className="w-6 h-6" strokeWidth={2} />
+        </div>
         <div>
           <h1 className="text-xl font-bold text-black tracking-tight">
             ตรวจสอบสถานะการลา (Manager)
           </h1>
+          <p className="text-xs text-gray-500 mt-1 font-medium">
+            ติดตามความคืบหน้าและสถานะการอนุมัติคำขอลาของคุณ
+          </p>
         </div>
       </div>
 
@@ -130,12 +137,20 @@ export default function LeaveStatusPage() {
                 const managerStage = getStageStatus(status, 'MANAGER');
                 const ceoStage = getStageStatus(status, 'CEO');
 
+                const requesterRole = req.user?.role || req.employee?.role || '';
+                const requesterPosition = typeof req.user?.position === 'string' ? req.user?.position : req.user?.position?.name || req.employee?.position?.name || '';
+                const isRequesterManagerOrCEO = 
+                  ['Manager', 'CEO'].includes(requesterRole) || 
+                  requesterPosition.toLowerCase().includes('leader') || 
+                  requesterPosition.toLowerCase().includes('manager') ||
+                  requesterRole.toLowerCase().includes('leader');
+                
                 const isNormalLeave = req.leaveType?.isSpecial === false;
                 const showCEO =
                   !isNormalLeave ||
-                  status === 'PENDING_EXECUTIVE' ||
-                  ceoStage === 'pending' ||
-                  ceoStage === 'approved';
+                  isRequesterManagerOrCEO ||
+                  status === 'PENDING_EXECUTIVE';
+                const showManager = !isRequesterManagerOrCEO;
                 const isFinalApproved = status === 'APPROVED';
                 const isFinalRejected = status === 'REJECTED';
                 const isCancelled = status === 'CANCELLED';
@@ -274,6 +289,7 @@ export default function LeaveStatusPage() {
                       </div>
 
                       {/* Step 3: Manager Approval */}
+                      {showManager && (
                       <div className="relative mb-10">
                         <div
                           className={`absolute -left-[31px] md:-left-[43px] w-4 h-4 rounded-full ring-[6px] ring-white z-10 top-0.5 ${
@@ -311,6 +327,7 @@ export default function LeaveStatusPage() {
                             </div>
                           )}
                       </div>
+                      )}
 
                       {/* Step 4: CEO Approval (if applicable) */}
                       {showCEO && (

@@ -77,7 +77,7 @@ export const calculateLeaveDays = (startDate: string, endDate: string, startForm
   if (s > e) return 0;
 
   let count = 0;
-  let current = new Date(s);
+  const current = new Date(s);
   while (current <= e) {
     const dayOfWeek = current.getDay();
 

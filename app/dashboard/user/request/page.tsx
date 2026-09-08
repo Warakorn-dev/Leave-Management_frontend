@@ -1,13 +1,15 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useLeaveBalance } from "@/hooks/useLeaveBalance";
 import { useLeave } from "@/hooks/useLeave";
-import { Mail, Bell, Settings, Upload, Check, X } from "lucide-react";
+import { Mail, Bell, Settings, Upload, Check, X, FilePlus2 } from "lucide-react";
 import { DatePicker } from "@/components/DateAndTime";
 import { LeaveTimePicker } from "@/components/LeaveTimePicker";
 import { userApi, uploadApi } from "@/lib/api";
+import { LeaveDayAvailabilityPreview } from "@/components/LeaveDayAvailabilityPreview";
+import { buildTakenMap, isDayUnavailable } from "@/lib/leavePortions";
 
 export default function RequestLeavePage() {
   const [type, setType] = useState("");
@@ -23,6 +25,7 @@ export default function RequestLeavePage() {
   
   const [reason, setReason] = useState("");
   const [username, setUsername] = useState("xxxxx xxxxxx");
+  const [hasRangeConflict, setHasRangeConflict] = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [showErrorModal, setShowErrorModal] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
@@ -40,44 +43,19 @@ export default function RequestLeavePage() {
   const { data: holidaysData = [] } = useHolidaysQuery();
   const { data: myLeaves = [] } = useLeavesQuery();
 
-  const isDateDisabled = (date: any) => {
-    if (!date) return false;
-    let checkDateStr = '';
-    if (typeof date.isValid === 'function' && date.isValid()) {
-      checkDateStr = date.format('YYYY-MM-DD');
-    } else if (date instanceof Date) {
-      if (isNaN(date.getTime())) return false;
-      const d = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
-      checkDateStr = d.toISOString().split('T')[0];
-    } else {
-      return false;
-    }
+  const currentUserId =
+    typeof window !== 'undefined' ? sessionStorage.getItem('userId') : '';
 
-    if (!Array.isArray(myLeaves)) return false;
+  // Half-day slots the current user has already booked, keyed by day.
+  const takenMap = useMemo(
+    () => buildTakenMap(Array.isArray(myLeaves) ? myLeaves : [], currentUserId),
+    [myLeaves, currentUserId],
+  );
 
-    const currentUserId = typeof window !== 'undefined' ? sessionStorage.getItem('userId') : '';
-
-    return myLeaves.some((leave: any) => {
-      if (!leave || ['REJECTED', 'Rejected', 'CANCELLED', 'Cancelled'].includes(leave.status)) return false;
-      if (!leave.startDate || !leave.endDate) return false;
-
-      // Only disable dates for the current user's own leaves, not other employees'
-      const leaveUserId = leave.userId || leave.employeeId;
-      if (currentUserId && String(leaveUserId) !== String(currentUserId)) return false;
-      
-      const start = new Date(leave.startDate);
-      if (isNaN(start.getTime())) return false;
-      const startStr = new Date(start.getTime() - start.getTimezoneOffset() * 60000).toISOString().split('T')[0];
-      
-      const end = new Date(leave.endDate);
-      if (isNaN(end.getTime())) return false;
-      const endStr = new Date(end.getTime() - end.getTimezoneOffset() * 60000).toISOString().split('T')[0];
-      
-      // If it's a half-day or hourly leave, we still disable the whole day in the picker to prevent confusion,
-      // as they already have some leave on this day.
-      return checkDateStr >= startStr && checkDateStr <= endStr;
-    });
-  };
+  // Disable a day only when there is no room left for what the user is booking:
+  // full day -> any existing half blocks it; half day -> only the chosen half.
+  const isDateDisabled = (date: any) =>
+    isDayUnavailable(date, leaveMode, period, takenMap);
 
   useEffect(() => {
     const storedUsername = sessionStorage.getItem("username");
@@ -125,7 +103,7 @@ export default function RequestLeavePage() {
       
       const [startH, startM] = startTime.split(':').map(Number);
       const [endH, endM] = endTime.split(':').map(Number);
-      let diffMinutes = (endH * 60 + endM) - (startH * 60 + startM);
+      const diffMinutes = (endH * 60 + endM) - (startH * 60 + startM);
       if (diffMinutes <= 0) {
         setErrorMsg("เวลาสิ้นสุดต้องมากกว่าเวลาเริ่มลา"); setShowErrorModal(true); return;
       }
@@ -133,6 +111,11 @@ export default function RequestLeavePage() {
       if (!startDate) { setErrorMsg("กรุณาเลือกวันที่เริ่มต้น"); setShowErrorModal(true); return; }
       if (!endDate) { setErrorMsg("กรุณาเลือกวันที่สิ้นสุด"); setShowErrorModal(true); return; }
       if (new Date(startDate) > new Date(endDate)) { setErrorMsg("วันที่สิ้นสุดต้องมากกว่าหรือเท่ากับวันที่เริ่มต้น"); setShowErrorModal(true); return; }
+      if (hasRangeConflict) {
+        setErrorMsg("บางวันในช่วงที่เลือกทับซ้อนกับการลาเดิมของคุณ กรุณาปรับช่วงวันที่ หรือเปลี่ยนรูปแบบการลาให้ตรงกับช่วงเวลาที่ยังว่าง (ดูรายละเอียดรายวันในแบบฟอร์ม)");
+        setShowErrorModal(true);
+        return;
+      }
     }
     
     if (!reason) {
@@ -204,7 +187,10 @@ export default function RequestLeavePage() {
   return (
     <div className="min-h-[calc(100vh-4rem)] bg-[#F8F9FA] font-sans text-slate-800 flex flex-col">
       {/* Top Banner */}
-      <div className="bg-white flex items-center justify-between px-8 py-5 shadow-sm z-10">
+      <div className="bg-white flex items-center gap-4 px-8 py-5 shadow-sm z-10 shrink-0">
+        <div className="w-11 h-11 bg-blue-100 text-blue-600 rounded-xl flex items-center justify-center shrink-0">
+          <FilePlus2 className="w-6 h-6" strokeWidth={2} />
+        </div>
         <div>
           <h1 className="text-xl font-bold text-black tracking-tight">แบบฟอร์มยื่นลา (Leave Request)</h1>
           <p className="text-xs text-gray-500 mt-1 font-medium">กรุณากรอกข้อมูลให้ครบถ้วนเพื่อส่งให้หัวหน้างานอนุมัติ</p>
@@ -394,6 +380,16 @@ export default function RequestLeavePage() {
                       placeholderText="วว/ดด/ปปปป"
                     />
                   </div>
+                  <LeaveDayAvailabilityPreview
+                    startDate={startDate}
+                    endDate={endDate}
+                    leaveMode={leaveMode}
+                    period={leaveMode === 'half_day' ? period : 'full'}
+                    leaves={Array.isArray(myLeaves) ? myLeaves : []}
+                    currentUserId={currentUserId}
+                    holidays={holidaysData}
+                    onConflictChange={setHasRangeConflict}
+                  />
                 </>
               )}
             </div>

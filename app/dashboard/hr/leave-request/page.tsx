@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useLeave } from '@/hooks/useLeave';
 import { useLeaveBalance } from '@/hooks/useLeaveBalance';
 import { useRouter } from 'next/navigation';
@@ -14,12 +14,15 @@ import {
   Building,
   User,
   Upload,
+  FilePlus2,
 } from 'lucide-react';
 import { DatePicker } from '@/components/DateAndTime';
 import { calculateLeaveDays } from '@/lib/api/store';
 import { LeaveTimePicker } from '@/components/LeaveTimePicker';
 import { userApi, uploadApi } from '@/lib/api';
 import { useLeaveType } from '@/hooks/useLeaveType';
+import { LeaveDayAvailabilityPreview } from '@/components/LeaveDayAvailabilityPreview';
+import { buildTakenMap, isDayUnavailable } from '@/lib/leavePortions';
 
 export default function RequestLeavePage() {
   const [type, setType] = useState('');
@@ -47,6 +50,7 @@ export default function RequestLeavePage() {
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const [showErrorModal, setShowErrorModal] = useState(false);
+  const [hasRangeConflict, setHasRangeConflict] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const router = useRouter();
 
@@ -77,39 +81,17 @@ export default function RequestLeavePage() {
     };
   });
 
-  const isDateDisabled = (date: any) => {
-    if (!date) return false;
-    let checkDateStr = '';
-    if (typeof date.isValid === 'function' && date.isValid()) {
-      checkDateStr = date.format('YYYY-MM-DD');
-    } else if (date instanceof Date) {
-      const d = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
-      checkDateStr = d.toISOString().split('T')[0];
-    } else {
-      return false;
-    }
+  const currentUserId =
+    typeof window !== 'undefined' ? sessionStorage.getItem('userId') : '';
 
-    return myLeaves.some((leave: any) => {
-      if (
-        ['REJECTED', 'Rejected', 'CANCELLED', 'Cancelled'].includes(
-          leave.status,
-        )
-      )
-        return false;
-      const start = new Date(leave.startDate);
-      const startStr = new Date(
-        start.getTime() - start.getTimezoneOffset() * 60000,
-      )
-        .toISOString()
-        .split('T')[0];
-      const end = new Date(leave.endDate);
-      const endStr = new Date(end.getTime() - end.getTimezoneOffset() * 60000)
-        .toISOString()
-        .split('T')[0];
+  const takenMap = useMemo(
+    () => buildTakenMap(Array.isArray(myLeaves) ? myLeaves : [], currentUserId),
+    [myLeaves, currentUserId],
+  );
 
-      return checkDateStr >= startStr && checkDateStr <= endStr;
-    });
-  };
+  // Disable a day only when there is no room left for the chosen mode/period.
+  const isDateDisabled = (date: any) =>
+    isDayUnavailable(date, leaveMode, period, takenMap);
 
   useEffect(() => {
     const fetchUserProfile = async () => {
@@ -191,7 +173,7 @@ export default function RequestLeavePage() {
 
       const [startH, startM] = startTime.split(':').map(Number);
       const [endH, endM] = endTime.split(':').map(Number);
-      let diffMinutes = endH * 60 + endM - (startH * 60 + startM);
+      const diffMinutes = endH * 60 + endM - (startH * 60 + startM);
       if (diffMinutes <= 0) {
         setErrorMsg('เวลาสิ้นสุดต้องมากกว่าเวลาเริ่มลา');
         setShowErrorModal(true);
@@ -210,6 +192,13 @@ export default function RequestLeavePage() {
       }
       if (new Date(startDate) > new Date(endDate)) {
         setErrorMsg('วันที่สิ้นสุดต้องมากกว่าหรือเท่ากับวันที่เริ่มต้น');
+        setShowErrorModal(true);
+        return;
+      }
+      if (hasRangeConflict) {
+        setErrorMsg(
+          'บางวันในช่วงที่เลือกทับซ้อนกับการลาเดิมของคุณ กรุณาปรับช่วงวันที่ หรือเปลี่ยนรูปแบบการลาให้ตรงกับช่วงเวลาที่ยังว่าง (ดูรายละเอียดรายวันในแบบฟอร์ม)',
+        );
         setShowErrorModal(true);
         return;
       }
@@ -312,7 +301,10 @@ export default function RequestLeavePage() {
   return (
     <div className="min-h-[calc(100vh-4rem)] bg-[#E2E4E9] font-sans text-slate-800 flex flex-col">
       {/* Top Banner */}
-      <div className="bg-white flex items-center justify-between px-8 py-5 shadow-sm z-10">
+      <div className="bg-white flex items-center gap-4 px-8 py-5 shadow-sm z-10 shrink-0">
+        <div className="w-11 h-11 bg-blue-100 text-blue-600 rounded-xl flex items-center justify-center shrink-0">
+          <FilePlus2 className="w-6 h-6" strokeWidth={2} />
+        </div>
         <div>
           <h1 className="text-xl font-bold text-black tracking-tight">
             แบบฟอร์มยื่นลา (Leave Request)
@@ -587,6 +579,16 @@ export default function RequestLeavePage() {
                       placeholderText="วว/ดด/ปปปป"
                     />
                   </div>
+                  <LeaveDayAvailabilityPreview
+                    startDate={startDate}
+                    endDate={endDate}
+                    leaveMode={leaveMode}
+                    period={leaveMode === 'half_day' ? period : 'full'}
+                    leaves={Array.isArray(myLeaves) ? myLeaves : []}
+                    currentUserId={currentUserId}
+                    holidays={holidaysData}
+                    onConflictChange={setHasRangeConflict}
+                  />
                 </>
               )}
             </div>

@@ -89,7 +89,7 @@ export function ManagerSidebar({ onNavigate }: { onNavigate?: () => void }) {
   };
 
   const menuItems = [
-    { name: "Dashboard", href: "/dashboard/manager", icon: PieChart },
+    { name: "Dashboard", href: "/dashboard/manager/dashboard", icon: PieChart },
     { name: "สร้างคำขอลา", href: "/dashboard/manager/request", icon: FileEdit },
     { name: "สถานะการลา", href: "/dashboard/manager/status", icon: Activity },
     { name: "ประวัติการลา", href: "/dashboard/manager/history", icon: BookOpen },

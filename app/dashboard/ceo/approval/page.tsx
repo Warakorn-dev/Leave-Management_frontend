@@ -148,6 +148,7 @@ export default function CEOApproval() {
     'thisMonth',
   );
   const [selectedLeave, setSelectedLeave] = useState<any | null>(null);
+  const [previewAttachment, setPreviewAttachment] = useState<{ url: string; isImage: boolean } | null>(null);
 
   const refetch = useCallback(async () => {
     setIsLoading(true);
@@ -260,19 +261,24 @@ export default function CEOApproval() {
   };
 
   return (
-    <div className="space-y-6 max-w-[1200px] mx-auto pb-10">
-      {/* Header */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white dark:bg-slate-900 p-6 rounded-3xl shadow-sm border border-slate-100 dark:border-slate-800">
+    <div className="min-h-[calc(100vh-4rem)] bg-[#E2E4E9] font-sans text-slate-800 flex flex-col">
+      {/* Top Banner */}
+      <div className="bg-white flex items-center gap-4 px-8 py-5 shadow-sm z-10 shrink-0">
+        <div className="w-11 h-11 bg-blue-100 text-blue-600 rounded-xl flex items-center justify-center shrink-0">
+          <CheckCircle2 className="w-6 h-6" strokeWidth={2} />
+        </div>
         <div>
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
-            <CheckCircle2 className="w-6 h-6 text-indigo-600" />
+          <h1 className="text-xl font-bold text-black tracking-tight">
             รายการคำขออนุมัติการลา (CEO)
           </h1>
-          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+          <p className="text-xs text-gray-500 mt-1 font-medium">
             อนุมัติหรือปฏิเสธคำขอลาที่ต้องผ่านการพิจารณาจากผู้บริหาร
           </p>
         </div>
       </div>
+
+      <div className="flex-1 p-6 md:p-8">
+        <div className="space-y-6 max-w-[1200px] mx-auto pb-4">
 
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
@@ -497,12 +503,7 @@ export default function CEOApproval() {
                           </span>
                           {leave.departmentName} | {leave.positionName}
                         </p>
-                        <p>
-                          <span className="font-bold min-w-[90px] inline-block">
-                            บทบาท:
-                          </span>
-                          {leave.employee?.user?.role?.name || '-'}
-                        </p>
+                        
                       </div>
                     </div>
                   </div>
@@ -549,19 +550,27 @@ export default function CEOApproval() {
                                 ? 'ครึ่งวันบ่าย'
                                 : 'เต็มวัน'}
                         </p>
-                        {leave.leaveType?.isSpecial && (
-                          <p className="flex items-center gap-2 text-purple-600">
-                            <AlertCircle className="w-4 h-4 shrink-0" />
-                            <span className="font-bold">คำขอประเภทพิเศษ</span>
-                          </p>
-                        )}
+
                         {leave.attachments?.length > 0 && (
-                          <p>
-                            <span className="font-bold">เอกสารแนบ:</span>{' '}
-                            <span className="text-emerald-600 font-bold">
-                              มีเอกสาร {leave.attachments.length} ไฟล์
-                            </span>
-                          </p>
+                          <div className="flex gap-2">
+                            <span className="font-bold whitespace-nowrap">เอกสารแนบ:</span>
+                            <div className="flex flex-col gap-1">
+                              {leave.attachments.map((att: any, idx: number) => {
+                                const isData = att.filePath?.startsWith('data:');
+                                const fileSrc = isData ? att.filePath : att.filePath?.startsWith('http') ? att.filePath : `/${att.filePath?.replace(/^\/+/, '')}`;
+                                const isImage = att.fileType?.startsWith('image/') || (!isData && att.filePath?.match(/\.(jpeg|jpg|gif|png)$/i));
+                                return (
+                                  <button
+                                    key={idx}
+                                    onClick={() => setPreviewAttachment({ url: fileSrc, isImage: !!isImage })}
+                                    className="text-emerald-600 font-bold hover:underline text-left text-[14px]"
+                                  >
+                                    ดูเอกสารแนบ {leave.attachments.length > 1 ? `(${idx + 1})` : ''}
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          </div>
                         )}
                       </div>
                     </div>
@@ -646,6 +655,57 @@ export default function CEOApproval() {
             </div>
           );
         })()}
+
+      {/* Preview Attachment Modal */}
+      {previewAttachment && (
+        <div className="fixed inset-0 z-[150] bg-black/60 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl w-full max-w-4xl flex flex-col overflow-hidden max-h-[90vh] shadow-2xl relative">
+            {/* Header */}
+            <div className="flex justify-between items-center px-6 py-4 border-b border-gray-100">
+              <h2 className="text-[16px] font-bold text-gray-800">เอกสารแนบ</h2>
+              <button
+                onClick={() => setPreviewAttachment(null)}
+                className="w-8 h-8 flex items-center justify-center bg-gray-100 hover:bg-gray-200 text-gray-500 rounded-full transition-colors"
+              >
+                <X className="w-5 h-5" strokeWidth={2.5} />
+              </button>
+            </div>
+
+            {/* Content */}
+            <div className="p-6 overflow-auto bg-gray-50/50 flex-1 flex flex-col items-center">
+              {previewAttachment.isImage ? (
+                <div className="relative w-full max-w-3xl flex justify-center">
+                  <img
+                    src={previewAttachment.url}
+                    alt="Attachment"
+                    className="max-w-full h-auto max-h-[70vh] object-contain rounded-lg border border-gray-200 shadow-sm"
+                  />
+                </div>
+              ) : (
+                <div className="w-full h-full min-h-[60vh] flex flex-col border border-gray-200 rounded-lg overflow-hidden shadow-sm bg-white">
+                  <iframe
+                    src={previewAttachment.url}
+                    className="w-full h-full flex-1"
+                    title="Attachment Preview"
+                  />
+                  <div className="p-3 bg-gray-50 border-t border-gray-200 flex justify-end">
+                    <a
+                      href={previewAttachment.url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold rounded-lg transition-colors shadow-sm"
+                    >
+                      เปิดไฟล์ในแท็บใหม่
+                    </a>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+        </div>
+      </div>
     </div>
   );
 }

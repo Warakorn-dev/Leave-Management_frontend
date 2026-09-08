@@ -305,7 +305,9 @@ export const useHrPendingVerifyQuery = () => {
       });
       if (res.ok) {
         const json = await res.json();
-        const mappedData = (json.data ?? json).map((l: any) => ({
+        const all = json.data ?? json;
+        const pendingVerify = all.filter((l: any) => l.status !== 'PENDING_CANCELLATION');
+        const mappedData = pendingVerify.map((l: any) => ({
           ...l,
           userId: l.employee?.user?.id || l.employee?.userId || 'unknown',
           totalDays: l.totalDays ?? l.durationDays ?? l.daysCount ?? 0,
