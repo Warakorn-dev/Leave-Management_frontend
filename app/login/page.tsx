@@ -118,10 +118,15 @@ export default function LoginPage() {
     } catch (err: any) {
       if (err.message === 'Invalid credentials') {
         setError("ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง");
-      } else if (err.message?.includes('CAPTCHA') || err.message?.includes('รหัส')) {
+      } else if (
+        err.message?.includes('CAPTCHA') ||
+        err.message?.includes('รหัส') ||
+        err.message?.includes('ล็อค') ||
+        err.message?.includes('กรุณา')
+      ) {
         setError(err.message);
       } else {
-        setError("บัญชีของคุณโดนระงับการใช้งาน ไม่สามารถเข้าสู่ระบบได้!!");
+        setError(err.message || "บัญชีของคุณโดนระงับการใช้งาน ไม่สามารถเข้าสู่ระบบได้!!");
       }
       generateCaptcha();
     } finally {

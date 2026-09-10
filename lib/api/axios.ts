@@ -1,5 +1,6 @@
 import axios from 'axios';
 import Swal from 'sweetalert2';
+import idleState from '@/lib/idleState';
 
 // Create an Axios instance
 const axiosInstance = axios.create({
@@ -54,7 +55,31 @@ axiosInstance.interceptors.response.use(
 
       // Only show alerts on the client side
       if (typeof window !== 'undefined') {
+        const url = originalRequest?.url || '';
+        const isAuthRequest =
+          url.includes('/auth/login') ||
+          url.includes('/auth/captcha') ||
+          url.includes('/auth/forgot-password') ||
+          url.includes('/auth/reset-password');
+        const isAuthPage =
+          window.location.pathname === '/login' ||
+          window.location.pathname === '/forgot-password' ||
+          window.location.pathname === '/reset-password';
+
         if (status === 401 && !originalRequest._retry) {
+          // If 401 occurs during login or on auth pages (e.g. wrong password/credentials),
+          // do NOT show session expired popup. Let the login form display the error.
+          if (isAuthRequest || isAuthPage) {
+            return Promise.reject(error);
+          }
+
+          // ── GUARD 1: Idle popup already showing ──────────────────────────
+          // The idle popup is up; don't touch session or redirect.
+          if (idleState.isPopupShowing || sessionStorage.getItem('idleTimeoutTriggered') === 'true') {
+            return Promise.reject(error);
+          }
+
+          // ── GUARD 2: Account deactivated / suspended ──────────────────────
           if (message === 'ACCOUNT_DEACTIVATED' || message === 'ACCOUNT_SUSPENDED') {
             Swal.fire({
               icon: 'error',
@@ -70,61 +95,60 @@ axiosInstance.interceptors.response.use(
             return Promise.reject(error);
           }
 
-          // Try to refresh token
+          // ── GUARD 3: Session expired (401 from backend) ──────────────────
+          // Whether the user was idle or the token just expired normally,
+          // always show the session-expired popup instead of silently redirecting.
+          // We check if we have a refresh token first; if refresh also fails,
+          // we show the popup instead of hard-redirecting.
           const refreshToken = sessionStorage.getItem('refreshToken');
-          
+
           if (refreshToken) {
             if (isRefreshing) {
-              return new Promise(function(resolve, reject) {
+              return new Promise(function (resolve, reject) {
                 failedQueue.push({ resolve, reject });
-              }).then(token => {
-                originalRequest.headers.Authorization = 'Bearer ' + token;
-                return axiosInstance(originalRequest);
-              }).catch(err => {
-                return Promise.reject(err);
-              });
+              })
+                .then((token) => {
+                  originalRequest.headers.Authorization = 'Bearer ' + token;
+                  return axiosInstance(originalRequest);
+                })
+                .catch((err) => Promise.reject(err));
             }
 
             originalRequest._retry = true;
             isRefreshing = true;
 
             try {
-              // Call API to refresh token
               const res = await axios.post('/api/auth/refresh', {}, {
-                headers: { Authorization: `Bearer ${refreshToken}` }
+                headers: { Authorization: `Bearer ${refreshToken}` },
               });
-              
+
               if (res.data?.accessToken) {
                 const newAccessToken = res.data.accessToken;
                 sessionStorage.setItem('accessToken', newAccessToken);
                 if (res.data.refreshToken) {
                   sessionStorage.setItem('refreshToken', res.data.refreshToken);
                 }
-                
                 axiosInstance.defaults.headers.common['Authorization'] = 'Bearer ' + newAccessToken;
                 originalRequest.headers.Authorization = 'Bearer ' + newAccessToken;
-                
                 processQueue(null, newAccessToken);
                 return axiosInstance(originalRequest);
               }
-            } catch (refreshError) {
-              processQueue(refreshError, null);
-              // Refresh failed, clear session and go to login
-              sessionStorage.clear();
-              if (window.location.pathname !== '/login') {
-                window.location.href = '/login';
-              }
-              return Promise.reject(refreshError);
+            } catch {
+              processQueue(null, null);
+              // Refresh failed → show session-expired popup
+              const timeoutMinutes = Math.round(idleState.timeoutMs / 60000);
+              idleState.showExpiredPopup(timeoutMinutes);
+              return Promise.reject(error);
             } finally {
               isRefreshing = false;
             }
           }
 
-          // No refresh token available, clear session and go to login
-          sessionStorage.clear();
-          if (window.location.pathname !== '/login') {
-            window.location.href = '/login';
-          }
+          // No refresh token at all → show session-expired popup
+          const timeoutMinutes = Math.round(idleState.timeoutMs / 60000);
+          idleState.showExpiredPopup(timeoutMinutes);
+          return Promise.reject(error);
+
         } else if (status === 403) {
           Swal.fire({
             icon: 'error',
@@ -148,11 +172,13 @@ axiosInstance.interceptors.response.use(
         } else if (status === 422 || status === 400) {
           // Bad request or validation error
           console.warn('Validation error:', message);
-          Swal.fire({
-            icon: 'warning',
-            title: 'ข้อมูลไม่ถูกต้อง',
-            text: message || 'โปรดตรวจสอบข้อมูลที่กรอกอีกครั้ง',
-          });
+          if (!isAuthRequest && !isAuthPage) {
+            Swal.fire({
+              icon: 'warning',
+              title: 'ข้อมูลไม่ถูกต้อง',
+              text: message || 'โปรดตรวจสอบข้อมูลที่กรอกอีกครั้ง',
+            });
+          }
         }
       }
     } else if (error.request) {
@@ -174,4 +200,3 @@ axiosInstance.interceptors.response.use(
 );
 
 export default axiosInstance;
-

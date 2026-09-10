@@ -76,16 +76,7 @@ export default function AdminUsersPage() {
     });
   };
 
-  const handleResetPassword = async (id: string) => {
-    if (!confirm('ต้องการรีเซ็ตรหัสผ่านของผู้ใช้รายนี้หรือไม่? ระบบจะสร้างรหัสผ่านใหม่แบบสุ่มให้')) return;
-    try {
-      const res = await api.post(`/admin/users/${id}/reset-password`);
-      alert(`รีเซ็ตรหัสผ่านสำเร็จ รหัสผ่านชั่วคราวคือ: ${res.data.tempPassword}`);
-      fetchUsers(); // Refresh to clear lockouts
-    } catch (err) {
-      alert("ไม่สามารถรีเซ็ตรหัสผ่านได้");
-    }
-  };
+
 
   const handleChangeRole = async (id: string, roleId: string) => {
     try {
@@ -212,13 +203,6 @@ export default function AdminUsersPage() {
                                 }`}
                               >
                                 <Power className="w-4 h-4" strokeWidth={2} />
-                              </button>
-                              <button
-                                onClick={() => handleResetPassword(user.id)}
-                                className="p-1.5 bg-red-50 text-red-600 hover:bg-red-100 rounded"
-                                title="รีเซ็ตรหัสผ่าน (Reset Password)"
-                              >
-                                <Key className="w-4 h-4" />
                               </button>
                             </div>
                           </td>
