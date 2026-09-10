@@ -110,6 +110,8 @@ export default function LoginPage() {
         router.push("/dashboard/hr/dashboard");
       } else if (lowerRole === "ceo") {
         router.push("/dashboard/ceo/dashboard");
+      } else if (lowerRole === "admin") {
+        router.push("/dashboard/admin/dashboard");
       } else {
         router.push("/dashboard/user/dashboard");
       }
