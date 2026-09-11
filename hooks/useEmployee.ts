@@ -108,10 +108,12 @@ export const useLoginMutation = () => {
         return res.data ?? res;
       } catch (err: any) {
         const msg = err.response?.data?.message || err.response?.data?.errors?.[0] || 'Failed to login';
+        // อนุญาตให้ข้อความเตือนเรื่องการระงับ หรือจำนวนครั้งที่เหลือ ส่งผ่านไปได้
         if (
           msg.includes('ระงับ') ||
-          msg.includes('มึงอย่าเที่ยวเข้าถิ้') ||
           msg.includes('ล็อค') ||
+          msg.includes('เหลือ') ||
+          msg.includes('ครั้ง') ||
           msg.includes('CAPTCHA') ||
           msg.includes('กรุณา')
         ) {
@@ -122,6 +124,7 @@ export const useLoginMutation = () => {
         }
         throw new Error(msg);
       }
+
     }
   };
 };

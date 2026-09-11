@@ -119,18 +119,18 @@ export default function LoginPage() {
       if (err.message === 'Invalid credentials') {
         setError("ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง");
       } else if (
-        err.message?.includes('CAPTCHA') ||
-        err.message?.includes('รหัส') ||
-        err.message?.includes('ล็อค') ||
-        err.message?.includes('กรุณา')
+        err.message?.includes('Too Many Requests') ||
+        err.message?.includes('ThrottlerException')
       ) {
-        setError(err.message);
+        // ✨ ดักจับเมื่อกดยิงถี่เกินไป แล้วแสดงข้อความนี้แทน
+        setError("คุณพยายามเข้าสู่ระบบถี่เกินไป กรุณารอ 1 นาทีแล้วลองใหม่อีกครั้ง");
       } else {
-        setError(err.message || "บัญชีของคุณโดนระงับการใช้งาน ไม่สามารถเข้าสู่ระบบได้!!");
+        // ข้อความอื่นๆ เช่น แจ้งเตือนการล็อคบัญชี 15 นาทีจาก Backend
+        setError(err.message || "เกิดข้อผิดพลาดในการเข้าสู่ระบบ");
       }
-      generateCaptcha();
+      generateCaptcha(); // สุ่มรหัส CAPTCHA ใหม่เสมอเมื่อล็อกอินไม่สำเร็จ
     } finally {
-      setIsLoading(false);
+      setIsLoading(false); // ปลดสถานะโหลด ให้ปุ่มกดกลับมาใช้งานได้ตามปกติ
     }
   };
 
