@@ -1,5 +1,10 @@
 import DashboardShell from "./dashboard-shell";
+import { IdleTimeoutGuard } from "@/components/IdleTimeoutGuard";
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
-  return <DashboardShell>{children}</DashboardShell>;
+  return (
+    <IdleTimeoutGuard>
+      <DashboardShell>{children}</DashboardShell>
+    </IdleTimeoutGuard>
+  );
 }

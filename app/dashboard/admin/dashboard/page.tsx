@@ -23,6 +23,22 @@ export default function AdminDashboardPage() {
     fetchStats();
   }, []);
 
+<<<<<<< HEAD
+=======
+  const getUserDisplay = (log: any) => {
+    if (log.user) return log.user.username || log.user.email || 'ระบบ';
+    
+    if (log.details && log.details.includes('Username: ')) {
+       const parts = log.details.split('Username: ');
+       if (parts.length > 1) {
+          return parts[1].trim();
+       }
+    }
+    
+    return 'ระบบ';
+  };
+
+>>>>>>> 691d1d8d9d0581499a3b8b66a7470aa10272336f
   return (
     <RoleGuard allowedRoles={["admin"]}>
       <div className="p-6 max-w-7xl mx-auto space-y-6">
@@ -101,7 +117,11 @@ export default function AdminDashboardPage() {
                           {new Date(log.createdAt).toLocaleString('th-TH')}
                         </td>
                         <td className="p-3 border-b font-medium text-slate-800">
+<<<<<<< HEAD
                           {log.user?.email || log.user?.username || 'ระบบ'}
+=======
+                          {getUserDisplay(log)}
+>>>>>>> 691d1d8d9d0581499a3b8b66a7470aa10272336f
                         </td>
                         <td className="p-3 border-b">
                           <span className={`px-2 py-1 rounded text-xs font-medium ${

@@ -48,6 +48,8 @@ export default function DashboardShell({ children }: { children: React.ReactNode
       setUsername(storedName);
     }
     if (!storedRole) {
+      // Don't redirect if the idle-timeout popup is currently showing
+      if (sessionStorage.getItem('idleTimeoutTriggered') === 'true') return;
       router.push("/login");
     } else {
       if (storedRole === "manager" && !pathname.startsWith("/dashboard/manager")) {

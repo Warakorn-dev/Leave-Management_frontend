@@ -108,14 +108,23 @@ export const useLoginMutation = () => {
         return res.data ?? res;
       } catch (err: any) {
         const msg = err.response?.data?.message || err.response?.data?.errors?.[0] || 'Failed to login';
-        if (msg.includes('ระงับ') || msg.includes('มึงอย่าเที่ยวเข้าถิ้')) {
+        // อนุญาตให้ข้อความเตือนเรื่องการระงับ หรือจำนวนครั้งที่เหลือ ส่งผ่านไปได้
+        if (
+          msg.includes('ระงับ') ||
+          msg.includes('ล็อค') ||
+          msg.includes('เหลือ') ||
+          msg.includes('ครั้ง') ||
+          msg.includes('CAPTCHA') ||
+          msg.includes('กรุณา')
+        ) {
           throw new Error(msg);
         }
-        if (err.response?.status === 401 || msg.toLowerCase().includes('invalid')) {
+        if (msg.toLowerCase().includes('invalid') || err.response?.status === 401) {
           throw new Error('Invalid credentials');
         }
         throw new Error(msg);
       }
+
     }
   };
 };

@@ -14,6 +14,7 @@ import {
   Trash2,
 } from 'lucide-react';
 import { userApi } from '@/lib/api';
+import Swal from 'sweetalert2';
 
 export default function HRSettingsPage() {
   const [username, setUsername] = useState('');
@@ -128,10 +129,7 @@ export default function HRSettingsPage() {
         const result = event.target?.result as string;
         try {
           await userApi.updateAvatar(result);
-        } catch (err) {
-          console.error(err);
-        }
-        setTimeout(() => {
+          
           setProfilePic(result);
           try {
             sessionStorage.setItem('profilePic', result);
@@ -139,8 +137,27 @@ export default function HRSettingsPage() {
             console.warn('Quota exceeded');
           }
           setIsUploading(false);
-          window.location.reload();
-        }, 1000);
+          
+          Swal.fire({
+            icon: 'success',
+            title: 'สำเร็จ',
+            text: 'อัปเดตรูปโปรไฟล์สำเร็จ',
+            timer: 1500,
+            showConfirmButton: false,
+          }).then(() => {
+            window.location.reload();
+          });
+        } catch (err: any) {
+          console.error(err);
+          setIsUploading(false);
+          const errorMessage = err.response?.data?.message || 'เกิดข้อผิดพลาดในการอัปโหลดรูปภาพ';
+          Swal.fire({
+            icon: 'error',
+            title: 'เกิดข้อผิดพลาด',
+            text: errorMessage,
+            confirmButtonColor: '#3085d6',
+          });
+        }
       };
       reader.readAsDataURL(e.target.files[0]);
     }
@@ -153,10 +170,26 @@ export default function HRSettingsPage() {
       setProfilePic(null);
       sessionStorage.removeItem('profilePic');
       setIsUploading(false);
-      window.location.reload();
-    } catch (err) {
+      
+      Swal.fire({
+        icon: 'success',
+        title: 'สำเร็จ',
+        text: 'ลบรูปโปรไฟล์สำเร็จ',
+        timer: 1500,
+        showConfirmButton: false,
+      }).then(() => {
+        window.location.reload();
+      });
+    } catch (err: any) {
       console.error(err);
       setIsUploading(false);
+      const errorMessage = err.response?.data?.message || 'เกิดข้อผิดพลาดในการลบรูปภาพ';
+      Swal.fire({
+        icon: 'error',
+        title: 'เกิดข้อผิดพลาด',
+        text: errorMessage,
+        confirmButtonColor: '#3085d6',
+      });
     }
   };
 

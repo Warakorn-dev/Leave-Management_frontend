@@ -17,6 +17,7 @@ export default function RoleGuard({
     const userRole = sessionStorage.getItem('role')?.toLowerCase() || '';
 
     if (!userRole) {
+      if (sessionStorage.getItem('idleTimeoutTriggered') === 'true') return;
       router.push('/login');
       return;
     }

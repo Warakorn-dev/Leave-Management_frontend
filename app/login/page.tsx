@@ -110,20 +110,27 @@ export default function LoginPage() {
         router.push("/dashboard/hr/dashboard");
       } else if (lowerRole === "ceo") {
         router.push("/dashboard/ceo/dashboard");
+      } else if (lowerRole === "admin") {
+        router.push("/dashboard/admin/dashboard");
       } else {
         router.push("/dashboard/user/dashboard");
       }
     } catch (err: any) {
       if (err.message === 'Invalid credentials') {
         setError("ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง");
-      } else if (err.message?.includes('CAPTCHA') || err.message?.includes('รหัส')) {
-        setError(err.message);
+      } else if (
+        err.message?.includes('Too Many Requests') ||
+        err.message?.includes('ThrottlerException')
+      ) {
+        // ✨ ดักจับเมื่อกดยิงถี่เกินไป แล้วแสดงข้อความนี้แทน
+        setError("คุณพยายามเข้าสู่ระบบถี่เกินไป กรุณารอ 1 นาทีแล้วลองใหม่อีกครั้ง");
       } else {
-        setError("บัญชีของคุณโดนระงับการใช้งาน ไม่สามารถเข้าสู่ระบบได้!!");
+        // ข้อความอื่นๆ เช่น แจ้งเตือนการล็อคบัญชี 15 นาทีจาก Backend
+        setError(err.message || "เกิดข้อผิดพลาดในการเข้าสู่ระบบ");
       }
-      generateCaptcha();
+      generateCaptcha(); // สุ่มรหัส CAPTCHA ใหม่เสมอเมื่อล็อกอินไม่สำเร็จ
     } finally {
-      setIsLoading(false);
+      setIsLoading(false); // ปลดสถานะโหลด ให้ปุ่มกดกลับมาใช้งานได้ตามปกติ
     }
   };
 

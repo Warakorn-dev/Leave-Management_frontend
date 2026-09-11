@@ -38,20 +38,54 @@ class AdapterDayjsBuddhist extends AdapterDayjs {
 }
 
 // Common styles to enforce EPP's premium purple design
-const pickerStyles = {
-  '& .MuiOutlinedInput-root': {
-    borderRadius: 2,
-    bgcolor: 'background.paper',
-    height: 38,
-    transition: 'all 0.2s',
-    '&:hover': {
-      borderColor: '#6b38fb',
+const getPickerStyles = (borderless = false, customSx = {}) => {
+  if (borderless) {
+    return {
+      '& .MuiOutlinedInput-root': {
+        bgcolor: 'transparent !important',
+        height: '100%',
+        minHeight: 0,
+        boxShadow: 'none !important',
+        '& fieldset': {
+          border: 'none !important',
+        },
+        '& .MuiOutlinedInput-notchedOutline': {
+          border: 'none !important',
+        },
+        '&:hover': {
+          borderColor: 'transparent !important',
+        },
+        '&:hover fieldset': {
+          border: 'none !important',
+        },
+        '&.Mui-focused': {
+          borderColor: 'transparent !important',
+          boxShadow: 'none !important',
+        },
+        '&.Mui-focused fieldset': {
+          border: 'none !important',
+        },
+      },
+      ...customSx,
+    };
+  }
+
+  return {
+    '& .MuiOutlinedInput-root': {
+      borderRadius: 2,
+      bgcolor: 'background.paper',
+      height: 38,
+      transition: 'all 0.2s',
+      '&:hover': {
+        borderColor: '#6b38fb',
+      },
+      '&.Mui-focused': {
+        borderColor: '#6b38fb',
+        boxShadow: '0 0 0 2px rgba(107, 56, 251, 0.2)',
+      },
     },
-    '&.Mui-focused': {
-      borderColor: '#6b38fb',
-      boxShadow: '0 0 0 2px rgba(107, 56, 251, 0.2)',
-    },
-  },
+    ...customSx,
+  };
 };
 
 const layoutStyles = (theme) => ({
@@ -176,6 +210,10 @@ export interface DatePickerProps {
   disabled?: boolean;
   minDate?: any;
   maxDate?: any;
+  borderless?: boolean;
+  className?: string;
+  sx?: any;
+  slotProps?: any;
   [key: string]: any;
 }
 
@@ -192,6 +230,10 @@ export default function DatePicker({
   disabled = false,
   minDate,
   maxDate,
+  borderless = false,
+  className,
+  sx,
+  slotProps,
   ...props
 }: DatePickerProps) {
   const actualValue = value !== undefined ? value : selected;
@@ -243,6 +285,13 @@ export default function DatePicker({
   };
 
   const renderPicker = () => {
+    const resolvedViews = props.views || ['year', 'month', 'day'];
+    const resolvedOpenTo =
+      props.openTo ||
+      (resolvedViews.includes('day')
+        ? 'day'
+        : resolvedViews[resolvedViews.length - 1]);
+
     switch (variant) {
       case 'inline':
         return (
@@ -253,8 +302,13 @@ export default function DatePicker({
               disabled={disabled}
               minDate={parsedMinDate}
               maxDate={parsedMaxDate}
+<<<<<<< HEAD
               views={props.views || ['year', 'month', 'day']}
               openTo={props.openTo || 'day'}
+=======
+              views={resolvedViews}
+              openTo={resolvedOpenTo}
+>>>>>>> 691d1d8d9d0581499a3b8b66a7470aa10272336f
               slots={{
                 day: CustomDay,
               }}
@@ -276,24 +330,34 @@ export default function DatePicker({
             format={format}
             minDate={parsedMinDate}
             maxDate={parsedMaxDate}
+<<<<<<< HEAD
             views={props.views || ['year', 'month', 'day']}
             openTo={props.openTo || 'day'}
+=======
+            views={resolvedViews}
+            openTo={resolvedOpenTo}
+>>>>>>> 691d1d8d9d0581499a3b8b66a7470aa10272336f
             slots={{
               day: CustomDay,
             }}
             slotProps={{
+              ...slotProps,
               toolbar: {
                 toolbarTitle: 'BASIC',
                 hidden: false,
+                ...slotProps?.toolbar,
               },
               textField: {
                 size: 'small',
                 fullWidth: fullWidth,
                 placeholder: actualPlaceholder,
-                sx: pickerStyles,
+                className: className,
+                sx: getPickerStyles(borderless, slotProps?.textField?.sx || sx),
+                ...slotProps?.textField,
               },
               layout: {
                 sx: layoutStyles,
+                ...slotProps?.layout,
               },
               dialog: {
                 PaperProps: {
@@ -302,8 +366,9 @@ export default function DatePicker({
                     overflow: 'hidden',
                   },
                 },
+                ...slotProps?.dialog,
               },
-              day: { holidays: holidaysData } as any,
+              day: { holidays: holidaysData, ...slotProps?.day } as any,
             }}
             {...props}
           />
@@ -318,22 +383,31 @@ export default function DatePicker({
             format={format}
             minDate={parsedMinDate}
             maxDate={parsedMaxDate}
+<<<<<<< HEAD
             views={props.views || ['year', 'month', 'day']}
             openTo={props.openTo || 'day'}
+=======
+            views={resolvedViews}
+            openTo={resolvedOpenTo}
+>>>>>>> 691d1d8d9d0581499a3b8b66a7470aa10272336f
             slots={{
               day: CustomDay,
             }}
             slotProps={{
+              ...slotProps,
               textField: {
                 size: 'small',
                 fullWidth: fullWidth,
                 placeholder: actualPlaceholder,
-                sx: pickerStyles,
+                className: className,
+                sx: getPickerStyles(borderless, slotProps?.textField?.sx || sx),
+                ...slotProps?.textField,
               },
               layout: {
                 sx: layoutStyles,
+                ...slotProps?.layout,
               },
-              day: { holidays: holidaysData } as any,
+              day: { holidays: holidaysData, ...slotProps?.day } as any,
             }}
             {...props}
           />
@@ -343,7 +417,14 @@ export default function DatePicker({
 
   return (
     <LocalizationProvider dateAdapter={AdapterDayjsBuddhist} adapterLocale="th">
-      <Box sx={{ width: '100%' }}>
+      <Box
+        sx={{
+          width: '100%',
+          height: borderless ? '100%' : 'auto',
+          display: borderless ? 'flex' : 'block',
+          alignItems: borderless ? 'center' : undefined,
+        }}
+      >
         {label && (
           <Typography
             variant="body2"

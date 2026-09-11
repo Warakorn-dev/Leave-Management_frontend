@@ -338,16 +338,16 @@ export default function LeaveHistoryPage() {
       startTime:
         selectedRequest?.raw?.startFormat === 'hourly'
           ? new Date(selectedRequest.raw.startDate).toLocaleTimeString(
-              'th-TH',
-              { hour: '2-digit', minute: '2-digit' },
-            )
+            'th-TH',
+            { hour: '2-digit', minute: '2-digit' },
+          )
           : '',
       endTime:
         selectedRequest?.raw?.endFormat === 'hourly'
           ? new Date(selectedRequest.raw.endDate).toLocaleTimeString('th-TH', {
-              hour: '2-digit',
-              minute: '2-digit',
-            })
+            hour: '2-digit',
+            minute: '2-digit',
+          })
           : '',
     });
     setEditAttachment(null);
@@ -441,29 +441,29 @@ export default function LeaveHistoryPage() {
         <div className="max-w-[1200px] mx-auto animate-in fade-in slide-in-from-bottom-4 duration-500">
           {/* Custom Date Picker and View Toggle */}
           <div className="mb-4 flex flex-wrap items-center justify-between gap-4 relative">
-            <div className="flex bg-white rounded-xl shadow-sm border border-gray-200 focus-within:ring-2 focus-within:ring-blue-100 focus-within:border-blue-400 transition-all">
+            <div className="flex items-center bg-white rounded-xl shadow-sm border border-gray-200 focus-within:ring-2 focus-within:ring-blue-100 focus-within:border-blue-400 transition-all h-[42px]">
               <select
                 value={filterType}
                 onChange={(e) =>
                   setFilterType(e.target.value as 'daily' | 'monthly')
                 }
-                className="bg-gray-50/50 pl-4 pr-2 py-3 text-[14px] font-bold text-blue-600 outline-none appearance-none border-r border-gray-200 cursor-pointer hover:bg-gray-50 transition-colors rounded-l-xl"
+                className="h-full bg-gray-50/70 pl-3.5 pr-8 text-[13px] font-bold text-blue-600 outline-none appearance-none border-r border-gray-200 cursor-pointer hover:bg-gray-100/70 transition-colors rounded-l-xl shrink-0"
                 style={{
                   backgroundImage:
                     'url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%232563EB%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E")',
                   backgroundRepeat: 'no-repeat',
-                  backgroundPosition: 'right 12px top 55%',
-                  backgroundSize: '10px auto',
-                  paddingRight: '32px',
+                  backgroundPosition: 'right 10px center',
+                  backgroundSize: '9px auto',
                 }}
               >
                 <option value="monthly">รายเดือน</option>
                 <option value="daily">รายวัน</option>
               </select>
 
-              <div className="relative inline-block w-[180px]">
+              <div className="relative flex items-center w-[165px] h-full [&_.MuiInputBase-root]:h-full [&_.MuiInputBase-input]:text-[13px] [&_.MuiInputBase-input]:font-semibold [&_.MuiInputBase-input]:text-slate-800 [&_.MuiInputBase-input]:py-0 [&_.MuiInputBase-input]:pl-3.5 [&_.MuiIconButton-root]:p-1.5 [&_.MuiIconButton-root]:mr-1.5 [&_.MuiIconButton-root]:text-slate-500">
                 {filterType === 'monthly' ? (
                   <DatePicker
+                    borderless
                     value={selectedMonthRaw}
                     onChange={(newMonth: any) => setSelectedMonthRaw(newMonth)}
                     views={['year', 'month']}
@@ -471,6 +471,7 @@ export default function LeaveHistoryPage() {
                   />
                 ) : (
                   <DatePicker
+                    borderless
                     selected={selectedDate}
                     onChange={(date: Date | null) => setSelectedDate(date)}
                     placeholderText="เลือกวันที่"
@@ -687,20 +688,35 @@ export default function LeaveHistoryPage() {
           fallbackName={selectedRequest.name || username}
           footer={
             (viewMode === 'personal' || selectedRequest.name === username) &&
+<<<<<<< HEAD
             !['cancelled', 'pending_cancellation'].includes(
               selectedRequest.status.toLowerCase(),
             ) &&
             selectedRequest.raw?.startDate &&
             new Date(selectedRequest.raw.startDate).setHours(0, 0, 0, 0) >
+=======
+              !['cancelled', 'pending_cancellation'].includes(
+                selectedRequest.status.toLowerCase(),
+              ) &&
+              selectedRequest.raw?.startDate &&
+              new Date(selectedRequest.raw.startDate).setHours(0, 0, 0, 0) >
+>>>>>>> 691d1d8d9d0581499a3b8b66a7470aa10272336f
               new Date().setHours(0, 0, 0, 0) ? (
               <>
                 <button
                   onClick={handleDelete}
+<<<<<<< HEAD
                   className={`font-bold text-[14px] flex items-center gap-1.5 transition-colors ${
                     selectedRequest.status.toLowerCase().includes('approved')
                       ? 'text-red-500 hover:text-red-600 bg-red-50 hover:bg-red-100 px-4 py-2 rounded-lg'
                       : 'text-gray-400 hover:text-red-500'
                   }`}
+=======
+                  className={`font-bold text-[14px] flex items-center gap-1.5 transition-colors ${selectedRequest.status.toLowerCase().includes('approved')
+                      ? 'text-red-500 hover:text-red-600 bg-red-50 hover:bg-red-100 px-4 py-2 rounded-lg'
+                      : 'text-gray-400 hover:text-red-500'
+                    }`}
+>>>>>>> 691d1d8d9d0581499a3b8b66a7470aa10272336f
                 >
                   <Trash2 className="w-4 h-4" strokeWidth={2.5} />
                   {selectedRequest.status.toLowerCase().includes('approved')
@@ -800,14 +816,14 @@ export default function LeaveHistoryPage() {
                           }
                           className={
                             b.remainingDays <= 0 &&
-                            editForm.type !== String(b.leaveType.id)
+                              editForm.type !== String(b.leaveType.id)
                               ? 'text-gray-400 bg-gray-50 font-medium'
                               : 'text-gray-800'
                           }
                         >
                           {b.leaveType.name}{' '}
                           {b.remainingDays <= 0 &&
-                          editForm.type !== String(b.leaveType.id)
+                            editForm.type !== String(b.leaveType.id)
                             ? '(หมดโควต้า)'
                             : `(เหลือ ${b.remainingDays} วัน)`}
                         </option>

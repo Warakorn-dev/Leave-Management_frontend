@@ -103,7 +103,11 @@ function useAuthLogic() {
       fetchLatestProfile();
 
       // Poll every 5 seconds for immediate kick-out on suspension
-      const intervalId = setInterval(fetchLatestProfile, 5000);
+      const intervalId = setInterval(() => {
+        // Don't poll while the idle-timeout popup is showing
+        if (sessionStorage.getItem('idleTimeoutTriggered') === 'true') return;
+        fetchLatestProfile();
+      }, 5000);
       return () => clearInterval(intervalId);
     }
   }, []);

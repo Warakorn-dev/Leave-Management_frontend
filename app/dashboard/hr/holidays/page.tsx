@@ -319,8 +319,9 @@ export default function HolidayManagementPage() {
                 <label className="block text-sm font-bold text-slate-700 mb-1.5">
                   วันที่ <span className="text-red-500">*</span>
                 </label>
-                <div className="relative">
+                <div className="w-full bg-slate-50 border border-slate-200 rounded-xl focus-within:ring-2 focus-within:ring-blue-500/20 transition-all [&_.MuiOutlinedInput-notchedOutline]:border-none [&_.MuiInputBase-root]:bg-transparent [&_.MuiInputBase-root]:h-[46px] [&_.MuiInputBase-input]:font-medium [&_.MuiInputBase-input]:text-sm [&_.MuiInputBase-input]:text-slate-700 [&_.MuiInputBase-input]:px-4 [&_.MuiInputBase-input]:py-3 [&_.MuiInputBase-input]:cursor-pointer [&_.MuiIconButton-root]:mr-1 [&_.MuiSvgIcon-root]:w-5 [&_.MuiSvgIcon-root]:h-5 [&_.MuiSvgIcon-root]:text-slate-500 relative">
                   <DatePicker
+                    borderless
                     selected={formData.date}
                     onChange={(date: Date | null) =>
                       date && setFormData({ ...formData, date })
@@ -378,8 +379,9 @@ export default function HolidayManagementPage() {
                 <label className="block text-sm font-bold text-slate-700 mb-1.5">
                   วันที่ <span className="text-red-500">*</span>
                 </label>
-                <div className="relative">
+                <div className="w-full bg-slate-50 border border-slate-200 rounded-xl focus-within:ring-2 focus-within:ring-blue-500/20 transition-all [&_.MuiOutlinedInput-notchedOutline]:border-none [&_.MuiInputBase-root]:bg-transparent [&_.MuiInputBase-root]:h-[46px] [&_.MuiInputBase-input]:font-medium [&_.MuiInputBase-input]:text-sm [&_.MuiInputBase-input]:text-slate-700 [&_.MuiInputBase-input]:px-4 [&_.MuiInputBase-input]:py-3 [&_.MuiInputBase-input]:cursor-pointer [&_.MuiIconButton-root]:mr-1 [&_.MuiSvgIcon-root]:w-5 [&_.MuiSvgIcon-root]:h-5 [&_.MuiSvgIcon-root]:text-slate-500 relative">
                   <DatePicker
+                    borderless
                     selected={formData.date}
                     onChange={(date: Date | null) =>
                       date && setFormData({ ...formData, date })
