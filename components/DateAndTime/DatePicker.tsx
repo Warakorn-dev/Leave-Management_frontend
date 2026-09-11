@@ -302,13 +302,8 @@ export default function DatePicker({
               disabled={disabled}
               minDate={parsedMinDate}
               maxDate={parsedMaxDate}
-<<<<<<< HEAD
-              views={props.views || ['year', 'month', 'day']}
-              openTo={props.openTo || 'day'}
-=======
               views={resolvedViews}
               openTo={resolvedOpenTo}
->>>>>>> 691d1d8d9d0581499a3b8b66a7470aa10272336f
               slots={{
                 day: CustomDay,
               }}
@@ -330,13 +325,8 @@ export default function DatePicker({
             format={format}
             minDate={parsedMinDate}
             maxDate={parsedMaxDate}
-<<<<<<< HEAD
-            views={props.views || ['year', 'month', 'day']}
-            openTo={props.openTo || 'day'}
-=======
             views={resolvedViews}
             openTo={resolvedOpenTo}
->>>>>>> 691d1d8d9d0581499a3b8b66a7470aa10272336f
             slots={{
               day: CustomDay,
             }}
@@ -383,13 +373,8 @@ export default function DatePicker({
             format={format}
             minDate={parsedMinDate}
             maxDate={parsedMaxDate}
-<<<<<<< HEAD
-            views={props.views || ['year', 'month', 'day']}
-            openTo={props.openTo || 'day'}
-=======
             views={resolvedViews}
             openTo={resolvedOpenTo}
->>>>>>> 691d1d8d9d0581499a3b8b66a7470aa10272336f
             slots={{
               day: CustomDay,
             }}

@@ -688,35 +688,19 @@ export default function LeaveHistoryPage() {
           fallbackName={selectedRequest.name || username}
           footer={
             (viewMode === 'personal' || selectedRequest.name === username) &&
-<<<<<<< HEAD
-            !['cancelled', 'pending_cancellation'].includes(
-              selectedRequest.status.toLowerCase(),
-            ) &&
-            selectedRequest.raw?.startDate &&
-            new Date(selectedRequest.raw.startDate).setHours(0, 0, 0, 0) >
-=======
               !['cancelled', 'pending_cancellation'].includes(
                 selectedRequest.status.toLowerCase(),
               ) &&
               selectedRequest.raw?.startDate &&
               new Date(selectedRequest.raw.startDate).setHours(0, 0, 0, 0) >
->>>>>>> 691d1d8d9d0581499a3b8b66a7470aa10272336f
               new Date().setHours(0, 0, 0, 0) ? (
               <>
                 <button
                   onClick={handleDelete}
-<<<<<<< HEAD
-                  className={`font-bold text-[14px] flex items-center gap-1.5 transition-colors ${
-                    selectedRequest.status.toLowerCase().includes('approved')
-                      ? 'text-red-500 hover:text-red-600 bg-red-50 hover:bg-red-100 px-4 py-2 rounded-lg'
-                      : 'text-gray-400 hover:text-red-500'
-                  }`}
-=======
                   className={`font-bold text-[14px] flex items-center gap-1.5 transition-colors ${selectedRequest.status.toLowerCase().includes('approved')
                       ? 'text-red-500 hover:text-red-600 bg-red-50 hover:bg-red-100 px-4 py-2 rounded-lg'
                       : 'text-gray-400 hover:text-red-500'
                     }`}
->>>>>>> 691d1d8d9d0581499a3b8b66a7470aa10272336f
                 >
                   <Trash2 className="w-4 h-4" strokeWidth={2.5} />
                   {selectedRequest.status.toLowerCase().includes('approved')

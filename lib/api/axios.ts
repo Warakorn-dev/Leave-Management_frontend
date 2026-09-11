@@ -55,9 +55,6 @@ axiosInstance.interceptors.response.use(
 
       // Only show alerts on the client side
       if (typeof window !== 'undefined') {
-<<<<<<< HEAD
-        if (status === 401 && !originalRequest._retry) {
-=======
         const url = originalRequest?.url || '';
         const isAuthRequest =
           url.includes('/auth/login') ||
@@ -83,7 +80,6 @@ axiosInstance.interceptors.response.use(
           }
 
           // ── GUARD 2: Account deactivated / suspended ──────────────────────
->>>>>>> 691d1d8d9d0581499a3b8b66a7470aa10272336f
           if (message === 'ACCOUNT_DEACTIVATED' || message === 'ACCOUNT_SUSPENDED') {
             Swal.fire({
               icon: 'error',
@@ -99,21 +95,6 @@ axiosInstance.interceptors.response.use(
             return Promise.reject(error);
           }
 
-<<<<<<< HEAD
-          // Try to refresh token
-          const refreshToken = sessionStorage.getItem('refreshToken');
-          
-          if (refreshToken) {
-            if (isRefreshing) {
-              return new Promise(function(resolve, reject) {
-                failedQueue.push({ resolve, reject });
-              }).then(token => {
-                originalRequest.headers.Authorization = 'Bearer ' + token;
-                return axiosInstance(originalRequest);
-              }).catch(err => {
-                return Promise.reject(err);
-              });
-=======
           // ── GUARD 3: Session expired (401 from backend) ──────────────────
           // Whether the user was idle or the token just expired normally,
           // always show the session-expired popup instead of silently redirecting.
@@ -131,57 +112,22 @@ axiosInstance.interceptors.response.use(
                   return axiosInstance(originalRequest);
                 })
                 .catch((err) => Promise.reject(err));
->>>>>>> 691d1d8d9d0581499a3b8b66a7470aa10272336f
             }
 
             originalRequest._retry = true;
             isRefreshing = true;
 
             try {
-<<<<<<< HEAD
-              // Call API to refresh token
-              const res = await axios.post('/api/auth/refresh', {}, {
-                headers: { Authorization: `Bearer ${refreshToken}` }
-              });
-              
-=======
               const res = await axios.post('/api/auth/refresh', {}, {
                 headers: { Authorization: `Bearer ${refreshToken}` },
               });
 
->>>>>>> 691d1d8d9d0581499a3b8b66a7470aa10272336f
               if (res.data?.accessToken) {
                 const newAccessToken = res.data.accessToken;
                 sessionStorage.setItem('accessToken', newAccessToken);
                 if (res.data.refreshToken) {
                   sessionStorage.setItem('refreshToken', res.data.refreshToken);
                 }
-<<<<<<< HEAD
-                
-                axiosInstance.defaults.headers.common['Authorization'] = 'Bearer ' + newAccessToken;
-                originalRequest.headers.Authorization = 'Bearer ' + newAccessToken;
-                
-                processQueue(null, newAccessToken);
-                return axiosInstance(originalRequest);
-              }
-            } catch (refreshError) {
-              processQueue(refreshError, null);
-              // Refresh failed, clear session and go to login
-              sessionStorage.clear();
-              if (window.location.pathname !== '/login') {
-                window.location.href = '/login';
-              }
-              return Promise.reject(refreshError);
-            } finally {
-              isRefreshing = false;
-            }
-          }
-
-          // No refresh token available, clear session and go to login
-          sessionStorage.clear();
-          if (window.location.pathname !== '/login') {
-            window.location.href = '/login';
-=======
                 axiosInstance.defaults.headers.common['Authorization'] = 'Bearer ' + newAccessToken;
                 originalRequest.headers.Authorization = 'Bearer ' + newAccessToken;
                 processQueue(null, newAccessToken);
@@ -196,7 +142,6 @@ axiosInstance.interceptors.response.use(
             } finally {
               isRefreshing = false;
             }
->>>>>>> 691d1d8d9d0581499a3b8b66a7470aa10272336f
           }
 
           // No refresh token at all → show session-expired popup
@@ -217,15 +162,12 @@ axiosInstance.interceptors.response.use(
             icon: 'error',
             title: 'ข้อผิดพลาดจากเซิร์ฟเวอร์',
             text: 'เกิดข้อผิดพลาดภายในระบบ กรุณาลองใหม่อีกครั้ง',
-<<<<<<< HEAD
-=======
           });
         } else if (status === 413) {
           Swal.fire({
             icon: 'error',
             title: 'ไฟล์ขนาดใหญ่เกินไป',
             text: message || 'ขนาดไฟล์เกินขีดจำกัดที่ตั้งไว้',
->>>>>>> 691d1d8d9d0581499a3b8b66a7470aa10272336f
           });
         } else if (status === 422 || status === 400) {
           // Bad request or validation error
