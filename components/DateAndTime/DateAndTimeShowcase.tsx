@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/ban-ts-comment -- MUI X Date Pickers' generics don't unify across the static/mobile/desktop variants and the Buddhist-era adapter; ts-nocheck is a deliberate escape hatch here, not an oversight. */
 // @ts-nocheck
 'use client';
 
@@ -9,7 +10,6 @@ import {
   Paper,
   IconButton,
   Button,
-  Divider,
 } from '@mui/material';
 import KeyboardArrowLeftIcon from '@mui/icons-material/KeyboardArrowLeft';
 import KeyboardArrowRightIcon from '@mui/icons-material/KeyboardArrowRight';

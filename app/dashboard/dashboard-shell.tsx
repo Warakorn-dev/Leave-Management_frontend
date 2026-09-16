@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { Menu, X } from "lucide-react";
 import { NotificationDropdown } from "@/components/NotificationDropdown";
@@ -14,7 +13,6 @@ import { AdminSidebar } from "@/components/AdminSidebar";
 
 export default function DashboardShell({ children }: { children: React.ReactNode }) {
   const [role, setRole] = useState<string | null>(null);
-  const [username, setUsername] = useState("");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const pathname = usePathname();
   const router = useRouter();
@@ -43,10 +41,6 @@ export default function DashboardShell({ children }: { children: React.ReactNode
 
   useEffect(() => {
     const storedRole = sessionStorage.getItem("role")?.toLowerCase();
-    const storedName = sessionStorage.getItem("username");
-    if (storedName) {
-      setUsername(storedName);
-    }
     if (!storedRole) {
       // Don't redirect if the idle-timeout popup is currently showing
       if (sessionStorage.getItem('idleTimeoutTriggered') === 'true') return;
@@ -74,7 +68,6 @@ export default function DashboardShell({ children }: { children: React.ReactNode
       }
 
       setRole(storedRole);
-      setUsername(storedName || storedRole);
     }
   }, [router, pathname]);
 

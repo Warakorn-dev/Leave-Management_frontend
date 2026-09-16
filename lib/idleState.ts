@@ -38,7 +38,7 @@ const idleState = {
    * Keeps session alive while popup is shown.
    * Clears session and redirects ONLY after the user clicks the confirm button.
    */
-  showExpiredPopup(timeoutMinutes: number) {
+  showExpiredPopup() {
     if (typeof window !== 'undefined' && window.location.pathname === '/login') return;
     if (this.isPopupShowing) return; // already showing
     this.isPopupShowing = true;
@@ -52,15 +52,15 @@ const idleState = {
       html: `
         <div style="text-align:center; padding: 8px 0;">
           <p style="margin-bottom: 8px; color: #555; font-size: 15px;">
-            คุณไม่ได้ใช้งานระบบเป็นเวลา <strong>${timeoutMinutes} นาที</strong>
+            คุณไม่ได้ใช้งานระบบเป็นเวลานาน
           </p>
           <p style="color: #555; font-size: 14px;">
-            ระบบได้ออกจากระบบโดยอัตโนมัติเพื่อความปลอดภัย<br/>
+          
             กรุณาเข้าสู่ระบบใหม่เพื่อดำเนินการต่อ
           </p>
         </div>
       `,
-      confirmButtonText: '🔐 เข้าสู่ระบบอีกครั้ง',
+      confirmButtonText: 'เข้าสู่ระบบอีกครั้ง',
       confirmButtonColor: '#3b82f6',
       allowOutsideClick: false,
       allowEscapeKey: false,

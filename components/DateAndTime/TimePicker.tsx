@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/ban-ts-comment, @typescript-eslint/no-explicit-any -- MUI X Date Pickers' generics don't unify across the static/mobile/desktop variants and the Buddhist-era adapter; ts-nocheck + any are a deliberate escape hatch here, not an oversight. */
 // @ts-nocheck
 'use client';
 
@@ -5,7 +6,6 @@ import React from 'react';
 import { Box, Typography } from '@mui/material';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
-import { TimePicker as MuiTimePicker } from '@mui/x-date-pickers/TimePicker';
 import { StaticTimePicker } from '@mui/x-date-pickers/StaticTimePicker';
 import { MobileTimePicker } from '@mui/x-date-pickers/MobileTimePicker';
 import dayjs from 'dayjs';

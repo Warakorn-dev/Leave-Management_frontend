@@ -7,14 +7,9 @@ import { useLeave } from '@/hooks/useLeave';
 import { useEmployee } from '@/hooks/useEmployee';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
-  Calendar,
   Clock,
   CheckCircle2,
   XCircle,
-  Search,
-  Filter,
-  Bell,
-  Settings,
   Paperclip,
   User,
 } from 'lucide-react';
@@ -29,9 +24,7 @@ import {
 } from 'recharts';
 import { format, parseISO } from 'date-fns';
 import { th } from 'date-fns/locale';
-import Swal from 'sweetalert2';
 import { previewAttachment } from '@/lib/api/attachmentPreview';
-import { Leave } from '@/lib/api/types';
 
 export default function CEODashboard() {
   const [isMounted, setIsMounted] = useState(false);
@@ -79,9 +72,9 @@ export default function CEODashboard() {
     isEmployeesLoading
   )
     return (
-      <div className="p-8 space-y-4">
+      <div className="p-4 sm:p-8 space-y-4">
         <Skeleton className="h-32 w-full rounded-2xl" />
-        <div className="grid grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <Skeleton className="h-24" />
           <Skeleton className="h-24" />
           <Skeleton className="h-24" />
@@ -96,23 +89,10 @@ export default function CEODashboard() {
   let remainingEmployees = 0;
   const pendingCount = pendingCEOLeaves.length;
 
-  // Personal Stats
-  let remainingVacation = 0;
-  let personalPending = 0;
-  let personalApproved = 0;
-  let personalRejected = 0;
-
   if (ceoStats) {
     totalEmployees = ceoStats.totalEmployees || 0;
     leavesToday = ceoStats.leavesToday || 0;
     remainingEmployees = ceoStats.remainingEmployees || 0;
-
-    if (ceoStats.personal) {
-      remainingVacation = ceoStats.personal.remainingVacation || 0;
-      personalPending = ceoStats.personal.pendingApprovals || 0;
-      personalApproved = ceoStats.personal.approvedThisYear || 0;
-      personalRejected = ceoStats.personal.rejectedRequests || 0;
-    }
   }
 
   const thaiMonths = [
@@ -137,8 +117,8 @@ export default function CEODashboard() {
     : thaiMonths.map((month: string) => ({ name: month, value: 0 }));
 
   const announcements = ceoStats?.announcements || [];
-  const recentActivities: any[] = [];
-  allLeaves.forEach((req: any) => {
+  const recentActivities: { title: string; time: string; color: string; timestamp: number }[] = [];
+  allLeaves.forEach((req) => {
     let typeText = 'ยื่นคำขอลา';
     let color = 'bg-[#FF9800]';
     if (req.status === 'APPROVED') {
@@ -162,7 +142,8 @@ export default function CEODashboard() {
       req.user?.firstName || req.employeeName || req.userId || 'พนักงาน';
     const title = `${empName} - ${typeText}`;
 
-    const timeMs = new Date(req.updatedAt || req.createdAt).getTime();
+    const timeMs = new Date(req.updatedAt || req.createdAt || 0).getTime();
+    // eslint-disable-next-line react-hooks/purity -- relative "time ago" label needs the current time at render
     const now = Date.now();
     const diffMs = now - timeMs;
     const diffMins = Math.floor(diffMs / 60000);
@@ -402,7 +383,7 @@ export default function CEODashboard() {
                       border: 'none',
                       boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)',
                     }}
-                    formatter={(value: any) => [value, 'จำนวนคนลา']}
+                    formatter={(value) => [value, 'จำนวนคนลา']}
                   />
                   <Bar
                     dataKey="value"
@@ -539,22 +520,22 @@ export default function CEODashboard() {
             <div className="space-y-5 flex-1 overflow-y-auto pr-2 custom-scrollbar">
               {!announcements ||
               announcements.filter(
-                (ann: any) =>
-                  new Date(ann.createdAt).getFullYear() === announcementYear,
+                (ann) =>
+                  new Date(ann.createdAt || 0).getFullYear() === announcementYear,
               ).length === 0 ? (
                 <p className="text-slate-300 text-sm">ไม่มีประกาศในขณะนี้</p>
               ) : (
                 [...announcements]
                   .filter(
-                    (ann: any) =>
-                      new Date(ann.createdAt).getFullYear() ===
+                    (ann) =>
+                      new Date(ann.createdAt || 0).getFullYear() ===
                       announcementYear,
                   )
-                  .sort((a: any, b: any) => {
+                  .sort((a, b) => {
                     if (a.isImportant === b.isImportant) return 0;
                     return a.isImportant ? -1 : 1;
                   })
-                  .map((ann: any, idx: number) => (
+                  .map((ann, idx: number) => (
                     <div
                       key={idx}
                       className={`${ann.isImportant ? 'bg-[#5b7ab9] border-[#6b8ac9]' : 'bg-[#4d6a99] border-[#3b5581]'} hover:bg-[#6c8bcb] transition-colors p-5 rounded-xl border cursor-pointer shadow-inner`}
@@ -583,8 +564,8 @@ export default function CEODashboard() {
                           onClick={(e) =>
                             previewAttachment(
                               e,
-                              ann.attachmentData,
-                              ann.attachmentName,
+                              ann.attachmentData || '',
+                              ann.attachmentName || '',
                             )
                           }
                         >
@@ -642,7 +623,7 @@ export default function CEODashboard() {
                 {activities.length === 0 ? (
                   <p className="text-slate-400 text-sm ml-6">ไม่มีกิจกรรม</p>
                 ) : (
-                  activities.map((act: any, idx: number) => (
+                  activities.map((act, idx: number) => (
                     <div key={idx} className="flex gap-4">
                       <div
                         className={`w-5 h-5 rounded-full ${act.color} ring-4 ring-white flex-shrink-0 mt-0.5`}

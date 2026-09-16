@@ -1,6 +1,14 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Employee } from '@/lib/api/types';
+import { Employee, CreateEmployeeInput } from '@/lib/api/types';
 import { employeeApi, authApi, hrApi } from '@/lib/api';
+import type { LoginRequest } from '@/lib/api/auth.api';
+
+interface ApiErrorLike {
+  response?: {
+    status?: number;
+    data?: { message?: string; errors?: string[] };
+  };
+}
 
 export const useEmployeesQuery = () => {
   const [data, setData] = useState<Employee[]>([]);
@@ -10,7 +18,7 @@ export const useEmployeesQuery = () => {
     setIsLoading(true);
     try {
       const res = await employeeApi.getAll();
-      setData(res.data ?? (res as any));
+      setData(res.data ?? []);
     } catch (error) {
       console.error(error);
     } finally {
@@ -33,7 +41,7 @@ export const useCeoEmployeesQuery = () => {
     setIsLoading(true);
     try {
       const res = await employeeApi.getForCeo();
-      setData(res.data ?? (res as any));
+      setData(res.data ?? []);
     } catch (error) {
       console.error(error);
     } finally {
@@ -50,12 +58,12 @@ export const useCeoEmployeesQuery = () => {
 
 export const useCreateEmployeeMutation = () => {
   return {
-    mutate: (data: Omit<Employee, 'id'>, options?: { onSuccess?: (data: any) => void, onError?: (error: any) => void }) => {
+    mutate: (data: CreateEmployeeInput, options?: { onSuccess?: (data: unknown) => void, onError?: (error: unknown) => void }) => {
       employeeApi.create(data)
         .then((res) => options?.onSuccess?.(res))
         .catch((err) => options?.onError?.(err));
     },
-    mutateAsync: async (data: Omit<Employee, 'id'>) => {
+    mutateAsync: async (data: CreateEmployeeInput) => {
       return await employeeApi.create(data);
     }
   };
@@ -63,7 +71,7 @@ export const useCreateEmployeeMutation = () => {
 
 export const useUpdateEmployeeMutation = () => {
   return {
-    mutate: ({ id, data }: { id: string, data: Partial<Employee> }, options?: { onSuccess?: (data: any) => void, onError?: (error: any) => void }) => {
+    mutate: ({ id, data }: { id: string, data: Partial<Employee> }, options?: { onSuccess?: (data: unknown) => void, onError?: (error: unknown) => void }) => {
       employeeApi.update(id, data)
         .then((res) => options?.onSuccess?.(res))
         .catch((err) => options?.onError?.(err));
@@ -76,7 +84,7 @@ export const useUpdateEmployeeMutation = () => {
 
 export const useUpdateEmployeeStatusMutation = () => {
   return {
-    mutate: ({ id, isActive }: { id: string, isActive: boolean }, options?: { onSuccess?: (data: any) => void, onError?: (error: any) => void }) => {
+    mutate: ({ id, isActive }: { id: string, isActive: boolean }, options?: { onSuccess?: (data: unknown) => void, onError?: (error: unknown) => void }) => {
       hrApi.updateEmployeeStatus(id, isActive)
         .then((res) => options?.onSuccess?.(res))
         .catch((err) => options?.onError?.(err));
@@ -89,7 +97,7 @@ export const useUpdateEmployeeStatusMutation = () => {
 
 export const useDeleteEmployeeMutation = () => {
   return {
-    mutate: (id: string, options?: { onSuccess?: () => void, onError?: (error: any) => void }) => {
+    mutate: (id: string, options?: { onSuccess?: () => void, onError?: (error: unknown) => void }) => {
       employeeApi.delete(id)
         .then(() => options?.onSuccess?.())
         .catch((err) => options?.onError?.(err));
@@ -102,11 +110,12 @@ export const useDeleteEmployeeMutation = () => {
 
 export const useLoginMutation = () => {
   return {
-    mutateAsync: async (credentials: any) => {
+    mutateAsync: async (credentials: LoginRequest) => {
       try {
         const res = await authApi.login(credentials);
         return res.data ?? res;
-      } catch (err: any) {
+      } catch (e) {
+        const err = e as ApiErrorLike;
         const msg = err.response?.data?.message || err.response?.data?.errors?.[0] || 'Failed to login';
         // อนุญาตให้ข้อความเตือนเรื่องการระงับ หรือจำนวนครั้งที่เหลือ ส่งผ่านไปได้
         if (
@@ -134,7 +143,8 @@ export const useForgotPasswordMutation = () => {
     mutateAsync: async (username: string) => {
       try {
         return await authApi.forgotPassword(username);
-      } catch (err: any) {
+      } catch (e) {
+        const err = e as ApiErrorLike;
         throw new Error(err.response?.data?.message || 'Failed to request reset');
       }
     }
@@ -143,10 +153,11 @@ export const useForgotPasswordMutation = () => {
 
 export const useResetPasswordMutation = () => {
   return {
-    mutateAsync: async (data: any) => {
+    mutateAsync: async (data: { token: string; newPassword: string }) => {
       try {
         return await authApi.resetPassword(data);
-      } catch (err: any) {
+      } catch (e) {
+        const err = e as ApiErrorLike;
         throw new Error(err.response?.data?.message || 'Failed to reset password');
       }
     }

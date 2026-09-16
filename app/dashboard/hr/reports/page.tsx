@@ -20,6 +20,7 @@ import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { DatePicker } from '@/components/DateAndTime';
+import type { Leave } from '@/lib/api/types';
 
 export default function HRReports() {
   const { useLeavesQuery } = useLeave();
@@ -40,7 +41,7 @@ export default function HRReports() {
   const [currentPage, setCurrentPage] = useState(1);
 
   // Helper to format date display cleanly
-  const formatDateDisplay = (startStr: string, endStr: string, leave: any) => {
+  const formatDateDisplay = (startStr: string, endStr: string, leave: Leave) => {
     try {
       const start = new Date(startStr);
       const end = new Date(endStr);
@@ -72,7 +73,7 @@ export default function HRReports() {
   };
 
   // Helper to format duration text cleanly
-  const formatDurationText = (l: any) => {
+  const formatDurationText = (l: Leave) => {
     const mode = l.startFormat || l.leaveMode;
     const days = Number(l.durationDays ?? l.totalDays ?? 0);
     const isFull = mode === 'full' || mode === 'full_day';
@@ -88,12 +89,12 @@ export default function HRReports() {
   };
 
   // Helper to resolve department name if it's an object
-  const resolveDepartmentName = (l: any) => {
+  const resolveDepartmentName = (l: Leave): string => {
     const dept = l.departmentName || l.department || l.employee?.departmentName || l.employee?.department || l.user?.departmentName || l.user?.department;
     if (typeof dept === 'object' && dept !== null) {
-      return dept.name || '-';
+      return (dept as { name?: string }).name || '-';
     }
-    return dept || '-';
+    return (dept as string) || '-';
   };
 
   // Helper to fetch Sarabun Thai font as Base64 for jsPDF
@@ -266,12 +267,12 @@ export default function HRReports() {
   return (
     <div className="min-h-[calc(100vh-4rem)] bg-[#E2E4E9] font-sans text-slate-800 flex flex-col">
       {/* Top Banner */}
-      <div className="bg-white flex items-center gap-4 px-8 py-5 shadow-sm z-10 shrink-0">
-        <div className="w-11 h-11 bg-blue-100 text-blue-600 rounded-xl flex items-center justify-center shrink-0">
+      <div className="bg-white flex items-center gap-3 sm:gap-4 px-4 sm:px-8 py-3 sm:py-5 shadow-sm z-10 shrink-0">
+        <div className="w-9 h-9 sm:w-11 sm:h-11 bg-blue-100 text-blue-600 rounded-xl flex items-center justify-center shrink-0">
           <BarChart3 className="w-6 h-6" strokeWidth={2} />
         </div>
         <div>
-          <h1 className="text-xl font-bold text-black tracking-tight">
+          <h1 className="text-base sm:text-xl font-bold text-black tracking-tight">
             รายงานการลางาน (Leave Reports)
           </h1>
           <p className="text-xs text-gray-500 mt-1 font-medium">
@@ -280,7 +281,7 @@ export default function HRReports() {
         </div>
       </div>
 
-      <div className="flex-1 p-6 md:p-8">
+      <div className="flex-1 p-4 sm:p-6 md:p-8">
         <div className="space-y-6 max-w-7xl mx-auto">
 
       {/* Export Buttons */}

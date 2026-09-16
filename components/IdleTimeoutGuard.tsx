@@ -1,12 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import api from "@/lib/api/axios";
 import idleState from "@/lib/idleState";
 
 export function IdleTimeoutGuard({ children }: { children: React.ReactNode }) {
-  const [timeoutMinutes, setTimeoutMinutes] = useState<number>(60);
-
   // --- Fetch idle timeout config from backend ---
   useEffect(() => {
     const fetchConfig = async () => {
@@ -15,7 +13,6 @@ export function IdleTimeoutGuard({ children }: { children: React.ReactNode }) {
         const configData = res.data?.data || res.data;
         if (configData?.idleTimeoutMinutes) {
           const minutes: number = configData.idleTimeoutMinutes;
-          setTimeoutMinutes(minutes);
           // Update the shared singleton so axios interceptor uses the same value
           idleState.timeoutMs = minutes * 60 * 1000;
         }
@@ -58,7 +55,7 @@ export function IdleTimeoutGuard({ children }: { children: React.ReactNode }) {
 
       if (idleState.isIdle()) {
         clearInterval(intervalId);
-        idleState.showExpiredPopup(timeoutMinutes);
+        idleState.showExpiredPopup();
       }
     }, 5000);
 
@@ -68,7 +65,7 @@ export function IdleTimeoutGuard({ children }: { children: React.ReactNode }) {
       );
       clearInterval(intervalId);
     };
-  }, [timeoutMinutes]);
+  }, []);
 
   return <>{children}</>;
 }

@@ -68,7 +68,7 @@ export function UserSidebar({ onNavigate }: { onNavigate?: () => void }) {
           setPosition(sessionStorage.getItem("position") || "");
           setDepartment(sessionStorage.getItem("department") || "");
         }
-      } catch (error) {
+      } catch {
         setFullName(sessionStorage.getItem("fullName") || "");
         setPosition(sessionStorage.getItem("position") || "");
         setDepartment(sessionStorage.getItem("department") || "");
@@ -104,6 +104,7 @@ export function UserSidebar({ onNavigate }: { onNavigate?: () => void }) {
 
       {/* Logo + Hamburger */}
       <div className={`relative flex items-center border-b border-white/10 ${isCollapsed ? 'justify-center px-0 py-4' : 'justify-center px-4 py-4'}`}>
+        {/* eslint-disable-next-line @next/next/no-img-element -- small static logo, next/image adds no benefit here */}
         {!isCollapsed && <img src="/logo.png" alt="NID PROGRESS TECHNOLOGY" className="w-[110px] h-auto object-contain" />}
         <button
           onClick={() => setIsCollapsed(!isCollapsed)}
@@ -119,6 +120,7 @@ export function UserSidebar({ onNavigate }: { onNavigate?: () => void }) {
         <div className="bg-white/5 rounded-xl p-3 flex items-center gap-3 border border-white/10">
           <div className="bg-zinc-500 rounded-full w-11 h-11 flex items-center justify-center shrink-0 overflow-hidden">
              {profilePic ? (
+                // eslint-disable-next-line @next/next/no-img-element -- dynamic user-uploaded avatar; next/image needs a configured remote loader
                 <img src={profilePic} alt="Profile" className="w-full h-full object-cover" />
              ) : (
                 <User className="w-5 h-5 text-white" />

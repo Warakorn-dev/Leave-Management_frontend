@@ -58,6 +58,7 @@ export default function LoginPage() {
 
   useEffect(() => {
     generateCaptcha();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- generateCaptcha is redefined each render; only `theme` should retrigger regeneration
   }, [theme]);
 
   const { useLoginMutation } = useEmployee();
@@ -90,7 +91,7 @@ export default function LoginPage() {
       }
       sessionStorage.setItem("userId", user.id.toString());
       sessionStorage.setItem("role", user.role);
-      sessionStorage.setItem("username", user.username || user.email);
+      sessionStorage.setItem("username", user.username || user.email || "");
       const fullName = [user.firstName, user.lastName].filter(Boolean).join(" ");
       if (fullName) sessionStorage.setItem("fullName", fullName);
       sessionStorage.setItem("department", user.department?.name || user.departmentName || "");
@@ -115,18 +116,19 @@ export default function LoginPage() {
       } else {
         router.push("/dashboard/user/dashboard");
       }
-    } catch (err: any) {
-      if (err.message === 'Invalid credentials') {
+    } catch (err) {
+      const message = err instanceof Error ? err.message : '';
+      if (message === 'Invalid credentials') {
         setError("ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง");
       } else if (
-        err.message?.includes('Too Many Requests') ||
-        err.message?.includes('ThrottlerException')
+        message.includes('Too Many Requests') ||
+        message.includes('ThrottlerException')
       ) {
         // ✨ ดักจับเมื่อกดยิงถี่เกินไป แล้วแสดงข้อความนี้แทน
         setError("คุณพยายามเข้าสู่ระบบถี่เกินไป กรุณารอ 1 นาทีแล้วลองใหม่อีกครั้ง");
       } else {
         // ข้อความอื่นๆ เช่น แจ้งเตือนการล็อคบัญชี 15 นาทีจาก Backend
-        setError(err.message || "เกิดข้อผิดพลาดในการเข้าสู่ระบบ");
+        setError(message || "เกิดข้อผิดพลาดในการเข้าสู่ระบบ");
       }
       generateCaptcha(); // สุ่มรหัส CAPTCHA ใหม่เสมอเมื่อล็อกอินไม่สำเร็จ
     } finally {
@@ -274,6 +276,7 @@ export default function LoginPage() {
                 title="คลิกเพื่อเปลี่ยนรูปใหม่"
               >
                 {captchaImage ? (
+                  // eslint-disable-next-line @next/next/no-img-element -- backend-generated CAPTCHA image; next/image needs a configured remote loader
                   <img src={captchaImage} alt="CAPTCHA" className="w-[120px] h-[42px] object-cover block" />
                 ) : (
                   <div className="w-[120px] h-[42px] bg-gray-200 flex items-center justify-center text-xs text-gray-500">Loading...</div>

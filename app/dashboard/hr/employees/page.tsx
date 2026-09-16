@@ -30,7 +30,6 @@ export default function EmployeeManagementPage() {
   const {
     useEmployeesQuery,
     useDeleteEmployeeMutation,
-    useCreateEmployeeMutation,
     useUpdateEmployeeMutation,
     useUpdateEmployeeStatusMutation,
   } = useEmployee();
@@ -85,9 +84,21 @@ export default function EmployeeManagementPage() {
   // Leave Balance Modal State
   const [isBalanceModalOpen, setIsBalanceModalOpen] = useState(false);
   const [selectedEmployeeBalances, setSelectedEmployeeBalances] =
-    useState<any>(null);
-  const [leaveBalances, setLeaveBalances] = useState<any[]>([]);
-  const [leaveTypes, setLeaveTypes] = useState<any[]>([]);
+    useState<Employee | null>(null);
+  const [leaveBalances, setLeaveBalances] = useState<{
+    id: string;
+    leaveTypeId?: string;
+    year?: number;
+    usedDays?: number;
+    remainingDays?: number;
+    totalDays?: number;
+  }[]>([]);
+  const [leaveTypes, setLeaveTypes] = useState<{
+    id: string;
+    name?: string;
+    defaultDays?: number;
+    isConfirmed?: boolean;
+  }[]>([]);
   const [isFetchingBalances, setIsFetchingBalances] = useState(false);
   const [editedRemainingBalances, setEditedRemainingBalances] = useState<{
     [id: string]: number;
@@ -96,7 +107,7 @@ export default function EmployeeManagementPage() {
     [id: string]: number;
   }>({});
 
-  const handleOpenBalanceModal = async (emp: any) => {
+  const handleOpenBalanceModal = async (emp: Employee) => {
     setSelectedEmployeeBalances(emp);
     setIsBalanceModalOpen(true);
     setIsFetchingBalances(true);
@@ -115,7 +126,9 @@ export default function EmployeeManagementPage() {
       const typesData = resTypes.data;
       if (typesData) {
         setLeaveTypes(
-          Array.isArray(typesData) ? typesData : (typesData as any).data || [],
+          Array.isArray(typesData)
+            ? typesData
+            : (typesData as { data?: typeof leaveTypes }).data || [],
         );
       }
     } catch (err) {
@@ -145,11 +158,11 @@ export default function EmployeeManagementPage() {
           timer: 1500,
           showConfirmButton: false,
         });
-        handleOpenBalanceModal(selectedEmployeeBalances);
+        handleOpenBalanceModal(selectedEmployeeBalances!);
       } else {
         setIsBalanceModalOpen(false);
       }
-    } catch (err) {
+    } catch {
       Swal.fire('ข้อผิดพลาด', 'ไม่สามารถปรับปรุงยอดวันลาได้', 'error');
     }
   };
@@ -238,7 +251,7 @@ export default function EmployeeManagementPage() {
     });
   };
 
-  const handleToggleStatus = (emp: any) => {
+  const handleToggleStatus = (emp: Employee) => {
     const newStatus = emp.status !== 'active';
     const actionText = newStatus ? 'เปิด' : 'ระงับ';
 
@@ -275,7 +288,7 @@ export default function EmployeeManagementPage() {
     });
   };
 
-  const handleEditClick = (emp: any) => {
+  const handleEditClick = (emp: Employee) => {
     setEditingEmployee({
       id: emp.id,
       employeeId: emp.employeeId,
@@ -361,7 +374,7 @@ export default function EmployeeManagementPage() {
           console.error('Update failed:', err);
           Swal.fire(
             'ข้อผิดพลาด',
-            err?.message || 'ไม่สามารถอัปเดตข้อมูลได้',
+            (err as { message?: string })?.message || 'ไม่สามารถอัปเดตข้อมูลได้',
             'error',
           );
         },
@@ -382,12 +395,12 @@ export default function EmployeeManagementPage() {
   return (
     <div className="min-h-[calc(100vh-4rem)] bg-[#E2E4E9] font-sans text-slate-800 flex flex-col">
       {/* Top Banner */}
-      <div className="bg-white flex items-center gap-4 px-8 py-5 shadow-sm z-10 shrink-0">
-        <div className="w-11 h-11 bg-blue-100 text-blue-600 rounded-xl flex items-center justify-center shrink-0">
+      <div className="bg-white flex items-center gap-3 sm:gap-4 px-4 sm:px-8 py-3 sm:py-5 shadow-sm z-10 shrink-0">
+        <div className="w-9 h-9 sm:w-11 sm:h-11 bg-blue-100 text-blue-600 rounded-xl flex items-center justify-center shrink-0">
           <Users className="w-6 h-6" strokeWidth={2} />
         </div>
         <div>
-          <h1 className="text-xl font-bold text-black tracking-tight">
+          <h1 className="text-base sm:text-xl font-bold text-black tracking-tight">
             จัดการข้อมูลพนักงาน
           </h1>
           <p className="text-xs text-gray-500 mt-1 font-medium">
@@ -396,7 +409,7 @@ export default function EmployeeManagementPage() {
         </div>
       </div>
 
-      <div className="flex-1 p-6 md:p-8">
+      <div className="flex-1 p-4 sm:p-6 md:p-8">
         <div className="max-w-[1200px] mx-auto">
       {/* Header Action */}
       <div className="flex justify-end mb-6">
@@ -801,7 +814,7 @@ export default function EmployeeManagementPage() {
                     <option value="" disabled>
                       -- กรุณาเลือกแผนก --
                     </option>
-                    {departmentsData.map((dept: any) => (
+                    {departmentsData.map((dept) => (
                       <option key={dept.id} value={dept.id}>
                         {dept.name}
                       </option>
@@ -894,7 +907,7 @@ export default function EmployeeManagementPage() {
                     <option value="" disabled>
                       -- กรุณาเลือกตำแหน่ง --
                     </option>
-                    {availableEditPositions.map((pos: any) => (
+                    {availableEditPositions.map((pos) => (
                       <option key={pos.id} value={pos.id}>
                         {pos.title || pos.name}
                       </option>
@@ -1051,7 +1064,7 @@ export default function EmployeeManagementPage() {
                       onClick={async () => {
                         try {
                           await hrApi.initializeLeaveBalances(
-                            selectedEmployeeBalances.id,
+                            selectedEmployeeBalances!.id,
                           );
                           Swal.fire({
                             icon: 'success',
@@ -1060,8 +1073,8 @@ export default function EmployeeManagementPage() {
                             timer: 1500,
                             showConfirmButton: false,
                           });
-                          handleOpenBalanceModal(selectedEmployeeBalances);
-                        } catch (e) {
+                          handleOpenBalanceModal(selectedEmployeeBalances!);
+                        } catch {
                           Swal.fire(
                             'ข้อผิดพลาด',
                             'ไม่สามารถสร้างข้อมูลวันลาได้',
@@ -1090,7 +1103,7 @@ export default function EmployeeManagementPage() {
                         if (result.isConfirmed) {
                           try {
                             await hrApi.resetLeaveBalances(
-                              selectedEmployeeBalances.id,
+                              selectedEmployeeBalances!.id,
                             );
                             Swal.fire({
                               icon: 'success',
@@ -1099,8 +1112,8 @@ export default function EmployeeManagementPage() {
                               timer: 1500,
                               showConfirmButton: false,
                             });
-                            handleOpenBalanceModal(selectedEmployeeBalances);
-                          } catch (e) {
+                            handleOpenBalanceModal(selectedEmployeeBalances!);
+                          } catch {
                             Swal.fire(
                               'ข้อผิดพลาด',
                               'ไม่สามารถทำรายการได้',
@@ -1163,7 +1176,7 @@ export default function EmployeeManagementPage() {
                                       const val = e.target.value;
                                       const numVal =
                                         val === ''
-                                          ? balance.totalDays
+                                          ? (balance.totalDays ?? 0)
                                           : Number(val);
                                       setEditedTotalBalances((prev) => ({
                                         ...prev,
@@ -1196,7 +1209,7 @@ export default function EmployeeManagementPage() {
                                       const val = e.target.value;
                                       const numVal =
                                         val === ''
-                                          ? balance.remainingDays
+                                          ? (balance.remainingDays ?? 0)
                                           : Number(val);
                                       setEditedRemainingBalances((prev) => ({
                                         ...prev,

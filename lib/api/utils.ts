@@ -41,3 +41,21 @@ export function resolveAssetUrl(path?: string | null): string {
   if (/^(data:|blob:|https?:\/\/)/i.test(path)) return path;
   return `/${path.replace(/^\/+/, '')}`;
 }
+
+/** Extract a human-readable message from a caught error of unknown shape (axios error, Error, or string). */
+export function getErrorMessage(err: unknown, fallback = 'เกิดข้อผิดพลาด'): string {
+  if (err && typeof err === 'object') {
+    const anyErr = err as {
+      response?: { data?: { message?: string; errors?: string[] } };
+      message?: string;
+    };
+    return (
+      anyErr.response?.data?.message ||
+      anyErr.response?.data?.errors?.[0] ||
+      anyErr.message ||
+      fallback
+    );
+  }
+  if (typeof err === 'string') return err;
+  return fallback;
+}

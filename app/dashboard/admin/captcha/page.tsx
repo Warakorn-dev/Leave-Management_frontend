@@ -6,7 +6,12 @@ import { Activity, Trash2, CheckCircle2, XCircle } from "lucide-react";
 import api from "@/lib/api/axios";
 
 export default function AdminCaptchaPage() {
-  const [stats, setStats] = useState<any>(null);
+  const [stats, setStats] = useState<{
+    total?: number;
+    active?: number;
+    used?: number;
+    expired?: number;
+  } | null>(null);
   const [loading, setLoading] = useState(true);
   const [purging, setPurging] = useState(false);
 
@@ -29,10 +34,10 @@ export default function AdminCaptchaPage() {
     if (!confirm('คุณแน่ใจหรือไม่ที่ต้องการล้างข้อมูลแคปช่า (CAPTCHA) ที่ใช้งานแล้วหรือหมดอายุทิ้งทั้งหมด?')) return;
     setPurging(true);
     try {
-      const res = await api.delete('/admin/captcha/purge');
+      await api.delete('/admin/captcha/purge');
       alert('ล้างข้อมูลเรียบร้อยแล้ว');
       fetchStats();
-    } catch (err) {
+    } catch {
       alert('ไม่สามารถล้างข้อมูลแคปช่าได้');
     } finally {
       setPurging(false);
@@ -43,12 +48,12 @@ export default function AdminCaptchaPage() {
     <RoleGuard allowedRoles={["admin"]}>
       <div className="min-h-[calc(100vh-4rem)] bg-[#E2E4E9] font-sans text-slate-800 flex flex-col">
         {/* Top Banner */}
-        <div className="bg-white flex items-center gap-4 px-8 py-5 shadow-sm z-10 shrink-0">
-          <div className="w-11 h-11 bg-blue-100 text-blue-600 rounded-xl flex items-center justify-center shrink-0">
+        <div className="bg-white flex items-center gap-3 sm:gap-4 px-4 sm:px-8 py-3 sm:py-5 shadow-sm z-10 shrink-0">
+          <div className="w-9 h-9 sm:w-11 sm:h-11 bg-blue-100 text-blue-600 rounded-xl flex items-center justify-center shrink-0">
             <Activity className="w-6 h-6" strokeWidth={2} />
           </div>
           <div>
-            <h1 className="text-xl font-bold text-black tracking-tight">
+            <h1 className="text-base sm:text-xl font-bold text-black tracking-tight">
               ตรวจสอบระบบ CAPTCHA
             </h1>
             <p className="text-xs text-gray-500 mt-1 font-medium">
@@ -57,7 +62,7 @@ export default function AdminCaptchaPage() {
           </div>
         </div>
 
-        <div className="flex-1 p-6">
+        <div className="flex-1 p-4 sm:p-6">
           <div className="max-w-4xl mx-auto space-y-6">
         <div className="flex justify-end">
             <button
@@ -104,7 +109,7 @@ export default function AdminCaptchaPage() {
         )}
 
         <div className="bg-blue-50 border border-blue-200 rounded-xl p-5 text-sm text-blue-800">
-          <strong>คำแนะนำ:</strong> ภาพแคปช่า (CAPTCHAs) จะถูกตรวจสอบและทำเครื่องหมายว่าถูกใช้งานแล้วเมื่อผู้ใช้ล็อกอินสำเร็จ อย่างไรก็ตามแคปช่าที่ถูกสร้างขึ้นแต่ผู้ใช้ไม่ได้กดล็อกอินจะสะสมในฐานข้อมูลและหมดอายุไปเอง ควรใช้ปุ่ม "ล้างข้อมูล" เป็นครั้งคราวเพื่อคืนพื้นที่และทำให้ฐานข้อมูลทำงานได้เร็วขึ้น
+          <strong>คำแนะนำ:</strong> ภาพแคปช่า (CAPTCHAs) จะถูกตรวจสอบและทำเครื่องหมายว่าถูกใช้งานแล้วเมื่อผู้ใช้ล็อกอินสำเร็จ อย่างไรก็ตามแคปช่าที่ถูกสร้างขึ้นแต่ผู้ใช้ไม่ได้กดล็อกอินจะสะสมในฐานข้อมูลและหมดอายุไปเอง ควรใช้ปุ่ม &quot;ล้างข้อมูล&quot; เป็นครั้งคราวเพื่อคืนพื้นที่และทำให้ฐานข้อมูลทำงานได้เร็วขึ้น
         </div>
           </div>
         </div>

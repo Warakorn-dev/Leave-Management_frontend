@@ -66,6 +66,47 @@ function formatTime(value?: string | Date | null): string {
   return d.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
 }
 
+interface RawLeaveInput {
+  employee?: {
+    title?: string;
+    firstName?: string;
+    lastName?: string;
+    department?: { name?: string };
+    position?: { name?: string };
+  };
+  user?: {
+    title?: string;
+    firstName?: string;
+    lastName?: string;
+    department?: { name?: string };
+    position?: { name?: string };
+  };
+  employeeName?: string;
+  departmentName?: string;
+  positionName?: string;
+  department?: string | { name?: string };
+  position?: string | { name?: string };
+  startFormat?: string;
+  leaveMode?: string;
+  totalDays?: number;
+  durationDays?: number;
+  startDate?: string | Date;
+  endDate?: string | Date;
+  leaveHours?: number;
+  attachments?: Array<{ filePath?: string; fileType?: string }>;
+  attachmentUrl?: string;
+  approvals?: Array<{ comment?: string }>;
+  approverReason?: string;
+  requestCode?: string;
+  leaveType?: string | { name?: string };
+  leaveTypeName?: string;
+  type?: string;
+  reason?: string;
+  status?: string;
+  createdAt?: string | Date | null;
+  updatedAt?: string | Date | null;
+}
+
 export interface NormalizedLeave {
   employeeName: string;
   department: string;
@@ -83,7 +124,7 @@ export interface NormalizedLeave {
   updatedAt?: string | Date | null;
 }
 
-function pickName(leave: any, fallbackName?: string): string {
+function pickName(leave: RawLeaveInput, fallbackName?: string): string {
   const emp = leave?.employee;
   const usr = leave?.user;
   if (emp?.firstName)
@@ -94,7 +135,7 @@ function pickName(leave: any, fallbackName?: string): string {
   return fallbackName || '-';
 }
 
-function pickDepartment(leave: any, fallback?: string): string {
+function pickDepartment(leave: RawLeaveInput, fallback?: string): string {
   const raw =
     leave?.employee?.department?.name ??
     leave?.user?.department?.name ??
@@ -105,7 +146,7 @@ function pickDepartment(leave: any, fallback?: string): string {
   return raw || fallback || '-';
 }
 
-function pickPosition(leave: any, fallback?: string): string {
+function pickPosition(leave: RawLeaveInput, fallback?: string): string {
   const raw =
     leave?.employee?.position?.name ??
     leave?.user?.position?.name ??
@@ -117,7 +158,7 @@ function pickPosition(leave: any, fallback?: string): string {
 }
 
 export function normalizeLeave(
-  leave: any,
+  leave: RawLeaveInput,
   fallbacks?: { name?: string; department?: string; position?: string },
 ): NormalizedLeave {
   const startFormat: string = leave?.startFormat || 'full';
@@ -158,7 +199,7 @@ export function normalizeLeave(
     attachments = [{ filePath: leave.attachmentUrl }];
   }
 
-  const approvals: any[] = Array.isArray(leave?.approvals)
+  const approvals: Array<{ comment?: string }> = Array.isArray(leave?.approvals)
     ? leave.approvals
     : [];
   const latestApproval = approvals.length
@@ -173,7 +214,7 @@ export function normalizeLeave(
     position: pickPosition(leave, fallbacks?.position),
     requestCode: leave?.requestCode || null,
     leaveTypeName:
-      leave?.leaveType?.name || leave?.leaveTypeName || leave?.type || '-',
+      (typeof leave?.leaveType === 'object' ? leave.leaveType?.name : leave?.leaveType) || leave?.leaveTypeName || leave?.type || '-',
     periodText,
     durationText,
     formatText,
@@ -188,7 +229,7 @@ export function normalizeLeave(
 
 interface Props {
   /** raw leave object from any of the endpoints; pass `selectedRequest.raw ?? selectedRequest` */
-  leave: any;
+  leave: RawLeaveInput;
   open?: boolean;
   onClose: () => void;
   /** page-specific action buttons, right-aligned in the default footer bar */
@@ -369,23 +410,31 @@ export function LeaveDetailModal({
                               key={idx}
                               className="flex items-center justify-between gap-2"
                             >
-                              <span className="text-blue-500 font-medium truncate text-[13px]">
+                              <button
+                                type="button"
+                                aria-label="เปิดดูไฟล์แนบ"
+                                className="text-blue-500 hover:text-blue-700 hover:underline font-medium truncate text-[13px] text-left"
+                                onClick={() => setPreview({ url: src, isImage })}
+                              >
                                 {isImage ? 'รูปภาพแนบ' : 'ไฟล์แนบ'}
                                 {info.attachments.length > 1
                                   ? ` (${idx + 1})`
                                   : ''}
-                              </span>
-                              <button
-                                type="button"
-                                aria-label="เปิดไฟล์แนบ"
+                              </button>
+                              <a
+                                href={src}
+                                download
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                aria-label="ดาวน์โหลดไฟล์แนบ"
+                                onClick={(e) => e.stopPropagation()}
                                 className="p-1.5 border border-gray-300 rounded-md hover:bg-gray-100 text-black shrink-0"
-                                onClick={() => setPreview({ url: src, isImage })}
                               >
                                 <Download
                                   className="w-[14px] h-[14px]"
                                   strokeWidth={2.5}
                                 />
-                              </button>
+                              </a>
                             </div>
                           );
                         })}

@@ -12,14 +12,7 @@ import Swal from 'sweetalert2';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { DatePicker } from '@/components/DateAndTime';
 import { holidayApi } from '@/lib/api';
-
-interface Holiday {
-  id: string;
-  name: string;
-  date: string;
-  createdAt: string;
-  updatedAt: string;
-}
+import type { PublicHoliday as Holiday } from '@/lib/api/holiday.api';
 
 export default function HolidayManagementPage() {
   const [holidays, setHolidays] = useState<Holiday[]>([]);
@@ -41,14 +34,7 @@ export default function HolidayManagementPage() {
     setIsLoading(true);
     try {
       const res = await holidayApi.getAll();
-      const data = res.data;
-      if (
-        (data as any).success ||
-        Array.isArray((data as any).data) ||
-        Array.isArray(data)
-      ) {
-        setHolidays((data as any).data || data);
-      }
+      setHolidays(res.data || []);
     } catch (error) {
       console.error('Failed to fetch holidays', error);
     } finally {
@@ -89,8 +75,7 @@ export default function HolidayManagementPage() {
         name: formData.name,
         date: dateToSave.toISOString().split('T')[0],
       });
-      const data = res.data;
-      if ((data as any).success || data) {
+      if (res.data) {
         setIsCreateModalOpen(false);
         fetchHolidays();
         Swal.fire({
@@ -102,7 +87,7 @@ export default function HolidayManagementPage() {
       } else {
         Swal.fire('ข้อผิดพลาด', 'ไม่สามารถเพิ่มวันหยุดได้', 'error');
       }
-    } catch (error) {
+    } catch {
       Swal.fire('ข้อผิดพลาด', 'เกิดข้อผิดพลาดในการเชื่อมต่อ', 'error');
     }
   };
@@ -117,8 +102,7 @@ export default function HolidayManagementPage() {
         name: formData.name,
         date: dateToSave.toISOString().split('T')[0],
       });
-      const data = res.data;
-      if ((data as any).success || data) {
+      if (res.data) {
         setIsEditModalOpen(false);
         fetchHolidays();
         Swal.fire({
@@ -130,7 +114,7 @@ export default function HolidayManagementPage() {
       } else {
         Swal.fire('ข้อผิดพลาด', 'ไม่สามารถแก้ไขวันหยุดได้', 'error');
       }
-    } catch (error) {
+    } catch {
       Swal.fire('ข้อผิดพลาด', 'เกิดข้อผิดพลาดในการเชื่อมต่อ', 'error');
     }
   };
@@ -149,14 +133,13 @@ export default function HolidayManagementPage() {
       if (result.isConfirmed) {
         try {
           const res = await holidayApi.delete(id);
-          const data = res.data;
-          if ((data as any).success || data) {
+          if (res.success) {
             Swal.fire('ลบสำเร็จ!', 'ลบวันหยุดเรียบร้อยแล้ว', 'success');
             fetchHolidays();
           } else {
             Swal.fire('ข้อผิดพลาด', 'ไม่สามารถลบวันหยุดได้', 'error');
           }
-        } catch (error) {
+        } catch {
           Swal.fire('ข้อผิดพลาด', 'เกิดข้อผิดพลาดในการเชื่อมต่อ', 'error');
         }
       }
@@ -166,12 +149,12 @@ export default function HolidayManagementPage() {
   return (
     <div className="min-h-[calc(100vh-4rem)] bg-[#E2E4E9] font-sans text-slate-800 flex flex-col pb-12">
       {/* Top Banner */}
-      <div className="bg-white flex items-center gap-4 px-8 py-5 shadow-sm z-10 shrink-0">
-        <div className="w-11 h-11 bg-blue-100 text-blue-600 rounded-xl flex items-center justify-center shrink-0">
+      <div className="bg-white flex items-center gap-3 sm:gap-4 px-4 sm:px-8 py-3 sm:py-5 shadow-sm z-10 shrink-0">
+        <div className="w-9 h-9 sm:w-11 sm:h-11 bg-blue-100 text-blue-600 rounded-xl flex items-center justify-center shrink-0">
           <CalendarIcon className="w-6 h-6" strokeWidth={2} />
         </div>
         <div>
-          <h1 className="text-xl font-bold text-black tracking-tight">
+          <h1 className="text-base sm:text-xl font-bold text-black tracking-tight">
             จัดการวันหยุดบริษัท
           </h1>
           <p className="text-xs text-gray-500 mt-1 font-medium">

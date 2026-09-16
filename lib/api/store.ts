@@ -53,7 +53,10 @@ export const getPublicHolidays = (year: number) => {
   return [...fixed, ...floating];
 };
 
-const checkIsHoliday = (d: Date, customHolidays?: any[]): boolean => {
+const checkIsHoliday = (
+  d: Date,
+  customHolidays?: { date?: string }[],
+): boolean => {
   if (customHolidays && customHolidays.length > 0) {
     const dTime = new Date(d);
     dTime.setHours(0, 0, 0, 0);
@@ -70,7 +73,7 @@ const checkIsHoliday = (d: Date, customHolidays?: any[]): boolean => {
   return FIXED_HOLIDAYS.some(h => h.monthDay === md) || FLOATING_HOLIDAYS.some(h => h.date === ymd);
 };
 
-export const calculateLeaveDays = (startDate: string, endDate: string, startFormat?: string, endFormat?: string, customHolidays?: any[]): number => {
+export const calculateLeaveDays = (startDate: string, endDate: string, startFormat?: string, endFormat?: string, customHolidays?: { date?: string }[]): number => {
   const s = new Date(startDate);
   const e = new Date(endDate);
   if (isNaN(s.getTime()) || isNaN(e.getTime())) return 1;
@@ -123,9 +126,9 @@ export const getLeaveRequests = async (): Promise<LeaveRequest[]> => {
     try {
       const usersRes = await fetch('/api/users', { cache: 'no-store' });
       if (usersRes.ok) {
-        const users = await usersRes.json();
-        return leaves.map((leave: any) => {
-          const user = users.find((u: any) =>
+        const users: Record<string, unknown>[] = await usersRes.json();
+        return leaves.map((leave: Record<string, unknown>) => {
+          const user = users.find((u) =>
             u.username === leave.userId ||
             ([u.firstName, u.lastName].filter(Boolean).join(" ")) === leave.userId
           );
@@ -134,7 +137,7 @@ export const getLeaveRequests = async (): Promise<LeaveRequest[]> => {
               ...leave,
               employeeName: [user.firstName, user.lastName].filter(Boolean).join(" "),
               departmentName: typeof user.department === 'object' && user.department !== null
-                ? user.department.name
+                ? (user.department as { name?: string }).name
                 : (user.departmentName || user.department || "-"),
               positionName: user.positionName || "-"
             };
@@ -230,10 +233,10 @@ export const getUsers = async () => {
   try {
     const res = await fetch(USERS_API_URL, { cache: 'no-store' });
     if (!res.ok) throw new Error('Failed to fetch users');
-    const users = await res.json();
-    return users.map((u: any) => ({
+    const users: Record<string, unknown>[] = await res.json();
+    return users.map((u) => ({
       ...u,
-      department: typeof u.department === 'object' && u.department !== null ? u.department.name : (u.departmentName || u.department || null)
+      department: typeof u.department === 'object' && u.department !== null ? (u.department as { name?: string }).name : (u.departmentName || u.department || null)
     }));
   } catch (error) {
     console.error(error);
@@ -241,7 +244,7 @@ export const getUsers = async () => {
   }
 };
 
-export const updateUser = async (id: string, data: any) => {
+export const updateUser = async (id: string, data: Record<string, unknown>) => {
   try {
     const res = await fetch(`${USERS_API_URL}/${id}`, {
       method: 'PATCH',

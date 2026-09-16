@@ -1,17 +1,30 @@
 import { useState, useEffect, useCallback } from 'react';
 
-const API_URL = '/api/leave-balances';
+export interface LeaveBalance {
+  id?: string;
+  leaveTypeId?: string;
+  leaveType?: { id?: string; name?: string; minTenureDays?: number; [key: string]: unknown };
+  remainingDays?: number;
+  totalDays?: number;
+  usedDays?: number;
+  effectiveRemainingDays?: number;
+  pendingDays?: number;
+  employeeHireDate?: string;
+  createdAt?: string;
+  startDate?: string;
+  year?: number;
+  [key: string]: unknown;
+}
 
-export const useLeaveBalancesQuery = (userId?: string) => {
-  const [data, setData] = useState<any[]>([]);
+export const useLeaveBalancesQuery = () => {
+  const [data, setData] = useState<LeaveBalance[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   const fetchBalances = useCallback(async () => {
     setIsLoading(true);
     try {
       const token = typeof window !== 'undefined' ? sessionStorage.getItem('accessToken') : '';
-      const actualUserId = userId || (typeof window !== 'undefined' ? sessionStorage.getItem('userId') : null);
-      
+
       const res = await fetch(`/api/leave/balance`, {
         headers: {
           'Authorization': `Bearer ${token}`
@@ -27,7 +40,7 @@ export const useLeaveBalancesQuery = (userId?: string) => {
     } finally {
       setIsLoading(false);
     }
-  }, [userId]);
+  }, []);
 
   useEffect(() => {
     fetchBalances();

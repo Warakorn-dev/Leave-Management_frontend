@@ -160,7 +160,7 @@ export function ThaiDatePicker({
   const { data: holidays = [] } = useHolidaysQuery();
   const { data: allLeaves = [] } = useLeavesQuery();
   const userId = typeof window !== 'undefined' ? sessionStorage.getItem('userId') : null;
-  const myLeaves = useMemo(() => allLeaves.filter((l: any) => 
+  const myLeaves = useMemo(() => allLeaves.filter((l) =>
     String(l.userId) === String(userId) || String(l.employee?.userId) === String(userId)
   ), [allLeaves, userId]);
 
@@ -282,10 +282,10 @@ export function ThaiDatePicker({
               const cellTime = new Date(c.year, c.month, c.day).getTime();
               const isBeforeMin = minDateNorm !== null && cellTime < minDateNorm;
               const isAfterMax = maxDateNorm !== null && cellTime > maxDateNorm;
-              const isHoliday = !isPlain && holidays.some((h: any) => h.date && h.date.split('T')[0] === c.dateStr);
-              
+              const isHoliday = !isPlain && holidays.some((h) => h.date && h.date.split('T')[0] === c.dateStr);
+
               // Check if date overlaps with existing leave
-              const isLeave = !isPlain && myLeaves.some((l: any) => {
+              const isLeave = !isPlain && myLeaves.some((l) => {
                 if (['REJECTED', 'Rejected', 'CANCELLED', 'Cancelled'].includes(l.status)) return false;
                 if (!l.startDate || !l.endDate) return false;
                 const s = new Date(l.startDate);

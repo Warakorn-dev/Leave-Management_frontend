@@ -6,7 +6,6 @@ import {
   Briefcase,
   Plus,
   Search,
-  MoreVertical,
   Edit,
   Trash2,
   X,
@@ -21,7 +20,6 @@ import {
   Crown,
   Code,
   PenTool,
-  Award,
   Star,
 } from 'lucide-react';
 import {
@@ -38,7 +36,7 @@ import {
 } from '@/hooks/usePosition';
 import { useEmployeesQuery } from '@/hooks/useEmployee';
 import { useRolesQuery } from '@/hooks/useRoles';
-import { Department, Position, Employee } from '@/lib/api/types';
+import { Department } from '@/lib/api/types';
 
 // Helper functions for dynamic icons and colors based on name
 const getDepartmentStyle = (name: string) => {
@@ -420,7 +418,7 @@ export default function OrganizationManagementPage() {
     });
 
     return result;
-  }, [positions, searchTerm, departmentFilter]);
+  }, [positions, searchTerm, departmentFilter, departments]);
 
   // Helper to get employees in a specific department
   const getEmployeesInDept = (deptName: string, deptId: string) => {
@@ -449,7 +447,7 @@ export default function OrganizationManagementPage() {
       if (excludePositionId && p.id === excludePositionId) return false;
       return (
         p.roleId === managerRole.id ||
-        (p.role as any)?.name?.toLowerCase() === 'manager'
+        (p.role as { name?: string } | undefined)?.name?.toLowerCase() === 'manager'
       );
     });
   };
@@ -484,17 +482,18 @@ export default function OrganizationManagementPage() {
       // Secondary sort by first name
       return (a.firstName || '').localeCompare(b.firstName || '');
     });
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- getEmployeesInDept is a pure helper redefined each render, not a real dependency
   }, [selectedDept, employees]);
 
   return (
     <div className="min-h-[calc(100vh-4rem)] bg-[#E2E4E9] font-sans text-slate-800 flex flex-col">
       {/* Top Banner */}
-      <div className="bg-white flex items-center gap-4 px-8 py-5 shadow-sm z-10 shrink-0">
-        <div className="w-11 h-11 bg-blue-100 text-blue-600 rounded-xl flex items-center justify-center shrink-0">
+      <div className="bg-white flex items-center gap-3 sm:gap-4 px-4 sm:px-8 py-3 sm:py-5 shadow-sm z-10 shrink-0">
+        <div className="w-9 h-9 sm:w-11 sm:h-11 bg-blue-100 text-blue-600 rounded-xl flex items-center justify-center shrink-0">
           <Building2 className="w-6 h-6" strokeWidth={2} />
         </div>
         <div>
-          <h1 className="text-xl font-bold text-black tracking-tight">
+          <h1 className="text-base sm:text-xl font-bold text-black tracking-tight">
             จัดการตำแหน่งและแผนก
           </h1>
           <p className="text-xs text-gray-500 mt-1 font-medium">
@@ -503,7 +502,7 @@ export default function OrganizationManagementPage() {
         </div>
       </div>
 
-      <div className="flex-1 p-6 md:p-8">
+      <div className="flex-1 p-4 sm:p-6 md:p-8">
         <div className="space-y-6 max-w-[1200px] mx-auto">
 
       {/* Tabs */}
@@ -687,12 +686,6 @@ export default function OrganizationManagementPage() {
                     </tr>
                   ) : (
                     filteredPositions.map((pos) => {
-                      // count how many employees hold this position
-                      const empsInPos = employees.filter(
-                        (e) =>
-                          e.positionId === pos.id ||
-                          e.positionName === pos.name,
-                      );
                       const style = getPositionStyle(
                         pos.name || pos.title || '',
                       );
@@ -730,7 +723,8 @@ export default function OrganizationManagementPage() {
                           <td className="px-6 py-4">
                             {pos.role ? (
                               <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-800">
-                                {(pos.role as any).name || pos.role}
+                                {(pos.role as { name?: string } | undefined)?.name ||
+                                  String(pos.role)}
                               </span>
                             ) : (
                               <span className="text-slate-400 text-xs italic">
@@ -753,7 +747,9 @@ export default function OrganizationManagementPage() {
                                       pos.department?.id ||
                                       '',
                                     roleId:
-                                      pos.roleId || (pos.role as any)?.id || '',
+                                      pos.roleId ||
+                                      (pos.role as { id?: string } | undefined)?.id ||
+                                      '',
                                   });
                                   setIsEditPosModalOpen(true);
                                 }}
