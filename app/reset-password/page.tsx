@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { useEmployee } from "@/hooks/useEmployee";
 import Swal from "sweetalert2";
+import { getErrorMessage } from "@/lib/api/utils";
 import { Eye, EyeOff, Moon, Sun } from "lucide-react";
 
 function ResetPasswordForm() {
@@ -18,14 +19,9 @@ function ResetPasswordForm() {
   const [newPassword, setNewPassword] = useState("");
 
   useEffect(() => {
-    const savedTheme = (localStorage.getItem('app_theme') || localStorage.getItem('auth-theme')) as string | null;
-    const isDarkTheme = savedTheme === 'dark' || (!savedTheme && window.matchMedia('(prefers-color-scheme: dark)').matches);
-    const activeTheme = isDarkTheme ? 'dark' : 'gray';
-    setTheme(activeTheme);
-    if (isDarkTheme) {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
+    const savedTheme = localStorage.getItem('auth-theme') as 'gray' | 'dark' | null;
+    if (savedTheme) {
+      setTheme(savedTheme);
     }
   }, []);
 
@@ -33,12 +29,6 @@ function ResetPasswordForm() {
     const newTheme = theme === 'dark' ? 'gray' : 'dark';
     setTheme(newTheme);
     localStorage.setItem('auth-theme', newTheme);
-    localStorage.setItem('app_theme', newTheme === 'dark' ? 'dark' : 'light');
-    if (newTheme === 'dark') {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
   };
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showNewPassword, setShowNewPassword] = useState(false);
@@ -81,8 +71,8 @@ function ResetPasswordForm() {
       }).then(() => {
         router.push("/login");
       });
-    } catch (err: any) {
-      setError(err.message || "ไม่สามารถตั้งรหัสผ่านใหม่ได้ โทเคนอาจหมดอายุแล้ว");
+    } catch (err) {
+      setError(getErrorMessage(err, "ไม่สามารถตั้งรหัสผ่านใหม่ได้ โทเคนอาจหมดอายุแล้ว"));
     } finally {
       setIsLoading(false);
     }

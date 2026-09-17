@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useEmployee } from '@/hooks/useEmployee';
 import { useDepartmentsQuery } from '@/hooks/useDepartment';
@@ -15,6 +15,8 @@ import {
   Edit,
   Wallet,
   Power,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react';
 import Swal from 'sweetalert2';
 import { Employee } from '@/lib/api/types';
@@ -28,7 +30,6 @@ export default function EmployeeManagementPage() {
   const {
     useEmployeesQuery,
     useDeleteEmployeeMutation,
-    useCreateEmployeeMutation,
     useUpdateEmployeeMutation,
     useUpdateEmployeeStatusMutation,
   } = useEmployee();
@@ -43,6 +44,8 @@ export default function EmployeeManagementPage() {
 
   const [searchTerm, setSearchTerm] = useState('');
   const [departmentFilter, setDepartmentFilter] = useState('all');
+  const itemsPerPage = 10;
+  const [currentPage, setCurrentPage] = useState(1);
 
   // Edit Employee Modal State
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -81,9 +84,21 @@ export default function EmployeeManagementPage() {
   // Leave Balance Modal State
   const [isBalanceModalOpen, setIsBalanceModalOpen] = useState(false);
   const [selectedEmployeeBalances, setSelectedEmployeeBalances] =
-    useState<any>(null);
-  const [leaveBalances, setLeaveBalances] = useState<any[]>([]);
-  const [leaveTypes, setLeaveTypes] = useState<any[]>([]);
+    useState<Employee | null>(null);
+  const [leaveBalances, setLeaveBalances] = useState<{
+    id: string;
+    leaveTypeId?: string;
+    year?: number;
+    usedDays?: number;
+    remainingDays?: number;
+    totalDays?: number;
+  }[]>([]);
+  const [leaveTypes, setLeaveTypes] = useState<{
+    id: string;
+    name?: string;
+    defaultDays?: number;
+    isConfirmed?: boolean;
+  }[]>([]);
   const [isFetchingBalances, setIsFetchingBalances] = useState(false);
   const [editedRemainingBalances, setEditedRemainingBalances] = useState<{
     [id: string]: number;
@@ -92,7 +107,7 @@ export default function EmployeeManagementPage() {
     [id: string]: number;
   }>({});
 
-  const handleOpenBalanceModal = async (emp: any) => {
+  const handleOpenBalanceModal = async (emp: Employee) => {
     setSelectedEmployeeBalances(emp);
     setIsBalanceModalOpen(true);
     setIsFetchingBalances(true);
@@ -111,7 +126,9 @@ export default function EmployeeManagementPage() {
       const typesData = resTypes.data;
       if (typesData) {
         setLeaveTypes(
-          Array.isArray(typesData) ? typesData : (typesData as any).data || [],
+          Array.isArray(typesData)
+            ? typesData
+            : (typesData as { data?: typeof leaveTypes }).data || [],
         );
       }
     } catch (err) {
@@ -141,11 +158,11 @@ export default function EmployeeManagementPage() {
           timer: 1500,
           showConfirmButton: false,
         });
-        handleOpenBalanceModal(selectedEmployeeBalances);
+        handleOpenBalanceModal(selectedEmployeeBalances!);
       } else {
         setIsBalanceModalOpen(false);
       }
-    } catch (err) {
+    } catch {
       Swal.fire('ข้อผิดพลาด', 'ไม่สามารถปรับปรุงยอดวันลาได้', 'error');
     }
   };
@@ -171,6 +188,18 @@ export default function EmployeeManagementPage() {
       return matchesSearch && matchesDept;
     });
   }, [employees, searchTerm, departmentFilter]);
+
+  // Pagination
+  const totalPages = Math.max(1, Math.ceil(filteredEmployees.length / itemsPerPage));
+  const safePage = Math.min(currentPage, totalPages);
+  const paginatedEmployees = filteredEmployees.slice(
+    (safePage - 1) * itemsPerPage,
+    safePage * itemsPerPage,
+  );
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, departmentFilter]);
 
   // Extract unique departments for the dropdown
   const departments = useMemo(() => {
@@ -222,7 +251,7 @@ export default function EmployeeManagementPage() {
     });
   };
 
-  const handleToggleStatus = (emp: any) => {
+  const handleToggleStatus = (emp: Employee) => {
     const newStatus = emp.status !== 'active';
     const actionText = newStatus ? 'เปิด' : 'ระงับ';
 
@@ -259,7 +288,7 @@ export default function EmployeeManagementPage() {
     });
   };
 
-  const handleEditClick = (emp: any) => {
+  const handleEditClick = (emp: Employee) => {
     setEditingEmployee({
       id: emp.id,
       employeeId: emp.employeeId,
@@ -345,7 +374,7 @@ export default function EmployeeManagementPage() {
           console.error('Update failed:', err);
           Swal.fire(
             'ข้อผิดพลาด',
-            err?.message || 'ไม่สามารถอัปเดตข้อมูลได้',
+            (err as { message?: string })?.message || 'ไม่สามารถอัปเดตข้อมูลได้',
             'error',
           );
         },
@@ -364,23 +393,26 @@ export default function EmployeeManagementPage() {
   }
 
   return (
-    <div className="max-w-[1200px] mx-auto min-h-screen pb-12 px-3 sm:px-5 md:px-8 pt-4 md:pt-6">
-      {/* Header Section */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 md:mb-8 gap-3">
-        <div className="flex items-start gap-3">
-          <div className="text-blue-500 mt-1">
-            <Users className="w-7 h-7 sm:w-10 sm:h-10" strokeWidth={1.5} />
-          </div>
-          <div>
-            <h1 className="text-2xl sm:text-[32px] font-bold text-slate-700 leading-tight">
-              จัดการข้อมูลพนักงาน
-            </h1>
-            <p className="text-slate-400 text-xs sm:text-sm mt-1">
-              เพิ่ม ลบ แก้ไข ข้อมูลพนักงานและข้อมูลติดต่อในระบบ
-            </p>
-          </div>
+    <div className="min-h-[calc(100vh-4rem)] bg-[#E2E4E9] font-sans text-slate-800 flex flex-col">
+      {/* Top Banner */}
+      <div className="bg-white flex items-center gap-3 sm:gap-4 px-4 sm:px-8 py-3 sm:py-5 shadow-sm z-10 shrink-0">
+        <div className="w-9 h-9 sm:w-11 sm:h-11 bg-blue-100 text-blue-600 rounded-xl flex items-center justify-center shrink-0">
+          <Users className="w-6 h-6" strokeWidth={2} />
         </div>
+        <div>
+          <h1 className="text-base sm:text-xl font-bold text-black tracking-tight">
+            จัดการข้อมูลพนักงาน
+          </h1>
+          <p className="text-xs text-gray-500 mt-1 font-medium">
+            เพิ่ม ลบ แก้ไข ข้อมูลพนักงานและข้อมูลติดต่อในระบบ
+          </p>
+        </div>
+      </div>
 
+      <div className="flex-1 p-4 sm:p-6 md:p-8">
+        <div className="max-w-[1200px] mx-auto">
+      {/* Header Action */}
+      <div className="flex justify-end mb-6">
         <Link
           href="/dashboard/hr/employees/add"
           className="flex items-center gap-2 sm:gap-3 bg-[#091136] hover:bg-[#152366] text-white px-4 sm:px-5 py-2.5 rounded-xl transition-all cursor-pointer shrink-0"
@@ -474,7 +506,7 @@ export default function EmployeeManagementPage() {
                   </td>
                 </tr>
               ) : (
-                filteredEmployees.map((emp) => (
+                paginatedEmployees.map((emp) => (
                   <tr
                     key={emp.id}
                     className="hover:bg-slate-50/50 transition-colors group"
@@ -581,6 +613,40 @@ export default function EmployeeManagementPage() {
             </tbody>
           </table>
         </div>
+
+        {/* Pagination */}
+        {!isLoading && filteredEmployees.length > 0 && (
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 px-4 py-4 border-t border-slate-100">
+            <span className="text-xs font-medium text-slate-500">
+              แสดง {(safePage - 1) * itemsPerPage + 1}
+              {' - '}
+              {Math.min(safePage * itemsPerPage, filteredEmployees.length)}
+              {' จากทั้งหมด '}
+              {filteredEmployees.length} คน
+            </span>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                disabled={safePage <= 1}
+                className="flex items-center gap-1 px-3 py-1.5 rounded-lg border border-slate-200 text-sm font-semibold text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              >
+                <ChevronLeft className="w-4 h-4" />
+                ก่อนหน้า
+              </button>
+              <span className="text-sm font-bold px-3 py-1 bg-blue-50 text-blue-600 rounded-lg">
+                {safePage} / {totalPages}
+              </span>
+              <button
+                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                disabled={safePage >= totalPages}
+                className="flex items-center gap-1 px-3 py-1.5 rounded-lg border border-slate-200 text-sm font-semibold text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              >
+                ถัดไป
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Edit Employee Modal */}
@@ -597,19 +663,6 @@ export default function EmployeeManagementPage() {
           {/* Form Body */}
           <div className="p-8 pb-10">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-8">
-              <div className="space-y-3">
-                <label className="block text-[#475569] font-medium text-[17px]">
-                  รหัสพนักงาน
-                </label>
-                <input
-                  type="text"
-                  placeholder="เช่น EMP-002"
-                  value={editingEmployee.employeeId}
-                  readOnly
-                  className="w-full bg-slate-100 border border-[#e2e8f0] px-5 py-3.5 rounded-xl text-[15px] text-slate-500 cursor-not-allowed transition-all"
-                />
-              </div>
-
               <div className="space-y-3">
                 <label className="block text-[#475569] font-medium text-[17px]">
                   ชื่อ
@@ -684,6 +737,19 @@ export default function EmployeeManagementPage() {
 
               <div className="space-y-3">
                 <label className="block text-[#475569] font-medium text-[17px]">
+                  รหัสพนักงาน
+                </label>
+                <input
+                  type="text"
+                  placeholder="เช่น EMP-002"
+                  value={editingEmployee.employeeId}
+                  readOnly
+                  className="w-full bg-slate-100 border border-[#e2e8f0] px-5 py-3.5 rounded-xl text-[15px] text-slate-500 cursor-not-allowed transition-all"
+                />
+              </div>
+
+              <div className="space-y-3">
+                <label className="block text-[#475569] font-medium text-[17px]">
                   เลขบัตรประชาชน (ID Card Number)
                 </label>
                 <input
@@ -726,42 +792,6 @@ export default function EmployeeManagementPage() {
 
               <div className="space-y-3">
                 <label className="block text-[#475569] font-medium text-[17px]">
-                  ที่อยู่ตามบัตรประชาชน
-                </label>
-                <textarea
-                  placeholder="กรอกที่อยู่ตามบัตรประชาชน"
-                  value={editingEmployee.idCardAddress}
-                  onChange={(e) =>
-                    setEditingEmployee({
-                      ...editingEmployee,
-                      idCardAddress: e.target.value,
-                    })
-                  }
-                  rows={3}
-                  className="w-full bg-[#f8fafc] border border-[#e2e8f0] px-5 py-3.5 rounded-xl text-[15px] focus:outline-hidden focus:ring-2 focus:ring-blue-100 transition-all text-slate-800 resize-none"
-                ></textarea>
-              </div>
-
-              <div className="space-y-3">
-                <label className="block text-[#475569] font-medium text-[17px]">
-                  ที่อยู่ปัจจุบัน
-                </label>
-                <textarea
-                  placeholder="กรอกที่อยู่ปัจจุบัน"
-                  value={editingEmployee.currentAddress}
-                  onChange={(e) =>
-                    setEditingEmployee({
-                      ...editingEmployee,
-                      currentAddress: e.target.value,
-                    })
-                  }
-                  rows={3}
-                  className="w-full bg-[#f8fafc] border border-[#e2e8f0] px-5 py-3.5 rounded-xl text-[15px] focus:outline-hidden focus:ring-2 focus:ring-blue-100 transition-all text-slate-800 resize-none"
-                ></textarea>
-              </div>
-
-              <div className="space-y-3">
-                <label className="block text-[#475569] font-medium text-[17px]">
                   แผนก
                 </label>
                 <div className="relative">
@@ -784,7 +814,7 @@ export default function EmployeeManagementPage() {
                     <option value="" disabled>
                       -- กรุณาเลือกแผนก --
                     </option>
-                    {departmentsData.map((dept: any) => (
+                    {departmentsData.map((dept) => (
                       <option key={dept.id} value={dept.id}>
                         {dept.name}
                       </option>
@@ -877,7 +907,7 @@ export default function EmployeeManagementPage() {
                     <option value="" disabled>
                       -- กรุณาเลือกตำแหน่ง --
                     </option>
-                    {availableEditPositions.map((pos: any) => (
+                    {availableEditPositions.map((pos) => (
                       <option key={pos.id} value={pos.id}>
                         {pos.title || pos.name}
                       </option>
@@ -926,7 +956,43 @@ export default function EmployeeManagementPage() {
                 />
               </div>
 
-              <div className="space-y-3 md:col-span-2 md:w-1/2 md:pr-6">
+              <div className="space-y-3">
+                <label className="block text-[#475569] font-medium text-[17px]">
+                  ที่อยู่ตามบัตรประชาชน
+                </label>
+                <textarea
+                  placeholder="กรอกที่อยู่ตามบัตรประชาชน"
+                  value={editingEmployee.idCardAddress}
+                  onChange={(e) =>
+                    setEditingEmployee({
+                      ...editingEmployee,
+                      idCardAddress: e.target.value,
+                    })
+                  }
+                  rows={3}
+                  className="w-full bg-[#f8fafc] border border-[#e2e8f0] px-5 py-3.5 rounded-xl text-[15px] focus:outline-hidden focus:ring-2 focus:ring-blue-100 transition-all text-slate-800 resize-none"
+                ></textarea>
+              </div>
+
+              <div className="space-y-3">
+                <label className="block text-[#475569] font-medium text-[17px]">
+                  ที่อยู่ปัจจุบัน
+                </label>
+                <textarea
+                  placeholder="กรอกที่อยู่ปัจจุบัน"
+                  value={editingEmployee.currentAddress}
+                  onChange={(e) =>
+                    setEditingEmployee({
+                      ...editingEmployee,
+                      currentAddress: e.target.value,
+                    })
+                  }
+                  rows={3}
+                  className="w-full bg-[#f8fafc] border border-[#e2e8f0] px-5 py-3.5 rounded-xl text-[15px] focus:outline-hidden focus:ring-2 focus:ring-blue-100 transition-all text-slate-800 resize-none"
+                ></textarea>
+              </div>
+
+              <div className="space-y-3 md:col-span-2 md:w-[calc(50%-1.5rem)]">
                 <label className="block text-[#475569] font-medium text-[17px]">
                   วันที่เริ่มทำงาน
                 </label>
@@ -948,10 +1014,10 @@ export default function EmployeeManagementPage() {
             </div>
 
             {/* Footer Buttons */}
-            <div className="flex justify-end items-center gap-4 mt-16 pb-2">
+            <div className="flex justify-end items-center gap-4 mt-10 pb-2">
               <button
                 onClick={() => setIsEditModalOpen(false)}
-                className="px-8 py-3.5 bg-[#f8fafc] dark:bg-slate-800 border border-[#e2e8f0] dark:border-slate-700 hover:bg-[#f1f5f9] dark:hover:bg-slate-700 text-[#0f172a] dark:text-slate-100 rounded-xl font-medium text-[17px] transition-colors cursor-pointer"
+                className="px-8 py-3.5 bg-[#f8fafc] border border-[#e2e8f0] hover:bg-[#f1f5f9] text-[#0f172a] rounded-xl font-medium text-[17px] transition-colors cursor-pointer"
               >
                 ยกเลิก
               </button>
@@ -998,7 +1064,7 @@ export default function EmployeeManagementPage() {
                       onClick={async () => {
                         try {
                           await hrApi.initializeLeaveBalances(
-                            selectedEmployeeBalances.id,
+                            selectedEmployeeBalances!.id,
                           );
                           Swal.fire({
                             icon: 'success',
@@ -1007,8 +1073,8 @@ export default function EmployeeManagementPage() {
                             timer: 1500,
                             showConfirmButton: false,
                           });
-                          handleOpenBalanceModal(selectedEmployeeBalances);
-                        } catch (e) {
+                          handleOpenBalanceModal(selectedEmployeeBalances!);
+                        } catch {
                           Swal.fire(
                             'ข้อผิดพลาด',
                             'ไม่สามารถสร้างข้อมูลวันลาได้',
@@ -1037,7 +1103,7 @@ export default function EmployeeManagementPage() {
                         if (result.isConfirmed) {
                           try {
                             await hrApi.resetLeaveBalances(
-                              selectedEmployeeBalances.id,
+                              selectedEmployeeBalances!.id,
                             );
                             Swal.fire({
                               icon: 'success',
@@ -1046,8 +1112,8 @@ export default function EmployeeManagementPage() {
                               timer: 1500,
                               showConfirmButton: false,
                             });
-                            handleOpenBalanceModal(selectedEmployeeBalances);
-                          } catch (e) {
+                            handleOpenBalanceModal(selectedEmployeeBalances!);
+                          } catch {
                             Swal.fire(
                               'ข้อผิดพลาด',
                               'ไม่สามารถทำรายการได้',
@@ -1110,7 +1176,7 @@ export default function EmployeeManagementPage() {
                                       const val = e.target.value;
                                       const numVal =
                                         val === ''
-                                          ? balance.totalDays
+                                          ? (balance.totalDays ?? 0)
                                           : Number(val);
                                       setEditedTotalBalances((prev) => ({
                                         ...prev,
@@ -1143,7 +1209,7 @@ export default function EmployeeManagementPage() {
                                       const val = e.target.value;
                                       const numVal =
                                         val === ''
-                                          ? balance.remainingDays
+                                          ? (balance.remainingDays ?? 0)
                                           : Number(val);
                                       setEditedRemainingBalances((prev) => ({
                                         ...prev,
@@ -1174,7 +1240,7 @@ export default function EmployeeManagementPage() {
             <div className="flex justify-end items-center gap-4 mt-8 pb-2">
               <button
                 onClick={() => setIsBalanceModalOpen(false)}
-                className="px-8 py-3.5 bg-[#f8fafc] dark:bg-slate-800 border border-[#e2e8f0] dark:border-slate-700 hover:bg-[#f1f5f9] dark:hover:bg-slate-700 text-[#0f172a] dark:text-slate-100 rounded-xl font-medium text-[17px] transition-colors cursor-pointer"
+                className="px-8 py-3.5 bg-[#f8fafc] border border-[#e2e8f0] hover:bg-[#f1f5f9] text-[#0f172a] rounded-xl font-medium text-[17px] transition-colors cursor-pointer"
               >
                 ยกเลิก
               </button>
@@ -1188,6 +1254,8 @@ export default function EmployeeManagementPage() {
           </div>
         </DialogContent>
       </Dialog>
+        </div>
+      </div>
     </div>
   );
 }

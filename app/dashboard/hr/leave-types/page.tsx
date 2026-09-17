@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { useLeaveType } from '@/hooks/useLeaveType';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import {
   Dialog,
@@ -17,6 +17,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import Swal from 'sweetalert2';
+import { getErrorMessage } from '@/lib/api/utils';
 import {
   Plus,
   Search,
@@ -121,11 +122,11 @@ export default function HRLeaveTypes() {
         });
       }
       setDialogOpen(false);
-    } catch (err: any) {
+    } catch (err) {
       Swal.fire({
         icon: 'error',
         title: 'เกิดข้อผิดพลาด',
-        text: err.response?.data?.message || 'ไม่สามารถบันทึกข้อมูลได้',
+        text: getErrorMessage(err, 'ไม่สามารถบันทึกข้อมูลได้'),
       });
     }
   };
@@ -156,7 +157,7 @@ export default function HRLeaveTypes() {
             timer: 1500,
             showConfirmButton: false,
           });
-        } catch (err) {
+        } catch {
           Swal.fire({
             icon: 'error',
             title: 'เกิดข้อผิดพลาด',
@@ -179,22 +180,26 @@ export default function HRLeaveTypes() {
   );
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6 bg-white dark:bg-slate-900 p-6 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800">
-        <div className="flex items-start gap-4">
-          <div className="p-3 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 rounded-xl shrink-0 mt-1 sm:mt-0">
-            <FileText className="w-6 h-6" />
-          </div>
-          <div>
-            <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
-              ประเภทการลา (Leave Policies)
-            </h1>
-            <p className="text-sm text-slate-500 dark:text-slate-400 mt-1.5">
-              ตั้งเกณฑ์โควตาการลาประจำปีของพนักงาน
-              กำหนดการบังคับแนบหลักฐานสำหรับแต่ละประเภท
-            </p>
-          </div>
+    <div className="min-h-[calc(100vh-4rem)] bg-[#E2E4E9] font-sans text-slate-800 flex flex-col">
+      {/* Top Banner */}
+      <div className="bg-white flex items-center gap-3 sm:gap-4 px-4 sm:px-8 py-3 sm:py-5 shadow-sm z-10 shrink-0">
+        <div className="w-9 h-9 sm:w-11 sm:h-11 bg-blue-100 text-blue-600 rounded-xl flex items-center justify-center shrink-0">
+          <FileText className="w-6 h-6" strokeWidth={2} />
         </div>
+        <div>
+          <h1 className="text-base sm:text-xl font-bold text-black tracking-tight">
+            ประเภทการลา (Leave Policies)
+          </h1>
+          <p className="text-xs text-gray-500 mt-1 font-medium">
+            ตั้งเกณฑ์โควตาการลาประจำปีของพนักงาน
+            กำหนดการบังคับแนบหลักฐานสำหรับแต่ละประเภท
+          </p>
+        </div>
+      </div>
+
+      <div className="flex-1 p-4 sm:p-6 md:p-8">
+        <div className="max-w-7xl mx-auto space-y-6">
+      <div className="flex justify-end">
         <button
           onClick={handleAddOpen}
           className="inline-flex items-center justify-center space-x-2 px-5 py-2.5 rounded-xl text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 cursor-pointer shadow-md shadow-indigo-500/20 transition-all shrink-0 w-full sm:w-auto"
@@ -233,7 +238,7 @@ export default function HRLeaveTypes() {
             </h3>
             <p className="text-sm text-slate-500 mb-6 max-w-sm">
               คุณยังไม่ได้เพิ่มประเภทการลาใดๆ ในระบบ กรุณาคลิกที่ปุ่ม
-              "เพิ่มประเภทการลา" ด้านบนเพื่อเริ่มต้น
+              &quot;เพิ่มประเภทการลา&quot; ด้านบนเพื่อเริ่มต้น
             </p>
             <button
               onClick={handleAddOpen}
@@ -334,17 +339,17 @@ export default function HRLeaveTypes() {
                     <td className="py-4 px-6 hidden sm:table-cell">
                       <div className="flex flex-col gap-1.5">
                         {lt.requiresCertificate && (
-                          <Badge className="bg-amber-100 dark:bg-amber-950/50 text-amber-700 dark:text-amber-300 hover:bg-amber-200 dark:hover:bg-amber-900/50 border-amber-200 dark:border-amber-800 w-max text-[10px]">
+                          <Badge className="bg-amber-100 text-amber-700 hover:bg-amber-200 border-amber-200 w-max text-[10px]">
                             บังคับแนบใบรับรองแพทย์
                           </Badge>
                         )}
                         {lt.isSpecial && (
-                          <Badge className="bg-rose-100 dark:bg-rose-950/50 text-rose-700 dark:text-rose-300 hover:bg-rose-200 dark:hover:bg-rose-900/50 border-rose-200 dark:border-rose-800 w-max text-[10px]">
+                          <Badge className="bg-rose-100 text-rose-700 hover:bg-rose-200 border-rose-200 w-max text-[10px]">
                             ส่งตรงให้ CEO อนุมัติ
                           </Badge>
                         )}
                         {!lt.requiresCertificate && !lt.isSpecial && (
-                          <span className="text-xs text-slate-400 dark:text-slate-500">-</span>
+                          <span className="text-xs text-slate-400">-</span>
                         )}
                       </div>
                     </td>
@@ -539,6 +544,8 @@ export default function HRLeaveTypes() {
           </form>
         </DialogContent>
       </Dialog>
+        </div>
+      </div>
     </div>
   );
 }

@@ -19,7 +19,7 @@ export const useNotification = () => {
     if (!silent) setIsLoading(true);
     try {
       const res = await notificationApi.getNotifications();
-      const rawData = res.data ?? (res as any);
+      const rawData = res.data ?? res;
       if (Array.isArray(rawData)) {
         setNotifications(rawData);
       }

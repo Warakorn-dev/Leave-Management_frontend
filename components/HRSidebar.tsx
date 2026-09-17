@@ -3,7 +3,9 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { LogOut, PieChart, FileEdit, Activity, BookOpen, Calendar, User, UserCog, Building, Briefcase, ListTodo, FileText, Settings, Menu, ChevronLeft, XCircle, FileCheck } from "lucide-react";
+import { LogOut, PieChart, FileEdit, Activity, BookOpen, Calendar, User, UserCog, Building, ListTodo, FileText, Settings, Menu, ChevronLeft, ChevronDown, Boxes, XCircle, FileCheck } from "lucide-react";
+
+type MenuLink = { name: string; href: string; icon: React.ComponentType<{ className?: string; strokeWidth?: number }> };
 
 export function HRSidebar({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = usePathname();
@@ -14,6 +16,7 @@ export function HRSidebar({ onNavigate }: { onNavigate?: () => void }) {
   const [department, setDepartment] = useState("");
   const [profilePic, setProfilePic] = useState<string | null>(null);
   const [isCollapsed, setIsCollapsed] = useState(true);
+  const [manageOpen, setManageOpen] = useState(false);
 
   // Start collapsed on mobile (<1024px), expanded on desktop
   useEffect(() => {
@@ -30,7 +33,6 @@ export function HRSidebar({ onNavigate }: { onNavigate?: () => void }) {
   }, []);
 
   useEffect(() => {
-    const userId = sessionStorage.getItem("userId");
     setUsername(sessionStorage.getItem("username") || "");
     const storedPic = sessionStorage.getItem("profilePic");
     if (storedPic) setProfilePic(storedPic);
@@ -80,7 +82,7 @@ export function HRSidebar({ onNavigate }: { onNavigate?: () => void }) {
 
   const isLeader = position.toLowerCase().includes('leader') || position.toLowerCase().includes('manager');
 
-  const menuItems = [
+  const topItems: MenuLink[] = [
     { name: "Dashboard", href: "/dashboard/hr/dashboard", icon: PieChart },
     { name: "สร้างคำขอลา", href: "/dashboard/hr/leave-request", icon: FileEdit },
     { name: "สถานะการลา", href: "/dashboard/hr/leave-status", icon: Activity },
@@ -89,15 +91,55 @@ export function HRSidebar({ onNavigate }: { onNavigate?: () => void }) {
     { name: "ตรวจสอบคำขอยกเลิกการลา", href: "/dashboard/hr/cancel-approval", icon: XCircle },
     ...(isLeader ? [{ name: "อนุมัติการลา (หัวหน้าแผนก)", href: "/dashboard/hr/dept-approve", icon: FileCheck }] : []),
     { name: "ปฏิทินวันลา", href: "/dashboard/hr/calendar", icon: Calendar },
-    { name: "จัดการข้อมูลพนักงาน", href: "/dashboard/hr/employees", icon: UserCog },
-    { name: "จัดการตำแหน่ง", href: "/dashboard/hr/organization", icon: Building },
+  ];
+
+  const manageGroup: { name: string; icon: typeof Boxes; children: MenuLink[] } = {
+    name: "จัดการข้อมูล",
+    icon: Boxes,
+    children: [
+      { name: "ข้อมูลพนักงาน", href: "/dashboard/hr/employees", icon: UserCog },
+      { name: "ตำแหน่งและแผนก", href: "/dashboard/hr/organization", icon: Building },
+      { name: "ประกาศบริษัท", href: "/dashboard/hr/announcements", icon: FileText },
+      { name: "วันหยุดบริษัท", href: "/dashboard/hr/holidays", icon: Calendar },
+    ],
+  };
+
+  const bottomItems: MenuLink[] = [
     { name: "ตั้งค่าสิทธิและกฎการลา", href: "/dashboard/hr/leave-types", icon: ListTodo },
-    { name: "จัดการประกาศบริษัท", href: "/dashboard/hr/announcements", icon: FileText },
-    { name: "จัดการวันหยุดบริษัท", href: "/dashboard/hr/holidays", icon: Calendar },
     { name: "รายงานการลางาน", href: "/dashboard/hr/reports", icon: PieChart },
     { name: "สรุปการลา", href: "/dashboard/hr/leave-summary", icon: Activity },
     { name: "ตั้งค่าผู้ใช้", href: "/dashboard/hr/settings", icon: Settings },
   ];
+
+  const isActive = (href: string) => pathname === href || pathname?.startsWith(href + '/');
+  const manageActive = manageGroup.children.some((c) => isActive(c.href));
+
+  // Auto-open the group when navigating to one of its pages
+  useEffect(() => {
+    if (manageActive) setManageOpen(true);
+  }, [manageActive]);
+
+  const renderLink = (item: MenuLink, opts: { child?: boolean } = {}) => {
+    const active = isActive(item.href);
+    return (
+      <Link
+        key={item.name}
+        href={item.href}
+        className={`flex items-center ${isCollapsed ? 'justify-center px-0' : 'gap-4 px-5'} ${opts.child ? 'py-2.5' : 'py-3.5'} rounded-xl transition-all relative overflow-hidden ${active
+            ? 'bg-white/10 text-white'
+            : 'text-white/60 hover:text-white hover:bg-white/5'
+          }`}
+        title={isCollapsed ? item.name : undefined}
+        onClick={onNavigate}
+      >
+        {active && (
+          <div className="absolute left-0 top-0 bottom-0 w-[5px] bg-blue-400 rounded-r-full shadow-[0_0_10px_rgba(96,165,250,0.5)]"></div>
+        )}
+        <item.icon className={`${opts.child ? 'w-[18px] h-[18px]' : 'w-[22px] h-[22px]'} shrink-0`} strokeWidth={2.5} />
+        {!isCollapsed && <span className={`font-semibold ${opts.child ? 'text-[13px]' : 'text-sm'} tracking-wide truncate`}>{item.name}</span>}
+      </Link>
+    );
+  };
 
   return (
     <aside
@@ -106,6 +148,7 @@ export function HRSidebar({ onNavigate }: { onNavigate?: () => void }) {
 
       {/* Logo + Hamburger */}
       <div className={`relative flex items-center border-b border-white/10 ${isCollapsed ? 'justify-center px-0 py-4' : 'justify-center px-4 py-4'}`}>
+        {/* eslint-disable-next-line @next/next/no-img-element -- small static logo, next/image adds no benefit here */}
         {!isCollapsed && <img src="/logo.png" alt="NID PROGRESS TECHNOLOGY" className="w-[110px] h-auto object-contain" />}
         <button
           onClick={() => setIsCollapsed(!isCollapsed)}
@@ -117,33 +160,79 @@ export function HRSidebar({ onNavigate }: { onNavigate?: () => void }) {
       </div>
 
 
-      {/* Navigation */}
-      <nav className="flex-1 px-4 space-y-3 overflow-y-auto mt-4 pb-6">
-        {menuItems.map((item) => {
-          const isExactActive = pathname === item.href || pathname?.startsWith(item.href + '/');
+      {/* User Profile */}
+      <div className={`px-5 py-4 ${isCollapsed ? 'hidden' : 'block'}`}>
+        <div className="bg-white/5 rounded-xl p-3 flex items-center gap-3 border border-white/10">
+          <div className="bg-zinc-500 rounded-full w-11 h-11 flex items-center justify-center shrink-0 overflow-hidden">
+            {profilePic ? (
+              // eslint-disable-next-line @next/next/no-img-element -- dynamic user-uploaded avatar; next/image needs a configured remote loader
+              <img src={profilePic} alt="Profile" className="w-full h-full object-cover" />
+            ) : (
+              <User className="w-5 h-5 text-white" />
+            )}
+          </div>
+          <div className="overflow-hidden flex-1 min-w-0">
+            <h3 className="font-bold text-[13px] truncate">{fullName || username}</h3>
+            {department && <p className="text-[10px] text-blue-300/80 mt-0.5 truncate">{department}</p>}
+            {position && <p className="text-[10px] text-zinc-400 truncate">{position}</p>}
+          </div>
+        </div>
+      </div>
 
-          return (
-            <Link
-              key={item.name}
-              href={item.href}
-              className={`flex items-center ${isCollapsed ? 'justify-center px-0' : 'gap-4 px-5'} py-3.5 rounded-xl transition-all relative overflow-hidden ${isExactActive
-                  ? 'bg-white/10 text-white'
-                  : 'text-white/60 hover:text-white hover:bg-white/5'
-                }`}
-              title={isCollapsed ? item.name : undefined}
-              onClick={onNavigate}
-            >
-              {isExactActive && (
-                <div className="absolute left-0 top-0 bottom-0 w-[5px] bg-blue-400 rounded-r-full shadow-[0_0_10px_rgba(96,165,250,0.5)]"></div>
-              )}
-              <item.icon className="w-[22px] h-[22px] shrink-0" strokeWidth={2.5} />
-              {!isCollapsed && <span className="font-semibold text-sm tracking-wide truncate">{item.name}</span>}
-            </Link>
-          );
-        })}
+      {/* Navigation */}
+      <nav className="flex-1 px-4 space-y-3 overflow-y-auto mt-2">
+        {topItems.map((item) => renderLink(item))}
+
+        {/* Group: จัดการข้อมูล */}
+        <div>
+          <button
+            onClick={() => {
+              if (isCollapsed) {
+                setIsCollapsed(false);
+                setManageOpen(true);
+              } else {
+                setManageOpen((o) => !o);
+              }
+            }}
+            className={`w-full flex items-center ${isCollapsed ? 'justify-center px-0' : 'gap-4 px-5'} py-3.5 rounded-xl transition-all relative overflow-hidden ${manageActive
+                ? 'bg-white/10 text-white'
+                : 'text-white/60 hover:text-white hover:bg-white/5'
+              }`}
+            title={isCollapsed ? manageGroup.name : undefined}
+          >
+            {manageActive && (
+              <div className="absolute left-0 top-0 bottom-0 w-[5px] bg-blue-400 rounded-r-full shadow-[0_0_10px_rgba(96,165,250,0.5)]"></div>
+            )}
+            <manageGroup.icon className="w-[22px] h-[22px] shrink-0" strokeWidth={2.5} />
+            {!isCollapsed && (
+              <>
+                <span className="font-semibold text-sm tracking-wide truncate flex-1 text-left">{manageGroup.name}</span>
+                <ChevronDown className={`w-4 h-4 shrink-0 transition-transform duration-200 ${manageOpen ? 'rotate-180' : ''}`} strokeWidth={2.5} />
+              </>
+            )}
+          </button>
+
+          {!isCollapsed && manageOpen && (
+            <div className="mt-1 ml-5 pl-3 border-l border-white/10 space-y-1">
+              {manageGroup.children.map((child) => renderLink(child, { child: true }))}
+            </div>
+          )}
+        </div>
+
+        {bottomItems.map((item) => renderLink(item))}
       </nav>
+
+      {/* Logout */}
+      <div className="p-5 mt-auto">
+        <button
+          onClick={handleLogout}
+          className={`w-full flex items-center ${isCollapsed ? 'justify-center' : 'justify-center gap-3'} bg-red-500/10 hover:bg-red-500/20 text-red-400 py-3.5 rounded-xl transition-colors font-semibold text-sm tracking-wide border border-red-500/20`}
+          title={isCollapsed ? "ออกจากระบบ" : undefined}
+        >
+          <LogOut className="w-5 h-5 shrink-0" strokeWidth={2.5} />
+          {!isCollapsed && <span>ออกจากระบบ</span>}
+        </button>
+      </div>
     </aside>
   );
 }
-
-

@@ -14,14 +14,14 @@ import {
   User,
   Calendar as CalendarIcon,
   Clock,
-  AlertCircle,
 } from 'lucide-react';
-import { getLeaveStatusText, resolveAssetUrl } from '@/lib/api/utils';
+import { getLeaveStatusText, resolveAssetUrl, getErrorMessage } from '@/lib/api/utils';
+import type { Leave } from '@/lib/api/types';
 
 const getToken = () =>
   typeof window !== 'undefined' ? sessionStorage.getItem('accessToken') : '';
 
-async function fetchPendingExecutive(): Promise<any[]> {
+async function fetchPendingExecutive(): Promise<Leave[]> {
   const res = await fetch('/api/ceo/pending', {
     headers: { Authorization: `Bearer ${getToken()}` },
   });
@@ -64,7 +64,7 @@ async function ceoReject(id: string, comment: string) {
 
 // ──────────────── helpers ────────────────
 
-function formatDateRange(leave: any) {
+function formatDateRange(leave: Leave) {
   try {
     const months = [
       'ม.ค.',
@@ -119,7 +119,7 @@ function formatDateRange(leave: any) {
   }
 }
 
-function mapLeave(r: any) {
+function mapLeave(r: Leave) {
   const emp = r.employee ?? {};
   return {
     ...r,
@@ -132,7 +132,7 @@ function mapLeave(r: any) {
         : 'EMP-000'),
     departmentName: emp.department?.name || '-',
     positionName: emp.position?.name || '-',
-    leaveTypeName: r.leaveType?.name || '-',
+    leaveTypeName: (typeof r.leaveType === 'object' ? r.leaveType?.name : r.leaveType) || '-',
     dateRangeStr: formatDateRange(r),
     approverReason: r.approvals?.[0]?.comment || null,
   };
@@ -141,13 +141,14 @@ function mapLeave(r: any) {
 // ──────────────── component ────────────────
 
 export default function CEOApproval() {
-  const { user } = useAuth();
-  const [leaves, setLeaves] = useState<any[]>([]);
+  useAuth();
+  const [leaves, setLeaves] = useState<ReturnType<typeof mapLeave>[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [filterMode, setFilterMode] = useState<'all' | 'thisMonth'>(
     'thisMonth',
   );
-  const [selectedLeave, setSelectedLeave] = useState<any | null>(null);
+  const [selectedLeave, setSelectedLeave] = useState<ReturnType<typeof mapLeave> | null>(null);
+  const [previewAttachment, setPreviewAttachment] = useState<{ url: string; isImage: boolean } | null>(null);
 
   const refetch = useCallback(async () => {
     setIsLoading(true);
@@ -182,7 +183,7 @@ export default function CEOApproval() {
     () =>
       leaves.reduce(
         (acc, l) => {
-          const t = l.leaveTypeName.split(' ')[0];
+          const t = (l.leaveTypeName || '').split(' ')[0];
           if (t) acc[t] = (acc[t] || 0) + 1;
           return acc;
         },
@@ -196,7 +197,7 @@ export default function CEOApproval() {
       .join(', ') || 'ไม่มี';
 
   // ── approve ──
-  const handleApprove = async (leave: any) => {
+  const handleApprove = async (leave: ReturnType<typeof mapLeave>) => {
     const result = await Swal.fire({
       title: 'ยืนยันการอนุมัติ',
       text: `อนุมัติคำขอลา ${leave.leaveTypeName} ของ ${leave.employeeName}?`,
@@ -218,13 +219,13 @@ export default function CEOApproval() {
         timer: 1500,
         showConfirmButton: false,
       });
-    } catch (err: any) {
-      Swal.fire({ icon: 'error', title: 'เกิดข้อผิดพลาด', text: err.message });
+    } catch (err) {
+      Swal.fire({ icon: 'error', title: 'เกิดข้อผิดพลาด', text: getErrorMessage(err) });
     }
   };
 
   // ── reject ──
-  const handleReject = async (leave: any) => {
+  const handleReject = async (leave: ReturnType<typeof mapLeave>) => {
     const { value: reason, isConfirmed } = await Swal.fire({
       title: 'ยืนยันการปฏิเสธ',
       html: `<p class="text-sm text-gray-600 mb-3">ปฏิเสธคำขอ <strong>${leave.leaveTypeName}</strong> ของ <strong>${leave.employeeName}</strong></p>`,
@@ -254,25 +255,30 @@ export default function CEOApproval() {
         timer: 1500,
         showConfirmButton: false,
       });
-    } catch (err: any) {
-      Swal.fire({ icon: 'error', title: 'เกิดข้อผิดพลาด', text: err.message });
+    } catch (err) {
+      Swal.fire({ icon: 'error', title: 'เกิดข้อผิดพลาด', text: getErrorMessage(err) });
     }
   };
 
   return (
-    <div className="space-y-6 max-w-[1200px] mx-auto pb-10">
-      {/* Header */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white dark:bg-slate-900 p-6 rounded-3xl shadow-sm border border-slate-100 dark:border-slate-800">
+    <div className="min-h-[calc(100vh-4rem)] bg-[#E2E4E9] font-sans text-slate-800 flex flex-col">
+      {/* Top Banner */}
+      <div className="bg-white flex items-center gap-3 sm:gap-4 px-4 sm:px-8 py-3 sm:py-5 shadow-sm z-10 shrink-0">
+        <div className="w-9 h-9 sm:w-11 sm:h-11 bg-blue-100 text-blue-600 rounded-xl flex items-center justify-center shrink-0">
+          <CheckCircle2 className="w-6 h-6" strokeWidth={2} />
+        </div>
         <div>
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
-            <CheckCircle2 className="w-6 h-6 text-indigo-600" />
+          <h1 className="text-base sm:text-xl font-bold text-black tracking-tight">
             รายการคำขออนุมัติการลา (CEO)
           </h1>
-          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+          <p className="text-xs text-gray-500 mt-1 font-medium">
             อนุมัติหรือปฏิเสธคำขอลาที่ต้องผ่านการพิจารณาจากผู้บริหาร
           </p>
         </div>
       </div>
+
+      <div className="flex-1 p-4 sm:p-6 md:p-8">
+        <div className="space-y-6 max-w-[1200px] mx-auto pb-4">
 
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
@@ -331,7 +337,7 @@ export default function CEOApproval() {
           <div className="relative">
             <select
               value={filterMode}
-              onChange={(e) => setFilterMode(e.target.value as any)}
+              onChange={(e) => setFilterMode(e.target.value as 'all' | 'thisMonth')}
               className="appearance-none bg-slate-50 dark:bg-slate-800 border-none px-4 py-2.5 pr-10 rounded-2xl text-sm focus:ring-2 focus:ring-indigo-500 focus:bg-white transition-colors font-medium text-slate-700 dark:text-slate-200 cursor-pointer"
             >
               <option value="thisMonth">เดือนนี้</option>
@@ -465,6 +471,7 @@ export default function CEOApproval() {
                   <div className="border border-gray-200 rounded-xl p-5 flex gap-4">
                     <div className="w-10 h-10 rounded-full bg-fuchsia-100 border border-fuchsia-200 text-fuchsia-500 flex items-center justify-center shrink-0 overflow-hidden">
                       {leave.employee?.user?.avatarUrl ? (
+                        // eslint-disable-next-line @next/next/no-img-element -- dynamic user-uploaded avatar; next/image needs a configured remote loader
                         <img
                           src={resolveAssetUrl(leave.employee.user.avatarUrl)}
                           alt="Avatar"
@@ -497,12 +504,7 @@ export default function CEOApproval() {
                           </span>
                           {leave.departmentName} | {leave.positionName}
                         </p>
-                        <p>
-                          <span className="font-bold min-w-[90px] inline-block">
-                            บทบาท:
-                          </span>
-                          {leave.employee?.user?.role?.name || '-'}
-                        </p>
+                        
                       </div>
                     </div>
                   </div>
@@ -549,19 +551,27 @@ export default function CEOApproval() {
                                 ? 'ครึ่งวันบ่าย'
                                 : 'เต็มวัน'}
                         </p>
-                        {leave.leaveType?.isSpecial && (
-                          <p className="flex items-center gap-2 text-purple-600">
-                            <AlertCircle className="w-4 h-4 shrink-0" />
-                            <span className="font-bold">คำขอประเภทพิเศษ</span>
-                          </p>
-                        )}
-                        {leave.attachments?.length > 0 && (
-                          <p>
-                            <span className="font-bold">เอกสารแนบ:</span>{' '}
-                            <span className="text-emerald-600 font-bold">
-                              มีเอกสาร {leave.attachments.length} ไฟล์
-                            </span>
-                          </p>
+
+                        {(leave.attachments?.length ?? 0) > 0 && (
+                          <div className="flex gap-2">
+                            <span className="font-bold whitespace-nowrap">เอกสารแนบ:</span>
+                            <div className="flex flex-col gap-1">
+                              {(leave.attachments ?? []).map((att, idx: number) => {
+                                const isData = att.filePath?.startsWith('data:');
+                                const fileSrc = isData ? att.filePath : att.filePath?.startsWith('http') ? att.filePath : `/${att.filePath?.replace(/^\/+/, '')}`;
+                                const isImage = att.fileType?.startsWith('image/') || (!isData && att.filePath?.match(/\.(jpeg|jpg|gif|png)$/i));
+                                return (
+                                  <button
+                                    key={idx}
+                                    onClick={() => setPreviewAttachment({ url: fileSrc || '', isImage: !!isImage })}
+                                    className="text-emerald-600 font-bold hover:underline text-left text-[14px]"
+                                  >
+                                    ดูเอกสารแนบ {(leave.attachments?.length ?? 0) > 1 ? `(${idx + 1})` : ''}
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          </div>
                         )}
                       </div>
                     </div>
@@ -587,7 +597,7 @@ export default function CEOApproval() {
                         ขั้นตอนการอนุมัติที่ผ่านมา
                       </h3>
                       <div className="space-y-3">
-                        {approvals.map((ap: any, i: number) => (
+                        {approvals.map((ap, i: number) => (
                           <div
                             key={ap.id || i}
                             className="flex items-start gap-3"
@@ -597,7 +607,7 @@ export default function CEOApproval() {
                             />
                             <div className="flex-1 bg-gray-50 rounded-xl p-3 text-[13px]">
                               <p className="font-bold text-gray-700">
-                                {getLeaveStatusText(ap.status)}
+                                {getLeaveStatusText(ap.status || '')}
                               </p>
                               {ap.comment && (
                                 <p className="text-gray-500 mt-1">
@@ -605,7 +615,7 @@ export default function CEOApproval() {
                                 </p>
                               )}
                               <p className="text-gray-400 text-[12px] mt-1">
-                                {new Date(ap.createdAt).toLocaleString('th-TH')}
+                                {ap.createdAt ? new Date(ap.createdAt).toLocaleString('th-TH') : ''}
                               </p>
                             </div>
                           </div>
@@ -646,6 +656,58 @@ export default function CEOApproval() {
             </div>
           );
         })()}
+
+      {/* Preview Attachment Modal */}
+      {previewAttachment && (
+        <div className="fixed inset-0 z-[150] bg-black/60 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl w-full max-w-4xl flex flex-col overflow-hidden max-h-[90vh] shadow-2xl relative">
+            {/* Header */}
+            <div className="flex justify-between items-center px-6 py-4 border-b border-gray-100">
+              <h2 className="text-[16px] font-bold text-gray-800">เอกสารแนบ</h2>
+              <button
+                onClick={() => setPreviewAttachment(null)}
+                className="w-8 h-8 flex items-center justify-center bg-gray-100 hover:bg-gray-200 text-gray-500 rounded-full transition-colors"
+              >
+                <X className="w-5 h-5" strokeWidth={2.5} />
+              </button>
+            </div>
+
+            {/* Content */}
+            <div className="p-6 overflow-auto bg-gray-50/50 flex-1 flex flex-col items-center">
+              {previewAttachment.isImage ? (
+                <div className="relative w-full max-w-3xl flex justify-center">
+                  {/* eslint-disable-next-line @next/next/no-img-element -- dynamic user-uploaded attachment preview; next/image needs a configured remote loader */}
+                  <img
+                    src={previewAttachment.url}
+                    alt="Attachment"
+                    className="max-w-full h-auto max-h-[70vh] object-contain rounded-lg border border-gray-200 shadow-sm"
+                  />
+                </div>
+              ) : (
+                <div className="w-full h-full min-h-[60vh] flex flex-col border border-gray-200 rounded-lg overflow-hidden shadow-sm bg-white">
+                  <iframe
+                    src={previewAttachment.url}
+                    className="w-full h-full flex-1"
+                    title="Attachment Preview"
+                  />
+                  <div className="p-3 bg-gray-50 border-t border-gray-200 flex justify-end">
+                    <a
+                      href={previewAttachment.url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold rounded-lg transition-colors shadow-sm"
+                    >
+                      เปิดไฟล์ในแท็บใหม่
+                    </a>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+        </div>
+      </div>
     </div>
   );
 }

@@ -1,25 +1,38 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useLeave } from '@/hooks/useLeave';
 import { useLeaveBalance } from '@/hooks/useLeaveBalance';
 import { useRouter } from 'next/navigation';
 import {
-  Mail,
-  Bell,
-  Settings,
-  Search,
   Check,
   X,
-  Building,
-  User,
   Upload,
+  FilePlus2,
 } from 'lucide-react';
 import { DatePicker } from '@/components/DateAndTime';
 import { calculateLeaveDays } from '@/lib/api/store';
 import { LeaveTimePicker } from '@/components/LeaveTimePicker';
 import { userApi, uploadApi } from '@/lib/api';
 import { useLeaveType } from '@/hooks/useLeaveType';
+import { LeaveDayAvailabilityPreview } from '@/components/LeaveDayAvailabilityPreview';
+import { buildTakenMap, isDayUnavailable } from '@/lib/leavePortions';
+import type { CreateLeavePayload } from '@/hooks/useLeave';
+import { getErrorMessage } from '@/lib/api/utils';
+
+/** DatePicker onChange can hand back a dayjs-like object or a plain date string. */
+function formatPickerValue(val: unknown): string {
+  if (val && typeof val === 'object') {
+    const dayjsLike = val as { format?: (f: string) => string };
+    if (typeof dayjsLike.format === 'function') {
+      return dayjsLike.format('YYYY-MM-DD');
+    }
+  }
+  if (typeof val === 'string') {
+    return val.substring(0, 10);
+  }
+  return '';
+}
 
 export default function RequestLeavePage() {
   const [type, setType] = useState('');
@@ -42,11 +55,11 @@ export default function RequestLeavePage() {
   const [department, setDepartment] = useState('');
   const [position, setPosition] = useState('');
   const [attachmentFile, setAttachmentFile] = useState<File | null>(null);
-  const [attachment, setAttachment] = useState<string | null>(null);
   const [attachmentName, setAttachmentName] = useState<string | null>(null);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const [showErrorModal, setShowErrorModal] = useState(false);
+  const [hasRangeConflict, setHasRangeConflict] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const router = useRouter();
 
@@ -60,9 +73,9 @@ export default function RequestLeavePage() {
   const { data: holidaysData = [] } = useHolidaysQuery();
   const { data: myLeaves = [] } = useLeavesQuery();
 
-  const combinedLeaveTypes = allLeaveTypes.map((lt: any) => {
+  const combinedLeaveTypes = allLeaveTypes.map((lt) => {
     const balance = balances.find(
-      (b: any) => b.leaveTypeId === lt.id || b.leaveType?.id === lt.id,
+      (b) => b.leaveTypeId === lt.id || b.leaveType?.id === lt.id,
     );
     if (balance) {
       return balance;
@@ -77,39 +90,17 @@ export default function RequestLeavePage() {
     };
   });
 
-  const isDateDisabled = (date: any) => {
-    if (!date) return false;
-    let checkDateStr = '';
-    if (typeof date.isValid === 'function' && date.isValid()) {
-      checkDateStr = date.format('YYYY-MM-DD');
-    } else if (date instanceof Date) {
-      const d = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
-      checkDateStr = d.toISOString().split('T')[0];
-    } else {
-      return false;
-    }
+  const currentUserId =
+    typeof window !== 'undefined' ? sessionStorage.getItem('userId') : '';
 
-    return myLeaves.some((leave: any) => {
-      if (
-        ['REJECTED', 'Rejected', 'CANCELLED', 'Cancelled'].includes(
-          leave.status,
-        )
-      )
-        return false;
-      const start = new Date(leave.startDate);
-      const startStr = new Date(
-        start.getTime() - start.getTimezoneOffset() * 60000,
-      )
-        .toISOString()
-        .split('T')[0];
-      const end = new Date(leave.endDate);
-      const endStr = new Date(end.getTime() - end.getTimezoneOffset() * 60000)
-        .toISOString()
-        .split('T')[0];
+  const takenMap = useMemo(
+    () => buildTakenMap(Array.isArray(myLeaves) ? myLeaves : [], currentUserId),
+    [myLeaves, currentUserId],
+  );
 
-      return checkDateStr >= startStr && checkDateStr <= endStr;
-    });
-  };
+  // Disable a day only when there is no room left for the chosen mode/period.
+  const isDateDisabled = (date: unknown) =>
+    isDayUnavailable(date, leaveMode, period, takenMap);
 
   useEffect(() => {
     const fetchUserProfile = async () => {
@@ -155,12 +146,6 @@ export default function RequestLeavePage() {
       }
       setAttachmentFile(file);
       setAttachmentName(file.name);
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        const base64 = event.target?.result as string;
-        setAttachment(base64);
-      };
-      reader.readAsDataURL(file);
     }
   };
 
@@ -191,7 +176,7 @@ export default function RequestLeavePage() {
 
       const [startH, startM] = startTime.split(':').map(Number);
       const [endH, endM] = endTime.split(':').map(Number);
-      let diffMinutes = endH * 60 + endM - (startH * 60 + startM);
+      const diffMinutes = endH * 60 + endM - (startH * 60 + startM);
       if (diffMinutes <= 0) {
         setErrorMsg('เวลาสิ้นสุดต้องมากกว่าเวลาเริ่มลา');
         setShowErrorModal(true);
@@ -210,6 +195,13 @@ export default function RequestLeavePage() {
       }
       if (new Date(startDate) > new Date(endDate)) {
         setErrorMsg('วันที่สิ้นสุดต้องมากกว่าหรือเท่ากับวันที่เริ่มต้น');
+        setShowErrorModal(true);
+        return;
+      }
+      if (hasRangeConflict) {
+        setErrorMsg(
+          'บางวันในช่วงที่เลือกทับซ้อนกับการลาเดิมของคุณ กรุณาปรับช่วงวันที่ หรือเปลี่ยนรูปแบบการลาให้ตรงกับช่วงเวลาที่ยังว่าง (ดูรายละเอียดรายวันในแบบฟอร์ม)',
+        );
         setShowErrorModal(true);
         return;
       }
@@ -244,10 +236,10 @@ export default function RequestLeavePage() {
     if (isSubmitting) return;
     setIsSubmitting(true);
     try {
-      const payload: any = {
+      const payload: CreateLeavePayload = {
         leaveTypeId: type,
-        leaveMode,
         reason,
+        leaveMode,
       };
 
       if (leaveMode === 'hourly') {
@@ -282,12 +274,9 @@ export default function RequestLeavePage() {
           formData.append('file', attachmentFile);
           formData.append('leaveRequestId', leaveRequestId);
           await uploadApi.uploadFile(formData);
-        } catch (uploadErr: any) {
+        } catch (uploadErr) {
           console.error('File upload failed:', uploadErr);
-          const uploadMsg =
-            uploadErr?.response?.data?.message ||
-            uploadErr?.message ||
-            'ไม่สามารถอัปโหลดไฟล์แนบได้';
+          const uploadMsg = getErrorMessage(uploadErr, 'ไม่สามารถอัปโหลดไฟล์แนบได้');
           setShowConfirmModal(false);
           setErrorMsg(
             `ส่งคำขอลาสำเร็จ แต่อัปโหลดไฟล์แนบไม่สำเร็จ: ${uploadMsg}`,
@@ -300,9 +289,9 @@ export default function RequestLeavePage() {
 
       setShowConfirmModal(false);
       router.push('/dashboard/hr/leave-status');
-    } catch (err: any) {
+    } catch (err) {
       setShowConfirmModal(false);
-      setErrorMsg(err.message || 'ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้');
+      setErrorMsg(getErrorMessage(err, 'ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้'));
       setShowErrorModal(true);
     } finally {
       setIsSubmitting(false);
@@ -312,9 +301,12 @@ export default function RequestLeavePage() {
   return (
     <div className="min-h-[calc(100vh-4rem)] bg-[#E2E4E9] font-sans text-slate-800 flex flex-col">
       {/* Top Banner */}
-      <div className="bg-white flex items-center justify-between px-8 py-5 shadow-sm z-10">
+      <div className="bg-white flex items-center gap-3 sm:gap-4 px-4 sm:px-8 py-3 sm:py-5 shadow-sm z-10 shrink-0">
+        <div className="w-9 h-9 sm:w-11 sm:h-11 bg-blue-100 text-blue-600 rounded-xl flex items-center justify-center shrink-0">
+          <FilePlus2 className="w-6 h-6" strokeWidth={2} />
+        </div>
         <div>
-          <h1 className="text-xl font-bold text-black tracking-tight">
+          <h1 className="text-base sm:text-xl font-bold text-black tracking-tight">
             แบบฟอร์มยื่นลา (Leave Request)
           </h1>
           <p className="text-xs text-gray-500 mt-1 font-medium">
@@ -324,8 +316,8 @@ export default function RequestLeavePage() {
       </div>
 
       {/* Main Content Container */}
-      <div className="flex-1 p-6 md:p-8">
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8 max-w-[1000px] mx-auto animate-in fade-in slide-in-from-bottom-4 duration-500">
+      <div className="flex-1 p-4 sm:p-6 md:p-8">
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-8 max-w-[1000px] mx-auto animate-in fade-in slide-in-from-bottom-4 duration-500">
           {/* User Info Box */}
           <div className="bg-[#F4F5F7] rounded-xl p-6 flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8">
             <div>
@@ -363,59 +355,28 @@ export default function RequestLeavePage() {
                     -- กรุณาเลือกประเภทการลา --
                   </option>
                   {[...combinedLeaveTypes]
-                    .sort((a: any, b: any) => {
+                    .sort((a, b) => {
                       const getOrder = (name: string) => {
                         if (name.includes('ลาป่วย')) return 1;
                         if (name.includes('ลากิจ')) return 2;
                         if (name.includes('พักผ่อน')) return 3;
                         return 99;
                       };
-                      const orderA = getOrder(a.leaveType.name);
-                      const orderB = getOrder(b.leaveType.name);
+                      const orderA = getOrder(a.leaveType?.name || '');
+                      const orderB = getOrder(b.leaveType?.name || '');
                       if (orderA !== orderB) return orderA - orderB;
-                      return a.leaveType.name.localeCompare(
-                        b.leaveType.name,
+                      return (a.leaveType?.name || '').localeCompare(
+                        b.leaveType?.name || '',
                         'th',
                       );
                     })
-                    .map((b: any) => {
-                      const isOutOfQuota = b.effectiveRemainingDays <= 0;
-
-                      let isTenureNotMet = false;
-                      const requiredTenure =
-                        b.leaveType.name.includes('พักร้อน') ||
-                        b.leaveType.name.includes('พักผ่อน')
-                          ? 365
-                          : b.leaveType.minTenureDays;
-
-                      if (requiredTenure > 0 && b.employeeHireDate) {
-                        const hireDate = new Date(b.employeeHireDate);
-                        const diffMs =
-                          new Date().getTime() - hireDate.getTime();
-                        const diffDays = diffMs / (1000 * 60 * 60 * 24);
-                        if (diffDays < requiredTenure) {
-                          isTenureNotMet = true;
-                        }
-                      }
-
-                      const isDisabled = isOutOfQuota || isTenureNotMet;
-                      let label = `${b.leaveType.name} `;
-                      if (isTenureNotMet) {
-                        label += `(อายุงานไม่ครบ ${requiredTenure >= 365 ? (requiredTenure / 365).toFixed(0) + ' ปี' : requiredTenure + ' วัน'})`;
-                      } else if (isOutOfQuota) {
-                        label += `(หมดโควต้า)`;
-                      } else {
-                        const pendingStr =
-                          b.pendingDays > 0
-                            ? ` + รออนุมัติ ${b.pendingDays} วัน`
-                            : '';
-                        label += `(เหลือ ${b.effectiveRemainingDays} วัน${pendingStr})`;
-                      }
+                    .map((b) => {
+                      const isOutOfQuota = (b.effectiveRemainingDays ?? 0) <= 0;
 
                       return (
                         <option
-                          key={b.leaveType.id}
-                          value={b.leaveType.id}
+                          key={b.leaveType?.id}
+                          value={b.leaveType?.id}
                           disabled={isOutOfQuota}
                           className={
                             isOutOfQuota
@@ -423,10 +384,10 @@ export default function RequestLeavePage() {
                               : 'text-gray-800'
                           }
                         >
-                          {b.leaveType.name}{' '}
+                          {b.leaveType?.name}{' '}
                           {isOutOfQuota
                             ? '(หมดโควต้า)'
-                            : b.remainingDays <= 0
+                            : (b.remainingDays ?? 0) <= 0
                               ? '(ใช้เกินโควต้า)'
                               : `(เหลือ ${b.remainingDays} วัน)`}
                         </option>
@@ -486,18 +447,8 @@ export default function RequestLeavePage() {
                     </label>
                     <DatePicker
                       value={leaveDate || null}
-                      onChange={(val: any) => {
-                        if (
-                          val &&
-                          typeof val === 'object' &&
-                          typeof val.format === 'function'
-                        ) {
-                          setLeaveDate(val.format('YYYY-MM-DD'));
-                        } else if (typeof val === 'string') {
-                          setLeaveDate(val.substring(0, 10));
-                        } else {
-                          setLeaveDate('');
-                        }
+                      onChange={(val: unknown) => {
+                        setLeaveDate(formatPickerValue(val));
                       }}
                       shouldDisableDate={isDateDisabled}
                       placeholderText="วว/ดด/ปปปป"
@@ -520,18 +471,8 @@ export default function RequestLeavePage() {
                     </label>
                     <DatePicker
                       value={startDate || null}
-                      onChange={(val: any) => {
-                        if (
-                          val &&
-                          typeof val === 'object' &&
-                          typeof val.format === 'function'
-                        ) {
-                          setStartDate(val.format('YYYY-MM-DD'));
-                        } else if (typeof val === 'string') {
-                          setStartDate(val.substring(0, 10));
-                        } else {
-                          setStartDate('');
-                        }
+                      onChange={(val: unknown) => {
+                        setStartDate(formatPickerValue(val));
                       }}
                       shouldDisableDate={isDateDisabled}
                       placeholderText="วว/ดด/ปปปป"
@@ -570,23 +511,23 @@ export default function RequestLeavePage() {
                     <DatePicker
                       value={endDate || null}
                       minDate={startDate ? startDate : undefined}
-                      onChange={(val: any) => {
-                        if (
-                          val &&
-                          typeof val === 'object' &&
-                          typeof val.format === 'function'
-                        ) {
-                          setEndDate(val.format('YYYY-MM-DD'));
-                        } else if (typeof val === 'string') {
-                          setEndDate(val.substring(0, 10));
-                        } else {
-                          setEndDate('');
-                        }
+                      onChange={(val: unknown) => {
+                        setEndDate(formatPickerValue(val));
                       }}
                       shouldDisableDate={isDateDisabled}
                       placeholderText="วว/ดด/ปปปป"
                     />
                   </div>
+                  <LeaveDayAvailabilityPreview
+                    startDate={startDate}
+                    endDate={endDate}
+                    leaveMode={leaveMode}
+                    period={leaveMode === 'half_day' ? period : 'full'}
+                    leaves={Array.isArray(myLeaves) ? myLeaves : []}
+                    currentUserId={currentUserId}
+                    holidays={holidaysData}
+                    onConflictChange={setHasRangeConflict}
+                  />
                 </>
               )}
             </div>
@@ -623,7 +564,6 @@ export default function RequestLeavePage() {
                       type="button"
                       onClick={(e) => {
                         e.stopPropagation();
-                        setAttachment(null);
                         setAttachmentName(null);
                         setAttachmentFile(null);
                       }}

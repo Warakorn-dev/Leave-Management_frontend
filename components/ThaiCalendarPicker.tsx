@@ -160,7 +160,7 @@ export function ThaiDatePicker({
   const { data: holidays = [] } = useHolidaysQuery();
   const { data: allLeaves = [] } = useLeavesQuery();
   const userId = typeof window !== 'undefined' ? sessionStorage.getItem('userId') : null;
-  const myLeaves = useMemo(() => allLeaves.filter((l: any) => 
+  const myLeaves = useMemo(() => allLeaves.filter((l) =>
     String(l.userId) === String(userId) || String(l.employee?.userId) === String(userId)
   ), [allLeaves, userId]);
 
@@ -282,10 +282,10 @@ export function ThaiDatePicker({
               const cellTime = new Date(c.year, c.month, c.day).getTime();
               const isBeforeMin = minDateNorm !== null && cellTime < minDateNorm;
               const isAfterMax = maxDateNorm !== null && cellTime > maxDateNorm;
-              const isHoliday = !isPlain && holidays.some((h: any) => h.date && h.date.split('T')[0] === c.dateStr);
-              
+              const isHoliday = !isPlain && holidays.some((h) => h.date && h.date.split('T')[0] === c.dateStr);
+
               // Check if date overlaps with existing leave
-              const isLeave = !isPlain && myLeaves.some((l: any) => {
+              const isLeave = !isPlain && myLeaves.some((l) => {
                 if (['REJECTED', 'Rejected', 'CANCELLED', 'Cancelled'].includes(l.status)) return false;
                 if (!l.startDate || !l.endDate) return false;
                 const s = new Date(l.startDate);
@@ -307,13 +307,13 @@ export function ThaiDatePicker({
                     setOpen(false);
                   }}
                   className={[
-                    "h-9 flex items-center justify-center text-[13px] rounded transition-all font-medium",
-                    (isBeforeMin || isAfterMax) ? "text-gray-300 dark:text-slate-600 bg-gray-50 dark:bg-slate-800/50 cursor-not-allowed" : "",
-                    isLeave ? "bg-orange-100 dark:bg-orange-950/60 text-orange-600 dark:text-orange-300 font-bold cursor-not-allowed border border-orange-200 dark:border-orange-800/60" : "",
-                    (!c.isCurrentMonth && !isBeforeMin && !isAfterMax && !isLeave ? "text-gray-300 dark:text-slate-600" : ""),
-                    c.isCurrentMonth && !isSel && !isDisabled && !isHoliday ? "text-gray-800 dark:text-slate-100 hover:bg-blue-50 dark:hover:bg-blue-900/40" : "",
-                    c.isCurrentMonth && !isSel && !isDisabled && isHoliday ? "text-red-600 dark:text-red-400 font-bold hover:bg-red-50 dark:hover:bg-red-950/40" : "",
-                    c.isToday && !isSel && !isDisabled ? "border border-blue-500 dark:border-blue-400 font-bold text-blue-600 dark:text-blue-400" : "",
+                    "h-9 flex items-center justify-center text-[13px] rounded transition-all",
+                    (isBeforeMin || isAfterMax) ? "text-gray-300 bg-gray-50 cursor-not-allowed" : "",
+                    isLeave ? "bg-orange-100 text-orange-600 font-bold cursor-not-allowed border border-orange-200" : "",
+                    (!c.isCurrentMonth && !isBeforeMin && !isAfterMax && !isLeave ? "text-gray-300" : ""),
+                    c.isCurrentMonth && !isSel && !isDisabled && !isHoliday ? "text-gray-800 hover:bg-blue-50" : "",
+                    c.isCurrentMonth && !isSel && !isDisabled && isHoliday ? "text-red-600 font-bold hover:bg-red-50" : "",
+                    c.isToday && !isSel && !isDisabled ? "border border-blue-500 font-bold text-blue-600" : "",
                     isSel && !isDisabled ? "bg-blue-600 text-white font-bold shadow-sm" : "",
                   ].filter(Boolean).join(" ")}
                 >

@@ -5,12 +5,8 @@ import Link from 'next/link';
 import { useAuth } from '@/context/AuthContext';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
-  User,
   CheckCircle2,
   Clock,
-  MapPin,
-  AlertCircle,
-  CalendarDays,
   Plus,
   Paperclip,
   XCircle,
@@ -25,11 +21,7 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from 'recharts';
-import {
-  useDashboardStats,
-  useAnnouncements,
-  useActivities,
-} from '@/hooks/useDashboard';
+import { useDashboardStats } from '@/hooks/useDashboard';
 import { useLeaveBalance } from '@/hooks/useLeaveBalance';
 import { previewAttachment } from '@/lib/api/attachmentPreview';
 
@@ -56,9 +48,9 @@ export default function HRPersonalDashboard() {
 
   if (!user || !isMounted || isLoading)
     return (
-      <div className="p-8 space-y-4">
+      <div className="p-4 sm:p-8 space-y-4">
         <Skeleton className="h-32 w-full rounded-2xl" />
-        <div className="grid grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <Skeleton className="h-24" />
           <Skeleton className="h-24" />
           <Skeleton className="h-24" />
@@ -70,18 +62,18 @@ export default function HRPersonalDashboard() {
   const data = rawData?.data || rawData || {};
 
   const vacationBal = Array.isArray(balances)
-    ? balances.find(
-        (b: any) =>
+    ? (balances as { leaveType?: { name?: string }; remainingDays?: number }[]).find(
+        (b) =>
           b.leaveType?.name?.includes('พักร้อน') ||
           b.leaveType?.name?.includes('พักผ่อน'),
       )
     : null;
 
-  let remainingVacation =
+  const remainingVacation =
     data?.remainingVacation ?? vacationBal?.remainingDays ?? 0;
-  let personalPending = data?.pendingApprovals ?? 0;
-  let personalApproved = data?.approvedThisYear ?? 0;
-  let personalRejected = data?.rejectedRequests ?? 0;
+  const personalPending = data?.pendingApprovals ?? 0;
+  const personalApproved = data?.approvedThisYear ?? 0;
+  const personalRejected = data?.rejectedRequests ?? 0;
 
   const chartData = data?.chartData || [];
   const announcements = data?.announcements || [];
@@ -289,19 +281,19 @@ export default function HRPersonalDashboard() {
           <div className="space-y-4 flex-1 overflow-y-auto max-h-[250px]">
             {announcements &&
             announcements.filter(
-              (ann: any) =>
-                new Date(ann.createdAt).getFullYear() === announcementYear,
+              (ann) =>
+                new Date(ann.createdAt || 0).getFullYear() === announcementYear,
             ).length > 0 ? (
               [...announcements]
                 .filter(
-                  (ann: any) =>
-                    new Date(ann.createdAt).getFullYear() === announcementYear,
+                  (ann) =>
+                    new Date(ann.createdAt || 0).getFullYear() === announcementYear,
                 )
-                .sort((a: any, b: any) => {
+                .sort((a, b) => {
                   if (a.isImportant === b.isImportant) return 0;
                   return a.isImportant ? -1 : 1;
                 })
-                .map((ann: any, idx: number) => (
+                .map((ann, idx: number) => (
                   <div
                     key={idx}
                     className={`p-4 rounded-2xl border transition-colors cursor-pointer relative overflow-hidden ${ann.isImportant ? 'bg-blue-500/20 border-blue-400/50 hover:bg-blue-500/30' : 'bg-white/10 border-white/5 hover:bg-white/15'}`}
@@ -325,8 +317,8 @@ export default function HRPersonalDashboard() {
                         onClick={(e) =>
                           previewAttachment(
                             e,
-                            ann.attachmentData,
-                            ann.attachmentName,
+                            ann.attachmentData || '',
+                            ann.attachmentName || '',
                           )
                         }
                       >
@@ -353,7 +345,7 @@ export default function HRPersonalDashboard() {
                           <polyline points="12 6 12 12 16 14" />
                         </svg>
                         {ann.createdAt
-                          ? new Date(ann.createdAt).toLocaleDateString(
+                          ? new Date(ann.createdAt || 0).toLocaleDateString(
                               'th-TH',
                               {
                                 year: 'numeric',
@@ -386,7 +378,7 @@ export default function HRPersonalDashboard() {
               <>
                 <div className="absolute left-2.5 top-2.5 bottom-2.5 w-px bg-slate-200 dark:bg-slate-700" />
                 <div className="space-y-6 relative z-10">
-                  {activities.map((act: any, idx: number) => (
+                  {activities.map((act, idx: number) => (
                     <div key={idx} className="flex gap-4">
                       <div
                         className={`w-5 h-5 rounded-full ${act.color || 'bg-blue-500'} ring-4 ring-white dark:ring-slate-900 flex-shrink-0 mt-0.5`}

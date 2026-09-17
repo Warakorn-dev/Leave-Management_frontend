@@ -2,20 +2,31 @@
 
 import { useState, useEffect } from "react";
 import { useLeave } from "@/hooks/useLeave";
-import { Calendar as CalendarIcon, X, User, Check, Clock, AlertTriangle } from "lucide-react";
-import { isSameYearMonth } from "@/lib/api/utils";
+import { Calendar as CalendarIcon, X, Check, AlertTriangle } from "lucide-react";
+import { LeaveDetailModal } from "@/components/LeaveDetailModal";
+
+interface MappedCancelRequest {
+  id?: string;
+  requestCode?: string;
+  employeeCode?: string;
+  firstName?: string;
+  lastName?: string;
+  dateRange?: string;
+  type?: string;
+  raw?: unknown;
+  [key: string]: unknown;
+}
 
 export default function HrCancelApprovalPage() {
-  const [requests, setRequests] = useState<any[]>([]);
+  const [requests, setRequests] = useState<MappedCancelRequest[]>([]);
   const [selectedMonthRaw, setSelectedMonthRaw] = useState(() => {
     const d = new Date();
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
   });
   const [isPickerOpen, setIsPickerOpen] = useState(false);
   const [tempYear, setTempYear] = useState(new Date().getFullYear());
-  const [selectedRequest, setSelectedRequest] = useState<any>(null);
+  const [selectedRequest, setSelectedRequest] = useState<MappedCancelRequest | null>(null);
   const [approverReason, setApproverReason] = useState("");
-  const [previewAttachment, setPreviewAttachment] = useState<{ url: string; isImage: boolean } | null>(null);
 
   const [showApproveModal, setShowApproveModal] = useState(false);
   const [showRejectModal, setShowRejectModal] = useState(false);
@@ -56,20 +67,25 @@ export default function HrCancelApprovalPage() {
   const { mutateAsync: verifyLeave } = useVerifyLeaveMutation();
 
   useEffect(() => {
-    const filtered = allCancellations.filter((r: any) => isSameYearMonth(r.startDate, selectedMonthRaw));
+    const filtered = allCancellations.filter((r) => {
+      if (!r.startDate) return false;
+      const d = new Date(r.startDate);
+      const yyyyMM = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+      return yyyyMM === selectedMonthRaw;
+    });
     const sorted = [...filtered].sort(
-      (a: any, b: any) => new Date(b.createdAt || b.startDate).getTime() - new Date(a.createdAt || a.startDate).getTime()
+      (a, b) => new Date(b.createdAt || b.startDate || 0).getTime() - new Date(a.createdAt || a.startDate || 0).getTime()
     );
 
     setRequests(
-      sorted.map((r: any) => {
-        let dateRangeStr = getDayRange(r.startDate.split("T")[0], r.endDate.split("T")[0]);
+      sorted.map((r) => {
+        let dateRangeStr = getDayRange((r.startDate || '').split("T")[0], (r.endDate || '').split("T")[0]);
         let daysStr = `${r.totalDays || 1} วัน`;
 
         if (r.startFormat === "hourly" || r.leaveMode === "hourly") {
-          const startT = new Date(r.startDate).toLocaleTimeString("th-TH", { hour: "2-digit", minute: "2-digit" });
-          const endT = new Date(r.endDate).toLocaleTimeString("th-TH", { hour: "2-digit", minute: "2-digit" });
-          dateRangeStr = `${formatShortDate(r.startDate)} ${startT} - ${endT}`;
+          const startT = new Date(r.startDate || 0).toLocaleTimeString("th-TH", { hour: "2-digit", minute: "2-digit" });
+          const endT = new Date(r.endDate || 0).toLocaleTimeString("th-TH", { hour: "2-digit", minute: "2-digit" });
+          dateRangeStr = `${formatShortDate(r.startDate || '')} ${startT} - ${endT}`;
           const hours = r.leaveHours ? r.leaveHours : Number(((r.totalDays ?? 0) * 8).toFixed(1));
           daysStr = `${hours} ชั่วโมง`;
         } else if ((r.totalDays ?? r.daysCount) === 0.5) {
@@ -94,6 +110,7 @@ export default function HrCancelApprovalPage() {
         };
       })
     );
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- getDayRange is a pure helper redefined each render, not a real dependency
   }, [selectedMonthRaw, allCancellations]);
 
   const handleMonthSelect = (monthIndex: number) => {
@@ -141,7 +158,7 @@ export default function HrCancelApprovalPage() {
 
   const onModalApprove = () => {
     if (!selectedRequest) return;
-    handleApproveClick(selectedRequest.id);
+    handleApproveClick(selectedRequest.id || '');
   };
 
   const onModalReject = () => {
@@ -151,27 +168,29 @@ export default function HrCancelApprovalPage() {
       return;
     }
     setRejectReasonInput(approverReason);
-    setConfirmData({ id: selectedRequest.id });
+    setConfirmData({ id: selectedRequest.id || '' });
     setShowRejectModal(true);
   };
 
   return (
-    <div className="min-h-[calc(100vh-4rem)] bg-[#E2E4E9] font-sans text-slate-800 p-6 md:p-10 flex flex-col items-center">
-
-      <div className="w-full max-w-[1200px] bg-white rounded-xl shadow-md border border-gray-100 p-8 md:p-12 animate-in fade-in slide-in-from-bottom-4 duration-500">
-
-        {/* Header */}
-        <div className="mb-6">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="w-9 h-9 rounded-xl bg-rose-100 flex items-center justify-center">
-              <AlertTriangle className="w-5 h-5 text-rose-600" strokeWidth={2.5} />
-            </div>
-            <h1 className="text-2xl font-bold text-gray-800 tracking-tight">ตรวจสอบคำขอยกเลิกการลา</h1>
-          </div>
-          <p className="text-sm text-gray-400 font-medium pl-12">
+    <div className="min-h-[calc(100vh-4rem)] bg-[#E2E4E9] font-sans text-slate-800 flex flex-col">
+      {/* Top Banner */}
+      <div className="bg-white flex items-center gap-3 sm:gap-4 px-4 sm:px-8 py-3 sm:py-5 shadow-sm z-10 shrink-0">
+        <div className="w-9 h-9 sm:w-11 sm:h-11 bg-rose-100 text-rose-600 rounded-xl flex items-center justify-center shrink-0">
+          <AlertTriangle className="w-6 h-6" strokeWidth={2} />
+        </div>
+        <div>
+          <h1 className="text-base sm:text-xl font-bold text-black tracking-tight">
+            ตรวจสอบคำขอยกเลิกการลา
+          </h1>
+          <p className="text-xs text-gray-500 mt-1 font-medium">
             พิจารณาอนุมัติหรือปฏิเสธคำขอยกเลิกใบลาที่ได้รับการอนุมัติแล้ว
           </p>
         </div>
+      </div>
+
+      <div className="flex-1 p-6 md:p-10 flex flex-col items-center">
+      <div className="w-full max-w-[1200px] bg-white rounded-xl shadow-md border border-gray-100 p-8 md:p-12 animate-in fade-in slide-in-from-bottom-4 duration-500">
 
         {/* Info Banner */}
         <div className="mb-6 bg-rose-50 border border-rose-200 rounded-xl p-4 flex items-start gap-3">
@@ -180,7 +199,7 @@ export default function HrCancelApprovalPage() {
             <p className="font-bold mb-1">หมายเหตุ:</p>
             <ul className="space-y-0.5 text-rose-600">
               <li>• <span className="font-semibold">อนุมัติการยกเลิก</span> → ใบลาจะถูกยกเลิก และโควตาวันลาจะถูกคืนให้พนักงาน</li>
-              <li>• <span className="font-semibold">ปฏิเสธ (คงสภาพ)</span> → ใบลายังคงมีผล สถานะกลับเป็น "อนุมัติแล้ว"</li>
+              <li>• <span className="font-semibold">ปฏิเสธ (คงสภาพ)</span> → ใบลายังคงมีผล สถานะกลับเป็น &quot;อนุมัติแล้ว&quot;</li>
             </ul>
           </div>
         </div>
@@ -189,22 +208,22 @@ export default function HrCancelApprovalPage() {
         <div className="mb-8 relative inline-block">
           <button
             onClick={() => setIsPickerOpen(!isPickerOpen)}
-            className="border border-gray-300 dark:border-slate-700 text-gray-700 dark:text-slate-200 text-sm font-bold py-2 px-5 rounded-full shadow-sm flex items-center gap-3 bg-white dark:bg-slate-800 hover:bg-gray-50 dark:hover:bg-slate-700/80 transition-all active:scale-95"
+            className="border border-gray-300 text-gray-700 text-sm font-bold py-2 px-5 rounded-full shadow-sm flex items-center gap-3 hover:bg-gray-50 transition-all active:scale-95"
           >
             {formatMonthYear(selectedMonthRaw)}
-            <CalendarIcon className="w-4 h-4 text-gray-700 dark:text-slate-200" strokeWidth={2.5} />
+            <CalendarIcon className="w-4 h-4 text-gray-700" strokeWidth={2.5} />
           </button>
 
           {isPickerOpen && (
             <>
               <div className="fixed inset-0 z-40" onClick={() => setIsPickerOpen(false)}></div>
-              <div className="absolute top-full left-0 mt-3 bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-gray-100 dark:border-slate-700 p-5 w-[340px] z-50 animate-in fade-in zoom-in-95 duration-200">
+              <div className="absolute top-full left-0 mt-3 bg-white rounded-2xl shadow-2xl border border-gray-100 p-4 sm:p-5 w-[calc(100vw-2rem)] max-w-[340px] z-50 animate-in fade-in zoom-in-95 duration-200">
                 <div className="flex items-center justify-between mb-5 px-1">
-                  <button onClick={() => setTempYear((y) => y - 1)} className="p-2 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-full transition-colors text-gray-500 dark:text-slate-400 hover:text-black dark:hover:text-white">
+                  <button onClick={() => setTempYear((y) => y - 1)} className="p-2 hover:bg-gray-100 rounded-full transition-colors text-gray-500 hover:text-black">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6" /></svg>
                   </button>
-                  <span className="font-bold text-lg text-black dark:text-white tracking-wide">{tempYear + 543}</span>
-                  <button onClick={() => setTempYear((y) => y + 1)} className="p-2 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-full transition-colors text-gray-500 dark:text-slate-400 hover:text-black dark:hover:text-white">
+                  <span className="font-bold text-lg text-black tracking-wide">{tempYear + 543}</span>
+                  <button onClick={() => setTempYear((y) => y + 1)} className="p-2 hover:bg-gray-100 rounded-full transition-colors text-gray-500 hover:text-black">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m9 18 6-6-6-6" /></svg>
                   </button>
                 </div>
@@ -215,7 +234,7 @@ export default function HrCancelApprovalPage() {
                       <button
                         key={m}
                         onClick={() => handleMonthSelect(i)}
-                        className={`py-2.5 rounded-xl text-[14px] font-bold transition-all ${isSelected ? "bg-rose-600 text-white shadow-md shadow-rose-600/20" : "text-gray-600 dark:text-slate-300 hover:bg-rose-50 dark:hover:bg-rose-950/40 hover:text-rose-700 dark:hover:text-rose-300"}`}
+                        className={`py-2.5 rounded-xl text-[14px] font-bold transition-all ${isSelected ? "bg-rose-600 text-white shadow-md shadow-rose-600/20" : "text-gray-600 hover:bg-rose-50 hover:text-rose-700"}`}
                       >
                         {m}
                       </button>
@@ -283,13 +302,13 @@ export default function HrCancelApprovalPage() {
                           รายละเอียด
                         </button>
                         <button
-                          onClick={() => handleApproveClick(req.id)}
+                          onClick={() => handleApproveClick(req.id || '')}
                           className="bg-rose-600 hover:bg-rose-700 text-white text-[11px] font-bold py-1.5 w-[105px] text-center rounded shadow-sm transition-colors"
                         >
                           อนุมัติการยกเลิก
                         </button>
                         <button
-                          onClick={() => handleRejectClick(req.id)}
+                          onClick={() => handleRejectClick(req.id || '')}
                           className="bg-gray-500 hover:bg-gray-600 text-white text-[11px] font-bold py-1.5 w-[105px] text-center rounded shadow-sm transition-colors"
                         >
                           ปฏิเสธ (คงสภาพ)
@@ -306,117 +325,15 @@ export default function HrCancelApprovalPage() {
 
       {/* Leave Details Modal */}
       {selectedRequest && (
-        <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-white rounded-[24px] w-full max-w-[650px] shadow-2xl flex flex-col max-h-[90vh] animate-in zoom-in-95 duration-200 border-2 border-rose-500 overflow-hidden relative">
-
-            {/* Header */}
-            <div className="flex items-center justify-between px-6 py-5 bg-rose-50 border-b border-rose-100">
-              <div>
-                <h2 className="text-[18px] font-bold text-gray-900">รายละเอียดคำขอยกเลิกการลา</h2>
-                <p className="text-sm text-rose-600 font-medium mt-0.5">กรุณาตรวจสอบข้อมูลก่อนพิจารณา</p>
-              </div>
-              <button
-                onClick={() => setSelectedRequest(null)}
-                className="w-8 h-8 flex items-center justify-center text-white bg-red-500 rounded-full hover:bg-red-600 transition-colors shadow-sm"
-              >
-                <X className="w-5 h-5" strokeWidth={3} />
-              </button>
-            </div>
-
-            {/* Body */}
-            <div className="px-6 pb-6 overflow-y-auto flex-1 space-y-4 pt-4">
-
-              {/* Status Badge */}
-              <div className="flex items-center gap-2">
-                <span className="inline-flex items-center gap-1.5 bg-rose-100 text-rose-700 text-[12px] font-bold px-3 py-1.5 rounded-full">
-                  <span className="w-2 h-2 rounded-full bg-rose-500 animate-pulse"></span>
-                  รอตรวจสอบการยกเลิก
-                </span>
-              </div>
-
-              {/* Employee Info */}
-              <div className="border border-gray-200 rounded-xl p-5 flex gap-4 bg-white">
-                <div className="w-[38px] h-[38px] rounded-full bg-rose-100 border border-rose-200 text-rose-500 flex items-center justify-center shrink-0">
-                  <User className="w-5 h-5" strokeWidth={2} />
-                </div>
-                <div className="flex-1">
-                  <h3 className="font-bold text-[15px] text-black mb-3">ข้อมูลพนักงาน</h3>
-                  <div className="text-[14px] text-gray-800 space-y-2">
-                    <p className="flex items-center gap-2"><span className="font-bold min-w-[90px]">ชื่อ:</span> {selectedRequest.displayName}</p>
-                    <p className="flex items-center gap-2"><span className="font-bold min-w-[90px]">แผนก | ตำแหน่ง:</span> {selectedRequest.department} | {selectedRequest.position}</p>
-                    <p className="flex items-center gap-2"><span className="font-bold min-w-[90px]">รหัสพนักงาน:</span> {selectedRequest.employeeCode || "-"}</p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Leave Info */}
-              <div className="border border-gray-200 rounded-xl p-5 bg-white">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="w-[32px] h-[32px] rounded-full bg-rose-50 border border-rose-100 flex items-center justify-center text-rose-500">
-                    <CalendarIcon className="w-[18px] h-[18px]" strokeWidth={2.5} />
-                  </div>
-                  <h3 className="font-bold text-[15px] text-black">รายละเอียดใบลา (ที่ต้องการยกเลิก)</h3>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-[14px] text-gray-800 pl-[44px]">
-                  <div className="space-y-3">
-                    <p className="flex gap-2 items-center"><span className="font-bold min-w-[80px]">รหัสการลา:</span> <span className="text-rose-600 font-semibold">{selectedRequest.requestCode || "-"}</span></p>
-                    <p className="flex gap-2"><span className="font-bold min-w-[80px]">ประเภทการลา:</span> {selectedRequest.type}</p>
-                    <p className="flex gap-2"><span className="font-bold min-w-[80px]">ช่วงเวลา:</span> {selectedRequest.dateRange}</p>
-                  </div>
-                  <div className="space-y-3">
-                    <p className="flex items-center gap-2">
-                      <Clock className="w-[14px] h-[14px] text-gray-400" />
-                      <span className="font-bold min-w-[60px]">จำนวน:</span>
-                      <span className="font-semibold text-rose-600">{selectedRequest.formattedDays}</span>
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Attachments */}
-              {selectedRequest.attachments && selectedRequest.attachments.length > 0 && (
-                <div>
-                  <h3 className="font-bold text-black text-[14px] mb-2">เอกสารแนบ</h3>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                    {selectedRequest.attachments.map((att: any, i: number) => {
-                      const isData = att.filePath?.startsWith("data:");
-                      const fileSrc = isData ? att.filePath : (att.filePath?.startsWith("http") ? att.filePath : `/${att.filePath?.replace(/^\/+/, '')}`);
-                      const isImage = att.fileType?.includes("image") || (!isData && att.filePath?.match(/\.(jpeg|jpg|gif|png)$/i));
-                      return (
-                        <div key={i}
-                          className="border border-gray-200 rounded-xl overflow-hidden shadow-sm relative group cursor-pointer hover:border-rose-400 transition-colors"
-                          onClick={() => setPreviewAttachment({ url: fileSrc, isImage })}
-                        >
-                          {isImage ? (
-                            <img src={fileSrc} alt="Attachment" className="w-full h-24 object-cover" />
-                          ) : (
-                            <div className="w-full h-24 flex flex-col items-center justify-center bg-gray-50 text-rose-500">
-                              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2v4a2 2 0 0 0 2 2h4" /><path d="M10.4 12.6a2 2 0 1 1 3 3L8 21l-4 1 1-4Z" /><path d="m18 22 4-4" /><path d="m14 18 4-4" /><path d="M4 14V4a2 2 0 0 1 2-2h8l6 6v3" /></svg>
-                              <span className="text-xs font-bold mt-2">ไฟล์เอกสาร</span>
-                            </div>
-                          )}
-                          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                            <span className="text-white text-xs font-bold px-2 py-1 bg-black/50 rounded-md">คลิกเพื่อดูไฟล์</span>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-
-              {/* Original Reason */}
-              <div>
-                <h3 className="font-bold text-black text-[14px] mb-2">เหตุผลการลาเดิม</h3>
-                <div className="border border-gray-200 rounded-xl p-3 text-[14px] text-gray-600 bg-gray-50">
-                  {selectedRequest.reason || "-"}
-                </div>
-              </div>
-            </div>
-
-            {/* Footer Actions */}
+        <LeaveDetailModal
+          leave={selectedRequest.raw ?? selectedRequest}
+          onClose={() => setSelectedRequest(null)}
+          title="รายละเอียดคำขอยกเลิกวันลา"
+          footerBar={
             <div className="bg-[#FAFAFA] border-t border-gray-200 px-6 py-5 shrink-0">
-              <h3 className="font-bold text-black text-[14px] mb-3">พิจารณาคำขอยกเลิกการลา</h3>
+              <h3 className="font-bold text-black text-[14px] mb-3">
+                พิจารณาคำขอยกเลิกการลา
+              </h3>
               <div className="flex flex-col sm:flex-row gap-3">
                 <input
                   type="text"
@@ -443,8 +360,8 @@ export default function HrCancelApprovalPage() {
                 </div>
               </div>
             </div>
-          </div>
-        </div>
+          }
+        />
       )}
 
       {/* Confirm Approve Cancellation Modal */}
@@ -500,7 +417,7 @@ export default function HrCancelApprovalPage() {
             </div>
             <div className="p-6">
               <p className="text-gray-700 text-sm font-medium mb-1">คุณต้องการปฏิเสธคำขอยกเลิกนี้ ใช่หรือไม่?</p>
-              <p className="text-[13px] text-gray-500 mb-4">ใบลาจะยังคงมีผลและสถานะกลับเป็น <strong>"อนุมัติแล้ว"</strong></p>
+              <p className="text-[13px] text-gray-500 mb-4">ใบลาจะยังคงมีผลและสถานะกลับเป็น <strong>&quot;อนุมัติแล้ว&quot;</strong></p>
               <div className="mb-5">
                 <label className="block text-xs font-bold text-gray-700 mb-1">
                   เหตุผลที่ปฏิเสธ <span className="text-red-500">*</span>
@@ -533,35 +450,8 @@ export default function HrCancelApprovalPage() {
         </div>
       )}
 
-      {/* Preview Attachment Modal */}
-      {previewAttachment && (
-        <div
-          className="fixed inset-0 z-[140] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200"
-          onClick={() => setPreviewAttachment(null)}
-        >
-          <div
-            className="bg-white rounded-[24px] w-full max-w-4xl shadow-2xl flex flex-col max-h-[90vh] animate-in zoom-in-95 duration-200 border-2 border-rose-500 overflow-hidden relative"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 bg-[#FAFAFA]">
-              <h2 className="text-[16px] font-bold text-black">ไฟล์เอกสารแนบ</h2>
-              <button
-                onClick={() => setPreviewAttachment(null)}
-                className="w-8 h-8 flex items-center justify-center text-white bg-red-500 rounded-full hover:bg-red-600 transition-colors shadow-sm"
-              >
-                <X className="w-5 h-5" strokeWidth={3} />
-              </button>
-            </div>
-            <div className="p-6 overflow-y-auto flex-1 flex items-center justify-center bg-gray-50/50">
-              {previewAttachment.isImage ? (
-                <img src={previewAttachment.url} alt="Preview" className="max-w-full max-h-[70vh] object-contain rounded-lg shadow-sm border border-gray-200" />
-              ) : (
-                <iframe src={previewAttachment.url} className="w-full h-[75vh] bg-white rounded-lg shadow-sm border border-gray-200" />
-              )}
-            </div>
-          </div>
-        </div>
-      )}
+
+      </div>
     </div>
   );
 }

@@ -1,6 +1,6 @@
 import axiosInstance from './axios';
 import { ApiResponse } from './types';
-import { Employee } from '@/lib/api/types';
+import { Employee, CreateEmployeeInput } from '@/lib/api/types';
 
 export const employeeApi = {
   getAll: async (): Promise<ApiResponse<Employee[]>> => {
@@ -13,7 +13,7 @@ export const employeeApi = {
     return response.data;
   },
 
-  create: async (data: Omit<Employee, 'id'>): Promise<ApiResponse<Employee>> => {
+  create: async (data: CreateEmployeeInput): Promise<ApiResponse<Employee>> => {
     const response = await axiosInstance.post('/hr/employees', data);
     return response.data;
   },
@@ -23,17 +23,17 @@ export const employeeApi = {
     return response.data;
   },
 
-  delete: async (id: string): Promise<ApiResponse<any>> => {
+  delete: async (id: string): Promise<ApiResponse<unknown>> => {
     const response = await axiosInstance.delete(`/hr/employees/${id}`);
     return response.data;
   },
-  
-  initializeLeaveBalances: async (id: string): Promise<ApiResponse<any>> => {
+
+  initializeLeaveBalances: async (id: string): Promise<ApiResponse<unknown>> => {
     const response = await axiosInstance.post(`/hr/employees/${id}/initialize-leave-balances`);
     return response.data;
   },
 
-  resetLeaveBalances: async (id: string): Promise<ApiResponse<any>> => {
+  resetLeaveBalances: async (id: string): Promise<ApiResponse<unknown>> => {
     const response = await axiosInstance.post(`/hr/employees/${id}/reset-leave-balances`);
     return response.data;
   }

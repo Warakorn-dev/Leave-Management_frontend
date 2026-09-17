@@ -42,11 +42,20 @@ export function resolveAssetUrl(path?: string | null): string {
   return `/${path.replace(/^\/+/, '')}`;
 }
 
-export function isSameYearMonth(dateInput: string | Date | undefined | null, targetYyyyMm: string): boolean {
-  if (!dateInput || !targetYyyyMm) return false;
-  const d = new Date(dateInput);
-  if (isNaN(d.getTime())) return false;
-  const year = d.getFullYear();
-  const month = String(d.getMonth() + 1).padStart(2, '0');
-  return `${year}-${month}` === targetYyyyMm;
+/** Extract a human-readable message from a caught error of unknown shape (axios error, Error, or string). */
+export function getErrorMessage(err: unknown, fallback = 'เกิดข้อผิดพลาด'): string {
+  if (err && typeof err === 'object') {
+    const anyErr = err as {
+      response?: { data?: { message?: string; errors?: string[] } };
+      message?: string;
+    };
+    return (
+      anyErr.response?.data?.message ||
+      anyErr.response?.data?.errors?.[0] ||
+      anyErr.message ||
+      fallback
+    );
+  }
+  if (typeof err === 'string') return err;
+  return fallback;
 }

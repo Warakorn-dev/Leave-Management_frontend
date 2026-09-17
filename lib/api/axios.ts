@@ -1,5 +1,15 @@
-import axios from 'axios';
+import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
 import Swal from 'sweetalert2';
+import idleState from '@/lib/idleState';
+
+interface QueueItem {
+  resolve: (token: string | null) => void;
+  reject: (error: unknown) => void;
+}
+
+interface RetryableRequestConfig extends InternalAxiosRequestConfig {
+  _retry?: boolean;
+}
 
 // Create an Axios instance
 const axiosInstance = axios.create({
@@ -20,22 +30,68 @@ axiosInstance.interceptors.request.use(
         config.headers.Authorization = `Bearer ${token}`;
       }
     }
+    if (config.data instanceof FormData) {
+      delete config.headers['Content-Type'];
+    }
     return config;
   },
   (error) => Promise.reject(error)
 );
 
+let isRefreshing = false;
+let failedQueue: QueueItem[] = [];
+
+const processQueue = (error: unknown, token: string | null = null) => {
+  failedQueue.forEach(prom => {
+    if (error) {
+      prom.reject(error);
+    } else {
+      prom.resolve(token);
+    }
+  });
+  failedQueue = [];
+};
+
 // Response Interceptor: Global error handling
 axiosInstance.interceptors.response.use(
   (response) => response,
-  (error) => {
+  async (error: AxiosError<{ message?: string }>) => {
+    const originalRequest = error.config as RetryableRequestConfig | undefined;
+    if (!originalRequest) {
+      return Promise.reject(error);
+    }
+
     if (error.response) {
       const status = error.response.status;
       const message = error.response.data?.message || 'Something went wrong';
 
       // Only show alerts on the client side
       if (typeof window !== 'undefined') {
-        if (status === 401) {
+        const url = originalRequest?.url || '';
+        const isAuthRequest =
+          url.includes('/auth/login') ||
+          url.includes('/auth/captcha') ||
+          url.includes('/auth/forgot-password') ||
+          url.includes('/auth/reset-password');
+        const isAuthPage =
+          window.location.pathname === '/login' ||
+          window.location.pathname === '/forgot-password' ||
+          window.location.pathname === '/reset-password';
+
+        if (status === 401 && !originalRequest._retry) {
+          // If 401 occurs during login or on auth pages (e.g. wrong password/credentials),
+          // do NOT show session expired popup. Let the login form display the error.
+          if (isAuthRequest || isAuthPage) {
+            return Promise.reject(error);
+          }
+
+          // ── GUARD 1: Idle popup already showing ──────────────────────────
+          // The idle popup is up; don't touch session or redirect.
+          if (idleState.isPopupShowing || sessionStorage.getItem('idleTimeoutTriggered') === 'true') {
+            return Promise.reject(error);
+          }
+
+          // ── GUARD 2: Account deactivated / suspended ──────────────────────
           if (message === 'ACCOUNT_DEACTIVATED' || message === 'ACCOUNT_SUSPENDED') {
             Swal.fire({
               icon: 'error',
@@ -50,29 +106,91 @@ axiosInstance.interceptors.response.use(
             });
             return Promise.reject(error);
           }
-          // Token expired or unauthorized
-          sessionStorage.clear();
-          if (window.location.pathname !== '/login') {
-            window.location.href = '/login';
+
+          // ── GUARD 3: Session expired (401 from backend) ──────────────────
+          // Whether the user was idle or the token just expired normally,
+          // always show the session-expired popup instead of silently redirecting.
+          // We check if we have a refresh token first; if refresh also fails,
+          // we show the popup instead of hard-redirecting.
+          const refreshToken = sessionStorage.getItem('refreshToken');
+
+          if (refreshToken) {
+            if (isRefreshing) {
+              return new Promise(function (resolve, reject) {
+                failedQueue.push({ resolve, reject });
+              })
+                .then((token) => {
+                  originalRequest.headers.Authorization = 'Bearer ' + token;
+                  return axiosInstance(originalRequest);
+                })
+                .catch((err) => Promise.reject(err));
+            }
+
+            originalRequest._retry = true;
+            isRefreshing = true;
+
+            try {
+              const res = await axios.post<{ accessToken?: string; refreshToken?: string }>(
+                '/api/auth/refresh',
+                {},
+                { headers: { Authorization: `Bearer ${refreshToken}` } },
+              );
+
+              if (res.data?.accessToken) {
+                const newAccessToken = res.data.accessToken;
+                sessionStorage.setItem('accessToken', newAccessToken);
+                if (res.data.refreshToken) {
+                  sessionStorage.setItem('refreshToken', res.data.refreshToken);
+                }
+                axiosInstance.defaults.headers.common['Authorization'] = 'Bearer ' + newAccessToken;
+                originalRequest.headers.Authorization = 'Bearer ' + newAccessToken;
+                processQueue(null, newAccessToken);
+                return axiosInstance(originalRequest);
+              }
+            } catch {
+              processQueue(null, null);
+              // Refresh failed → show session-expired popup
+              idleState.showExpiredPopup();
+              return Promise.reject(error);
+            } finally {
+              isRefreshing = false;
+            }
           }
+
+          // No refresh token at all → show session-expired popup
+          idleState.showExpiredPopup();
+          return Promise.reject(error);
+
         } else if (status === 403) {
           Swal.fire({
             icon: 'error',
-            title: 'Access Denied',
-            text: 'You do not have permission to perform this action.',
+            title: 'ปฏิเสธการเข้าถึง',
+            text: 'คุณไม่มีสิทธิ์ในการดำเนินการนี้',
           });
         } else if (status === 404) {
-          console.warn('API Not Found:', error.config.url);
+          console.warn('API Not Found:', originalRequest.url);
         } else if (status >= 500) {
           Swal.fire({
             icon: 'error',
-            title: 'Server Error',
-            text: 'Internal server error occurred. Please try again later.',
+            title: 'ข้อผิดพลาดจากเซิร์ฟเวอร์',
+            text: 'เกิดข้อผิดพลาดภายในระบบ กรุณาลองใหม่อีกครั้ง',
+          });
+        } else if (status === 413) {
+          Swal.fire({
+            icon: 'error',
+            title: 'ไฟล์ขนาดใหญ่เกินไป',
+            text: message || 'ขนาดไฟล์เกินขีดจำกัดที่ตั้งไว้',
           });
         } else if (status === 422 || status === 400) {
           // Bad request or validation error
-          // Usually handled by the component, but we can log it
           console.warn('Validation error:', message);
+          if (!isAuthRequest && !isAuthPage) {
+            Swal.fire({
+              icon: 'warning',
+              title: 'ข้อมูลไม่ถูกต้อง',
+              text: message || 'โปรดตรวจสอบข้อมูลที่กรอกอีกครั้ง',
+            });
+          }
         }
       }
     } else if (error.request) {
@@ -82,8 +200,8 @@ axiosInstance.interceptors.response.use(
       if (typeof window !== 'undefined' && window.location.pathname !== '/login') {
         Swal.fire({
           icon: 'error',
-          title: 'Network Error',
-          text: 'Cannot connect to the server. Please check your internet connection.',
+          title: 'ข้อผิดพลาดเครือข่าย',
+          text: 'ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้ กรุณาตรวจสอบอินเทอร์เน็ตของคุณ',
         });
       }
     } else {
@@ -94,4 +212,3 @@ axiosInstance.interceptors.response.use(
 );
 
 export default axiosInstance;
-

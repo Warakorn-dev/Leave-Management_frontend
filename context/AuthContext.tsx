@@ -24,6 +24,11 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType>({ user: null });
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
+  const auth = useAuthLogic();
+  return <AuthContext.Provider value={auth}>{children}</AuthContext.Provider>;
+};
+
+function useAuthLogic() {
   const [user, setUser] = useState<User | null>(null);
 
   useEffect(() => {
@@ -98,14 +103,29 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       fetchLatestProfile();
 
       // Poll every 5 seconds for immediate kick-out on suspension
-      const intervalId = setInterval(fetchLatestProfile, 5000);
+      const intervalId = setInterval(() => {
+        // Don't poll while the idle-timeout popup is showing
+        if (sessionStorage.getItem('idleTimeoutTriggered') === 'true') return;
+        fetchLatestProfile();
+      }, 5000);
       return () => clearInterval(intervalId);
     }
   }, []);
 
-  return <AuthContext.Provider value={{ user }}>{children}</AuthContext.Provider>;
-};
+  return { user };
+}
 
 export const useAuth = () => {
-  return useContext(AuthContext);
+  // We can just rely on the local state since AuthProvider is not actually wrapping the application
+  // but just in case, we will always call useContext.
+  const context = useContext(AuthContext);
+  const localAuth = useAuthLogic();
+
+  // If the context is somehow populated (someone used AuthProvider), return it
+  if (context.user) {
+    return context;
+  }
+
+  // Otherwise fallback to our local state
+  return localAuth;
 };

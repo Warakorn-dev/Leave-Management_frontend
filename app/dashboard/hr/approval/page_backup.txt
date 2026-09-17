@@ -1,0 +1,413 @@
+﻿"use client";
+
+import { useState, useEffect } from "react";
+import { useLeave } from "@/hooks/useLeave";
+import { useAuth } from "@/context/AuthContext";
+import { Calendar as CalendarIcon, X, User, Check, Clock, Eye } from "lucide-react";
+
+export default function HrApprovePage() {
+  const [requests, setRequests] = useState<any[]>([]);
+  const [selectedMonthRaw, setSelectedMonthRaw] = useState(() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`; });
+  const [isPickerOpen, setIsPickerOpen] = useState(false);
+  const [tempYear, setTempYear] = useState(new Date().getFullYear());
+  const [selectedRequest, setSelectedRequest] = useState<any>(null);
+  const [approverReason, setApproverReason] = useState("");
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [confirmData, setConfirmData] = useState<{ id: string, reason: string } | null>(null);
+
+  const [showRejectModal, setShowRejectModal] = useState(false);
+  const [rejectData, setRejectData] = useState<{ id: string, reason: string } | null>(null);
+  const [rejectReasonInput, setRejectReasonInput] = useState("");
+  const [previewAttachment, setPreviewAttachment] = useState<{ url: string, isImage: boolean } | null>(null);
+
+  useEffect(() => {
+    setApproverReason("");
+  }, [selectedRequest]);
+
+  const formatMonthYear = (yyyyMM: string) => {
+    if (!yyyyMM) return "";
+    const [year, month] = yyyyMM.split('-');
+    const months = ["เธกเธเธฃเธฒเธเธก", "เธเธธเธกเธ เธฒเธเธฑเธเธเน", "เธกเธตเธเธฒเธเธก", "เน€เธกเธฉเธฒเธขเธ", "เธเธคเธฉเธ เธฒเธเธก", "เธกเธดเธ–เธธเธเธฒเธขเธ", "เธเธฃเธเธเธฒเธเธก", "เธชเธดเธเธซเธฒเธเธก", "เธเธฑเธเธขเธฒเธขเธ", "เธ•เธธเธฅเธฒเธเธก", "เธเธคเธจเธเธดเธเธฒเธขเธ", "เธเธฑเธเธงเธฒเธเธก"];
+    return `${months[parseInt(month) - 1]} ${parseInt(year) + 543}`;
+  };
+
+  const formatShortDate = (dateString: string) => {
+    const d = new Date(dateString);
+    if (isNaN(d.getTime())) return dateString;
+    const months = ["เธก.เธ.", "เธ.เธ.", "เธกเธต.เธ.", "เน€เธก.เธข.", "เธ.เธ.", "เธกเธด.เธข.", "เธ.เธ.", "เธช.เธ.", "เธ.เธข.", "เธ•.เธ.", "เธ.เธข.", "เธ.เธ."];
+    return `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`;
+  };
+
+  const getDayRange = (start: string, end: string) => {
+    if (start === end) return formatShortDate(start);
+    const d1 = new Date(start);
+    const d2 = new Date(end);
+    const months = ["เธก.เธ.", "เธ.เธ.", "เธกเธต.เธ.", "เน€เธก.เธข.", "เธ.เธ.", "เธกเธด.เธข.", "เธ.เธ.", "เธช.เธ.", "เธ.เธข.", "เธ•.เธ.", "เธ.เธข.", "เธ.เธ."];
+    if (d1.getMonth() === d2.getMonth() && d1.getFullYear() === d2.getFullYear()) {
+      return `${d1.getDate()}-${d2.getDate()} ${months[d1.getMonth()]} ${d1.getFullYear()}`;
+    }
+    return `${formatShortDate(start)} - ${formatShortDate(end)}`;
+  };
+
+  const { useHrPendingVerifyQuery, useVerifyLeaveMutation, useMarkLeaveViewedMutation } = useLeave();
+  const { user } = useAuth();
+  const { data: allLeaves = [], refetch: refetchLeaves } = useHrPendingVerifyQuery();
+  const { mutateAsync: verifyLeave } = useVerifyLeaveMutation();
+  const { mutateAsync: markLeaveViewed } = useMarkLeaveViewedMutation();
+
+  useEffect(() => {
+    const filtered = allLeaves.filter((r: any) => {
+      if (!r.startDate) return false;
+      const d = new Date(r.startDate);
+      const yyyyMM = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+      return yyyyMM === selectedMonthRaw;
+    });
+    const sorted = [...filtered].sort((a: any, b: any) => new Date(b.createdAt || b.startDate).getTime() - new Date(a.createdAt || a.startDate).getTime());
+
+    setRequests(sorted.map((r: any) => {
+      let dateRangeStr = getDayRange(r.startDate.split('T')[0], r.endDate.split('T')[0]);
+      let daysStr = `${r.totalDays || 1} เธงเธฑเธ`;
+
+      if (r.startFormat === 'hourly' || r.leaveMode === 'hourly') {
+        const startT = new Date(r.startDate).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
+        const endT = new Date(r.endDate).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
+        dateRangeStr = `${formatShortDate(r.startDate)} ${startT} - ${endT}`;
+        const hours = r.leaveHours ? r.leaveHours : Number(((r.totalDays ?? 0) * 8).toFixed(1));
+        daysStr = `${hours} เธเธฑเนเธงเนเธกเธ`;
+      } else if ((r.totalDays ?? r.daysCount) === 0.5) {
+        if (r.startFormat === 'morning') daysStr = 'เธเธฃเธถเนเธเธงเธฑเธเน€เธเนเธฒ';
+        else if (r.startFormat === 'afternoon') daysStr = 'เธเธฃเธถเนเธเธงเธฑเธเธเนเธฒเธข';
+        else daysStr = '0.5 เธงเธฑเธ';
+      }
+
+      return {
+        ...r,
+        empId: r.employee?.employeeCode || (r.employee?.id ? `EMP-${String(r.employee.id).substring(0, 5).toUpperCase()}` : `EMP-000`),
+        userId: r.user?.firstName ? `${r.user.firstName} ${r.user.lastName}` : (r.userId || 'Unknown'),
+        firstName: r.user?.firstName || r.employee?.firstName || r.userId || 'Unknown',
+        lastName: r.user?.lastName || r.employee?.lastName || '',
+        department: r.user?.department?.name || r.department,
+        position: r.user?.position?.name || r.position,
+        type: r.leaveType?.name || r.type,
+        dateRange: `${dateRangeStr} (${daysStr})`,
+        formattedDays: daysStr
+      };
+    }));
+  }, [selectedMonthRaw, allLeaves]);
+
+  // Auto-refresh (Polling) เธ—เธธเธเน 5 เธงเธดเธเธฒเธ—เธต เน€เธเธทเนเธญเนเธซเนเธซเธเนเธฒเธเธญเธญเธฑเธเน€เธ”เธ•เธชเธ–เธฒเธเธฐเธเธฒเธฃเธฅเนเธญเธเธ—เธฑเธเธ—เธต
+  useEffect(() => {
+    const interval = setInterval(() => {
+      refetchLeaves();
+    }, 5000);
+    return () => clearInterval(interval);
+  }, [refetchLeaves]);
+
+  const handleMonthSelect = (monthIndex: number) => {
+    const mm = (monthIndex + 1).toString().padStart(2, '0');
+    setSelectedMonthRaw(`${tempYear}-${mm}`);
+    setIsPickerOpen(false);
+  };
+
+  const handleApproveClick = (reqId: string, reason: string = "") => {
+    setConfirmData({ id: reqId, reason });
+    setShowConfirmModal(true);
+  };
+
+  const handlePullRequest = async (req: any) => {
+    try {
+      await markLeaveViewed({ id: req.id, lock: true });
+      refetchLeaves(); // เธญเธฑเธเน€เธ”เธ•เธ•เธฒเธฃเธฒเธเนเธซเนเนเธชเธ”เธเธชเธ–เธฒเธเธฐเธงเนเธฒเน€เธฃเธฒเธฅเนเธญเธเนเธฅเนเธง
+    } catch (error: any) {
+      console.error("Failed to pull request", error);
+      alert(error.message || 'เนเธกเนเธชเธฒเธกเธฒเธฃเธ–เธ”เธถเธเธเธณเธเธญเธเธตเนเนเธ”เน เน€เธเธทเนเธญเธเธเธฒเธเธเธณเธฅเธฑเธเธ–เธนเธเธ•เธฃเธงเธเธชเธญเธเนเธ”เธข HR เธเธเธญเธทเนเธ');
+      refetchLeaves();
+    }
+  };
+
+  const handleViewDetails = async (req: any) => {
+    if (req.currentHrReviewerId && req.currentHrReviewerId !== user?.id) {
+      alert("เธเธณเธเธญเธเธตเนเธเธณเธฅเธฑเธเธ–เธนเธเธ•เธฃเธงเธเธชเธญเธเนเธ”เธข HR เธเธเธญเธทเนเธ เธเธธเธ“เนเธกเนเธชเธฒเธกเธฒเธฃเธ–เธ”เธนเธฃเธฒเธขเธฅเธฐเน€เธญเธตเธขเธ”เนเธ”เน");
+      return;
+    }
+    // เนเธเนเน€เธเธดเธ”เธ”เธนเธฃเธฒเธขเธฅเธฐเน€เธญเธตเธขเธ”เน€เธเธขเน เนเธกเนเนเธ”เนเธเธฐเธ”เธถเธเธกเธฒเธ•เธฃเธงเธเธชเธญเธ
+    if (!req.isViewedByHr) {
+      try {
+        await markLeaveViewed({ id: req.id, lock: false });
+        req.isViewedByHr = true;
+        // เนเธกเนเธ•เนเธญเธเธฅเนเธญเธเน€เธเนเธเธเธญเธเน€เธฃเธฒ (เนเธกเนเธ•เนเธญเธเน€เธเนเธ• currentHrReviewerId)
+      } catch (error: any) {
+        console.error("Failed to mark leave as viewed", error);
+      }
+    }
+    setSelectedRequest(req);
+  };
+
+  const executeApprove = async () => {
+    if (!confirmData) return;
+    try {
+      await verifyLeave({ id: confirmData.id, action: 'Approve', comment: confirmData.reason });
+      if (selectedRequest && selectedRequest.id === confirmData.id) setSelectedRequest(null);
+    } catch (error: any) {
+      alert(error.message || 'เน€เธเธดเธ”เธเนเธญเธเธดเธ”เธเธฅเธฒเธ”เนเธเธเธฒเธฃเธญเธเธธเธกเธฑเธ•เธดเธเธณเธเธญ');
+    } finally {
+      refetchLeaves();
+      setShowConfirmModal(false);
+      setConfirmData(null);
+                            </button>
+                            <button
+                              onClick={() => handleViewDetails(req)}
+                              className="inline-flex items-center justify-center p-1.5 rounded-md border border-blue-200 text-blue-600 bg-white hover:bg-blue-50 transition-colors shadow-sm"
+                              title="เธ”เธนเธฃเธฒเธขเธฅเธฐเน€เธญเธตเธขเธ”"
+                            >
+                              <Eye className="w-[14px] h-[14px]" strokeWidth={2.5} />
+                            </button>
+                          </div>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
+        </div>
+
+      </div>
+
+      {/* Leave Details Modal */}
+      {selectedRequest && (
+        <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white rounded-[24px] w-full max-w-[650px] shadow-2xl flex flex-col max-h-[90vh] animate-in zoom-in-95 duration-200 border-2 border-blue-500 overflow-hidden relative">
+
+            {/* Header */}
+            <div className="flex items-center justify-between px-6 py-5">
+              <h2 className="text-[20px] font-bold text-black">เธฃเธฒเธขเธฅเธฐเน€เธญเธตเธขเธ”เธเธณเธเธญเธฅเธฒ (Leave Request Details)</h2>
+              <button
+                onClick={() => setSelectedRequest(null)}
+                className="w-8 h-8 flex items-center justify-center text-white bg-red-500 rounded-full hover:bg-red-600 transition-colors shadow-sm"
+              >
+                <X className="w-5 h-5" strokeWidth={3} />
+              </button>
+            </div>
+
+            {/* Body */}
+            <div className="px-6 pb-6 overflow-y-auto flex-1 space-y-4">
+
+              {/* Employee Info */}
+              <div className="border border-gray-300 rounded-xl p-5 flex gap-4 bg-white">
+                <div className="w-[38px] h-[38px] rounded-full bg-fuchsia-100/50 border border-fuchsia-200 text-fuchsia-500 flex items-center justify-center shrink-0">
+                  <User className="w-5 h-5" strokeWidth={2} />
+                </div>
+                <div className="flex-1">
+                  <h3 className="font-bold text-[15px] text-black mb-3">เธเนเธญเธกเธนเธฅเธเธเธฑเธเธเธฒเธ (Employee Info)</h3>
+                  <div className="text-[14px] text-gray-800 space-y-2">
+                    <p className="flex items-center gap-2"><span className="font-bold min-w-[90px]">เธเธทเนเธญ:</span> {selectedRequest.userId || selectedRequest.raw?.userId}</p>
+                    <p className="flex items-center gap-2"><span className="font-bold min-w-[90px]">เนเธเธเธ|เธ•เธณเนเธซเธเนเธ:</span> {selectedRequest.department || "-"} | {selectedRequest.position || selectedRequest.raw?.positionName || "-"}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Leave Info */}
+              <div className="border border-gray-300 rounded-xl p-5 bg-white">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-[32px] h-[32px] rounded-full bg-blue-50 border border-blue-100 flex items-center justify-center text-blue-500">
+                    <CalendarIcon className="w-[18px] h-[18px]" strokeWidth={2.5} />
+                  </div>
+                  <h3 className="font-bold text-[15px] text-black">เธฃเธฒเธขเธฅเธฐเน€เธญเธตเธขเธ”เธเธฒเธฃเธฅเธฒ (Leave Information)</h3>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-[14px] text-gray-800 pl-[44px]">
+                  <div className="space-y-3">
+                    <p className="flex gap-2 items-center"><span className="font-bold min-w-[80px]">เธฃเธซเธฑเธชเธเธฒเธฃเธฅเธฒ:</span> <span className="text-blue-500 font-semibold">{selectedRequest.requestCode || '-'}</span></p>
+                    <p className="flex gap-2"><span className="font-bold min-w-[80px]">เธเธฃเธฐเน€เธ เธ—เธเธฒเธฃเธฅเธฒ:</span> {selectedRequest.type}</p>
+                    <p className="flex gap-2"><span className="font-bold min-w-[80px]">เธเนเธงเธเน€เธงเธฅเธฒ:</span> {selectedRequest.dateRange}</p>
+                  </div>
+                  <div className="space-y-3">
+                    <p className="flex items-center gap-2">
+                      <Clock className="w-[14px] h-[14px] text-gray-400" />
+                      <span className="font-bold min-w-[60px]">เธเธณเธเธงเธ:</span> <span className="font-semibold text-blue-600">{selectedRequest.formattedDays}</span>
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Attachments */}
+              {selectedRequest.attachments && selectedRequest.attachments.length > 0 && (
+                <div>
+                  <h3 className="font-bold text-black text-[14px] mb-2">เน€เธญเธเธชเธฒเธฃเนเธเธ</h3>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                    {selectedRequest.attachments.map((att: any, i: number) => {
+                      const isData = att.filePath?.startsWith('data:');
+                      const fileSrc = isData ? att.filePath : (att.filePath?.startsWith('http') ? att.filePath : `/${att.filePath?.replace(/^\/+/, '')}`);
+                      const isImage = att.fileType?.includes('image') || (att.filePath && !isData && att.filePath.match(/\.(jpeg|jpg|gif|png)$/i));
+
+                      return (
+                        <div key={i} className="border border-gray-200 rounded-xl overflow-hidden shadow-sm relative group cursor-pointer hover:border-blue-400 transition-colors"
+                          onClick={() => {
+                            setPreviewAttachment({ url: fileSrc, isImage });
+                          }}
+                        >
+                          {isImage ? (
+                            <img src={fileSrc} alt="Attachment" className="w-full h-24 object-cover" />
+                          ) : (
+                            <div className="w-full h-24 flex flex-col items-center justify-center bg-gray-50 text-blue-500">
+                              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2v4a2 2 0 0 0 2 2h4" /><path d="M10.4 12.6a2 2 0 1 1 3 3L8 21l-4 1 1-4Z" /><path d="m18 22 4-4" /><path d="m14 18 4-4" /><path d="M4 14V4a2 2 0 0 1 2-2h8l6 6v3" /></svg>
+                              <span className="text-xs font-bold mt-2">เนเธเธฅเนเน€เธญเธเธชเธฒเธฃ</span>
+                            </div>
+                          )}
+                          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                            <span className="text-white text-xs font-bold px-2 py-1 bg-black/50 rounded-md">เธเธฅเธดเธเน€เธเธทเนเธญเธ”เธนเนเธเธฅเน</span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* Reason */}
+              <div>
+                <h3 className="font-bold text-black text-[14px] mb-2">เน€เธซเธ•เธธเธเธฅเธเธฒเธฃเธฅเธฒ</h3>
+                <input
+                  type="text"
+                  readOnly
+                  value={selectedRequest.reason || '-'}
+                  className="w-full border border-gray-300 rounded-xl p-3 text-[14px] text-gray-500 bg-white outline-none cursor-default"
+                />
+              </div>
+
+            </div>
+
+            {/* Approver Footer Form */}
+            {selectedRequest.currentHrReviewerId && selectedRequest.currentHrReviewerId !== user?.id ? (
+              <div className="bg-[#FFF8E1] border-t border-[#FFC107] px-6 py-5 shrink-0 flex flex-col items-center justify-center">
+                <p className="font-bold text-[#FF8F00] text-[15px] mb-1">
+                  เธเธณเธเธญเธเธตเนเธเธณเธฅเธฑเธเธ–เธนเธเธ•เธฃเธงเธเธชเธญเธเนเธ”เธข {selectedRequest.currentReviewer?.username || selectedRequest.currentReviewer?.email || 'HR เธเธเธญเธทเนเธ'}
+                </p>
+                <p className="text-[13px] text-[#FFA000] font-medium">
+                  เน€เธฃเธดเนเธกเธ•เธฃเธงเธเธชเธญเธ: {selectedRequest.hrReviewStartedAt ? new Date(selectedRequest.hrReviewStartedAt).toLocaleString('th-TH') : '-'}
+                </p>
+                <p className="text-[13px] text-[#FFA000] mt-2 bg-[#FFECB3] px-3 py-1.5 rounded-md font-bold">
+                  เธเธธเธ“เธชเธฒเธกเธฒเธฃเธ–เธ”เธนเธฃเธฒเธขเธฅเธฐเน€เธญเธตเธขเธ”เนเธ”เน เนเธ•เนเนเธกเนเธชเธฒเธกเธฒเธฃเธ–เธญเธเธธเธกเธฑเธ•เธดเธซเธฃเธทเธญเธเธเธดเน€เธชเธเธเธณเธเธญเธเธตเนเนเธ”เน
+                </p>
+              </div>
+            ) : selectedRequest.currentHrReviewerId === user?.id ? (
+              <div className="bg-[#FAFAFA] border-t border-gray-200 px-6 py-5 shrink-0">
+                <h3 className="font-bold text-black text-[14px] mb-3">เธ•เธฃเธงเธเธชเธญเธเน€เธญเธเธชเธฒเธฃเนเธฅเธฐเธเนเธญเธกเธนเธฅเธเธฒเธฃเธฅเธฒ</h3>
+                <div className="flex flex-col sm:flex-row gap-3">
+                  <input
+                    type="text"
+                    placeholder="เธซเธกเธฒเธขเน€เธซเธ•เธธเน€เธเธดเนเธกเน€เธ•เธดเธก (เธ–เนเธฒเธกเธต)..."
+                    value={approverReason}
+                    onChange={(e) => setApproverReason(e.target.value)}
+                    className="flex-1 border border-gray-300 rounded-xl p-3 text-[14px] outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-black"
+                  />
+                  <div className="flex gap-2">
+                    <button onClick={onModalApprove} className="flex-1 sm:flex-none bg-[#00C853] hover:bg-[#00B04A] text-white px-5 py-3 rounded-xl font-bold text-[14px] shadow-sm transition-colors flex items-center justify-center gap-1.5">
+                      <Check className="w-[18px] h-[18px]" strokeWidth={3} />
+                      เธเนเธฒเธเธเธฒเธฃเธ•เธฃเธงเธเธชเธญเธ
+                    </button>
+                    <button onClick={onModalReject} className="flex-1 sm:flex-none bg-[#FF0000] hover:bg-[#E50000] text-white px-5 py-3 rounded-xl font-bold text-[14px] shadow-sm transition-colors flex items-center justify-center gap-1.5">
+                      <X className="w-[18px] h-[18px]" strokeWidth={3} />
+                      เธเธเธดเน€เธชเธเธเธณเธเธญ
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ) : null}
+
+          </div>
+        </div>
+      )}
+
+      {/* Confirm Approve Modal (Small) */}
+      {showConfirmModal && confirmData && (
+        <div className="fixed inset-0 z-[130] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white rounded-2xl w-full max-w-[400px] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
+            <div className="bg-[#00C853] px-6 py-4 flex items-center justify-between">
+              <h3 className="text-white font-bold text-lg">เธขเธทเธเธขเธฑเธเธเธฒเธฃเธ•เธฃเธงเธเธชเธญเธ</h3>
+              <button onClick={() => { setShowConfirmModal(false); setConfirmData(null); }} className="text-white/80 hover:text-white">
+                <X className="w-5 h-5" strokeWidth={3} />
+              </button>
+            </div>
+            <div className="p-6">
+              <p className="text-gray-700 text-sm font-medium mb-1">เธเธธเธ“เธ•เนเธญเธเธเธฒเธฃเนเธซเนเธเธณเธเธญเธฅเธฒเธเธตเนเธเนเธฒเธเธเธฒเธฃเธ•เธฃเธงเธเธชเธญเธเน€เธเธทเนเธญเธเธ•เนเธ เนเธเนเธซเธฃเธทเธญเนเธกเน?</p>
+              <p className="text-[13px] text-gray-500 mb-6">เธฃเธซเธฑเธชเธเธณเธเธญ: {requests.find(r => r.id === confirmData.id)?.requestCode}</p>
+              <div className="flex justify-end gap-3">
+                <button onClick={() => { setShowConfirmModal(false); setConfirmData(null); }} className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-sm font-bold transition-colors">
+                  เธขเธเน€เธฅเธดเธ
+                </button>
+                <button onClick={executeApprove} className="px-4 py-2 bg-[#00C853] hover:bg-[#00B04A] text-white rounded-lg text-sm font-bold transition-colors">
+                  เธขเธทเธเธขเธฑเธเธเธฒเธฃเธ—เธณเธฃเธฒเธขเธเธฒเธฃ
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Confirm Reject Modal (Small) */}
+      {showRejectModal && rejectData && (
+        <div className="fixed inset-0 z-[130] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white rounded-2xl w-full max-w-[400px] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
+            <div className="bg-[#FF0000] px-6 py-4 flex items-center justify-between">
+              <h3 className="text-white font-bold text-lg">เธขเธทเธเธขเธฑเธเธเธฒเธฃเธเธเธดเน€เธชเธเธเธณเธเธญ</h3>
+              <button onClick={() => { setShowRejectModal(false); setRejectData(null); setRejectReasonInput(""); }} className="text-white/80 hover:text-white">
+                <X className="w-5 h-5" strokeWidth={3} />
+              </button>
+            </div>
+            <div className="p-6">
+              <p className="text-gray-700 text-sm font-medium mb-1">เธเธธเธ“เธ•เนเธญเธเธเธฒเธฃเธเธเธดเน€เธชเธเธเธณเธเธญเธฅเธฒเธเธตเน เนเธเนเธซเธฃเธทเธญเนเธกเน?</p>
+              <p className="text-[13px] text-gray-500 mb-4">เธฃเธซเธฑเธชเธเธณเธเธญ: {requests.find(r => r.id === rejectData.id)?.requestCode}</p>
+              <div className="mb-6">
+                <label className="block text-xs font-bold text-gray-700 mb-1">เน€เธซเธ•เธธเธเธฅเธ—เธตเนเธเธเธดเน€เธชเธ <span className="text-red-500">*</span></label>
+                <input
+                  type="text"
+                  value={rejectReasonInput}
+                  onChange={(e) => setRejectReasonInput(e.target.value)}
+                  className="w-full border border-gray-300 rounded-lg p-2 text-sm outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 text-black"
+                  placeholder="เธฃเธฐเธเธธเน€เธซเธ•เธธเธเธฅ..."
+                  autoFocus
+                />
+              </div>
+              <div className="flex justify-end gap-3">
+                <button onClick={() => { setShowRejectModal(false); setRejectData(null); setRejectReasonInput(""); }} className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-sm font-bold transition-colors">
+                  เธขเธเน€เธฅเธดเธ
+                </button>
+                <button onClick={executeReject} className="px-4 py-2 bg-[#FF0000] hover:bg-[#E50000] text-white rounded-lg text-sm font-bold transition-colors">
+                  เธขเธทเธเธขเธฑเธเธเธเธดเน€เธชเธ
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Preview Attachment Modal */}
+      {previewAttachment && (
+        <div className="fixed inset-0 z-[140] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200" onClick={() => setPreviewAttachment(null)}>
+          <div className="bg-white rounded-[24px] w-full max-w-4xl shadow-2xl flex flex-col max-h-[90vh] animate-in zoom-in-95 duration-200 border-2 border-blue-500 overflow-hidden relative" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 bg-[#FAFAFA]">
+              <h2 className="text-[16px] font-bold text-black">เนเธเธฅเนเน€เธญเธเธชเธฒเธฃเนเธเธ (Attachment)</h2>
+              <button
+                onClick={() => setPreviewAttachment(null)}
+                className="w-8 h-8 flex items-center justify-center text-white bg-red-500 rounded-full hover:bg-red-600 transition-colors shadow-sm"
+              >
+                <X className="w-5 h-5" strokeWidth={3} />
+              </button>
+            </div>
+            <div className="p-6 overflow-y-auto flex-1 flex items-center justify-center bg-gray-50/50">
+              {previewAttachment.isImage ? (
+                <img src={previewAttachment.url} alt="Preview" className="max-w-full max-h-[70vh] object-contain rounded-lg shadow-sm border border-gray-200" />
+              ) : (
+                <iframe src={previewAttachment.url} className="w-full h-[75vh] bg-white rounded-lg shadow-sm border border-gray-200" />
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+    </div>
+  );
+}
+

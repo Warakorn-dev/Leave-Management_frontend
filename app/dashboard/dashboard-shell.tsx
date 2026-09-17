@@ -1,31 +1,31 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { X } from "lucide-react";
-import { GlobalHeader } from "@/components/GlobalHeader";
+import { Menu, X } from "lucide-react";
+import { NotificationDropdown } from "@/components/NotificationDropdown";
+import { RealtimeClock } from "@/components/RealtimeClock";
 import { UserSidebar } from "@/components/sidebar-user";
 import { ManagerSidebar } from "@/components/ManagerSidebar";
 import { HRSidebar } from "@/components/HRSidebar";
 import { CEOSidebar } from "@/components/sidebar-ceo";
+<<<<<<< HEAD
 import AIChatWidget from "@/components/AIChatWidget";
+=======
+import { AdminSidebar } from "@/components/AdminSidebar";
+>>>>>>> b6f02caf72656e7b68c88c3020a9862b0b251e3c
 
 export default function DashboardShell({ children }: { children: React.ReactNode }) {
   const [role, setRole] = useState<string | null>(null);
-  const [username, setUsername] = useState("");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const pathname = usePathname();
   const router = useRouter();
 
-  // Initialize theme from storage
+  // Ensure default clean theme
   useEffect(() => {
-    const savedTheme = localStorage.getItem("app_theme") || localStorage.getItem("auth-theme");
-    if (savedTheme === "dark" || (!savedTheme && window.matchMedia("(prefers-color-scheme: dark)").matches)) {
-      document.documentElement.classList.add("dark");
-    } else if (savedTheme === "light" || savedTheme === "gray") {
-      document.documentElement.classList.remove("dark");
-    }
+    document.documentElement.classList.remove("dark", "fantasy-mode");
+    localStorage.removeItem("app_theme");
+    localStorage.removeItem("global_app_theme");
   }, []);
 
   // Close mobile menu on route change
@@ -45,18 +45,16 @@ export default function DashboardShell({ children }: { children: React.ReactNode
 
   useEffect(() => {
     const storedRole = sessionStorage.getItem("role")?.toLowerCase();
-    const storedName = sessionStorage.getItem("username");
-    if (storedName) {
-      setUsername(storedName);
-    }
     if (!storedRole) {
+      // Don't redirect if the idle-timeout popup is currently showing
+      if (sessionStorage.getItem('idleTimeoutTriggered') === 'true') return;
       router.push("/login");
     } else {
       if (storedRole === "manager" && !pathname.startsWith("/dashboard/manager")) {
         router.push("/dashboard/manager/dashboard");
         return;
       }
-      if ((storedRole === "user" || storedRole === "employee") && !pathname.startsWith("/dashboard/user")) {
+      if (storedRole === "user" && !pathname.startsWith("/dashboard/user")) {
         router.push("/dashboard/user/dashboard");
         return;
       }
@@ -68,16 +66,21 @@ export default function DashboardShell({ children }: { children: React.ReactNode
         router.push("/dashboard/ceo/dashboard");
         return;
       }
+      if (storedRole === "admin" && !pathname.startsWith("/dashboard/admin")) {
+        router.push("/dashboard/admin/dashboard");
+        return;
+      }
 
       setRole(storedRole);
-      setUsername(storedName || storedRole);
     }
   }, [router, pathname]);
+
 
   if (!role) return null; // loading
 
   const renderSidebar = () => {
     switch (role) {
+      case "admin": return <AdminSidebar onNavigate={() => setMobileMenuOpen(false)} />;
       case "manager": return <ManagerSidebar onNavigate={() => setMobileMenuOpen(false)} />;
       case "hr": return <HRSidebar onNavigate={() => setMobileMenuOpen(false)} />;
       case "ceo": return <CEOSidebar onNavigate={() => setMobileMenuOpen(false)} />;
@@ -114,12 +117,29 @@ export default function DashboardShell({ children }: { children: React.ReactNode
         </div>
       )}
 
-      {/* Main Content Area */}
-      <main className="flex-1 flex flex-col min-w-0 overflow-hidden relative bg-[#F8F9FA] dark:bg-slate-950 text-slate-900 dark:text-slate-100 transition-colors duration-200">
-        {/* Global Centralized Header */}
-        <GlobalHeader onOpenMobileMenu={() => setMobileMenuOpen(true)} />
-        
-        {/* Page Content */}
+      {/* Main Content */}
+      <main className="flex-1 flex flex-col min-w-0 overflow-hidden relative bg-[#F8F9FA] text-slate-900">
+        <header className="h-14 sm:h-16 flex items-center justify-between px-3 sm:px-6 border-b border-gray-200 bg-white z-40 sticky top-0 shrink-0 shadow-sm relative">
+          
+          {/* Left / Center Area: Mobile Toggle & Real-time Live Clock */}
+          <div className="flex items-center gap-3">
+            {/* Mobile Hamburger - only on small screens */}
+            <button
+              className="lg:hidden flex items-center justify-center w-10 h-10 rounded-xl hover:bg-gray-100 transition-colors text-gray-700"
+              onClick={() => setMobileMenuOpen(true)}
+            >
+              <Menu className="w-6 h-6" />
+            </button>
+
+            {/* Real-time Clock Component */}
+            <RealtimeClock />
+          </div>
+
+          {/* Right Area: Notifications */}
+          <div className="flex items-center gap-4 sm:gap-6 text-black relative">
+            <NotificationDropdown />
+          </div>
+        </header>
         <div className="flex-1 overflow-auto">
           {children}
         </div>

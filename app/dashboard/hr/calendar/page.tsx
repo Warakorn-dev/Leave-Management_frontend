@@ -2,10 +2,11 @@
 
 import { useState, useEffect } from 'react';
 import { useLeave } from '@/hooks/useLeave';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { CalendarDays } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import Swal from 'sweetalert2';
 import { holidayApi } from '@/lib/api';
+import type { Leave } from '@/lib/api/types';
 
 // mockLeaves removed
 
@@ -35,11 +36,10 @@ const daysOfWeek = [
 
 export default function LeaveCalendarPage() {
   const [currentDate, setCurrentDate] = useState(new Date()); // Default to July 2026
-  const [allLeaves, setAllLeaves] = useState<any[]>([]);
-  const [username, setUsername] = useState('Manager');
+  const [allLeaves, setAllLeaves] = useState<Leave[]>([]);
   const [department, setDepartment] = useState('');
   const [actualUserId, setActualUserId] = useState('');
-  const [selectedDateLeaves, setSelectedDateLeaves] = useState<any[] | null>(
+  const [selectedDateLeaves, setSelectedDateLeaves] = useState<Leave[] | null>(
     null,
   );
   const [selectedDateString, setSelectedDateString] = useState('');
@@ -47,8 +47,7 @@ export default function LeaveCalendarPage() {
   const router = useRouter();
 
   const { useLeavesQuery, useHolidaysQuery } = useLeave();
-  const { data: leavesData = [], refetch: refetchLeaves } =
-    useLeavesQuery(true);
+  const { data: leavesData = [] } = useLeavesQuery(true);
   const { data: holidaysData = [], refetch: refetchHolidays } =
     useHolidaysQuery();
 
@@ -58,14 +57,11 @@ export default function LeaveCalendarPage() {
       router.push('/login');
       return;
     }
-    const storedUsername = sessionStorage.getItem('username');
-    if (storedUsername)
-      setUsername(sessionStorage.getItem('fullName') || storedUsername);
     const storedDept = sessionStorage.getItem('department') || '';
     setDepartment(storedDept);
     setActualUserId(sessionStorage.getItem('userId') || '');
 
-    const approvedLeaves = leavesData.filter((r: any) => {
+    const approvedLeaves = leavesData.filter((r) => {
       const s = (r.status || '').toUpperCase();
       return s === 'APPROVED' || s.includes('APPROVED');
     });
@@ -75,7 +71,7 @@ export default function LeaveCalendarPage() {
   const currentMonth = currentDate.getMonth();
   const currentYear = currentDate.getFullYear();
 
-  const publicHolidays = holidaysData.map((h: any) => ({
+  const publicHolidays = holidaysData.map((h) => ({
     id: h.id,
     date: h.date.split('T')[0],
     title: h.name,
@@ -85,18 +81,22 @@ export default function LeaveCalendarPage() {
   const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
   const firstDayOfMonth = new Date(currentYear, currentMonth, 1).getDay();
 
-  const prevMonth = () =>
-    setCurrentDate(new Date(currentYear, currentMonth - 1, 1));
-  const nextMonth = () =>
-    setCurrentDate(new Date(currentYear, currentMonth + 1, 1));
-
   // Build calendar cells
   const blanks = Array.from({ length: firstDayOfMonth }, (_, i) => i);
   const days = Array.from({ length: daysInMonth }, (_, i) => i + 1);
 
+  interface CalendarDayEvent {
+    id?: string;
+    date?: string;
+    title?: string;
+    type: string;
+    isStart?: boolean;
+    raw?: Leave;
+  }
+
   const getEventsForDate = (day: number) => {
     const dateStr = `${currentYear}-${(currentMonth + 1).toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`;
-    const events: any[] = [];
+    const events: CalendarDayEvent[] = [];
 
     // Check holidays
     const holiday = publicHolidays.find((h) => h.date === dateStr);
@@ -132,7 +132,7 @@ export default function LeaveCalendarPage() {
           String(leave.employeeId) === String(actualUserId);
         events.push({
           title: leave.user?.firstName
-            ? `${leave.user.firstName} - ${leave.leaveType?.name || leave.type}`
+            ? `${leave.user.firstName} - ${(typeof leave.leaveType === 'object' ? leave.leaveType?.name : leave.leaveType) || leave.type}`
             : leave.type,
           type: isMine ? 'my-leave' : 'leave',
           isStart: startStr === dateStr,
@@ -142,46 +142,6 @@ export default function LeaveCalendarPage() {
     });
 
     return events;
-  };
-
-  const handleAddHoliday = async () => {
-    const { value: formValues } = await Swal.fire({
-      title: 'เพิ่มวันหยุดนักขัตฤกษ์',
-      html:
-        '<input id="swal-input-name" class="swal2-input" placeholder="ชื่อวันหยุด">' +
-        '<input id="swal-input-date" type="date" class="swal2-input">',
-      focusConfirm: false,
-      showCancelButton: true,
-      confirmButtonText: 'บันทึก',
-      cancelButtonText: 'ยกเลิก',
-      preConfirm: () => {
-        const name = (
-          document.getElementById('swal-input-name') as HTMLInputElement
-        ).value;
-        const date = (
-          document.getElementById('swal-input-date') as HTMLInputElement
-        ).value;
-        if (!name || !date) {
-          Swal.showValidationMessage('กรุณากรอกข้อมูลให้ครบถ้วน');
-        }
-        return { name, date };
-      },
-    });
-
-    if (formValues) {
-      try {
-        const res = await holidayApi.create(formValues);
-        const data = res.data;
-        if ((data as any).success || data) {
-          Swal.fire('สำเร็จ', 'เพิ่มวันหยุดเรียบร้อยแล้ว', 'success');
-          refetchHolidays();
-        } else {
-          Swal.fire('ผิดพลาด', 'ไม่สามารถเพิ่มวันหยุดได้', 'error');
-        }
-      } catch (err) {
-        Swal.fire('ผิดพลาด', 'เกิดข้อผิดพลาดในการเชื่อมต่อ', 'error');
-      }
-    }
   };
 
   const handleDeleteHoliday = (id: string) => {
@@ -198,11 +158,11 @@ export default function LeaveCalendarPage() {
         try {
           const res = await holidayApi.delete(id);
           const data = res.data;
-          if ((data as any).success || data) {
+          if (data) {
             Swal.fire('สำเร็จ', 'ลบวันหยุดเรียบร้อยแล้ว', 'success');
             refetchHolidays();
           }
-        } catch (err) {
+        } catch {
           Swal.fire('ผิดพลาด', 'เกิดข้อผิดพลาดในการเชื่อมต่อ', 'error');
         }
       }
@@ -212,23 +172,21 @@ export default function LeaveCalendarPage() {
   return (
     <div className="min-h-[calc(100vh-4rem)] bg-[#E2E4E9] font-sans text-slate-800 flex flex-col relative pb-8">
       {/* Top Banner */}
-      <div className="bg-white flex items-center justify-between px-8 py-5 shadow-sm z-10">
-        <div>
-          <h1 className="text-xl font-bold text-black tracking-tight">
-            ปฏิทินวันลา{' '}
-          </h1>
+      <div className="bg-white flex items-center gap-3 sm:gap-4 px-4 sm:px-8 py-3 sm:py-5 shadow-sm z-10 shrink-0">
+        <div className="w-9 h-9 sm:w-11 sm:h-11 bg-blue-100 text-blue-600 rounded-xl flex items-center justify-center shrink-0">
+          <CalendarDays className="w-6 h-6" strokeWidth={2} />
         </div>
         <div>
-          <button
-            onClick={handleAddHoliday}
-            className="bg-[#28305c] hover:bg-[#1e2447] text-white font-bold py-2 px-4 rounded-xl shadow-sm hover:shadow transition-all text-sm"
-          >
-            + เพิ่มวันหยุดนักขัตฤกษ์
-          </button>
+          <h1 className="text-base sm:text-xl font-bold text-black tracking-tight">
+            ปฏิทินวันลา
+          </h1>
+          <p className="text-xs text-gray-500 mt-1 font-medium">
+            ภาพรวมวันลาของพนักงานทั้งบริษัทในรูปแบบปฏิทิน
+          </p>
         </div>
       </div>
 
-      <div className="flex-1 p-6 md:p-8">
+      <div className="flex-1 p-4 sm:p-6 md:p-8">
         <div className="max-w-[1200px] mx-auto bg-[#D9D9D9] p-4 rounded-xl shadow-md animate-in fade-in zoom-in-95 duration-300">
           {/* Calendar Header Control */}
           <div className="flex flex-col md:flex-row items-center justify-between mb-4 bg-transparent px-2">
@@ -340,7 +298,8 @@ export default function LeaveCalendarPage() {
           </div>
 
           {/* Calendar Grid */}
-          <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-sm">
+          <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-sm overflow-x-auto">
+            <div className="min-w-[700px]">
             <div className="grid grid-cols-7 w-full border-b border-gray-200 bg-gray-50/80">
               {/* Days Header */}
               {daysOfWeek.map((d) => (
@@ -379,7 +338,8 @@ export default function LeaveCalendarPage() {
                         .filter(
                           (e) => e.type === 'leave' || e.type === 'my-leave',
                         )
-                        .map((e) => e.raw);
+                        .map((e) => e.raw)
+                        .filter((r): r is Leave => Boolean(r));
                       if (leavesOnDay.length > 0) {
                         const formattedDate = `${d} ${['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'][currentMonth]} ${currentYear + 543}`;
                         setSelectedDateLeaves(leavesOnDay);
@@ -408,7 +368,7 @@ export default function LeaveCalendarPage() {
                               <button
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  handleDeleteHoliday(evt.id);
+                                  if (evt.id) handleDeleteHoliday(evt.id);
                                 }}
                                 className="text-red-400 hover:text-red-600 ml-1 shrink-0 text-sm font-black leading-none"
                               >
@@ -424,14 +384,14 @@ export default function LeaveCalendarPage() {
                               key={idx}
                               className="bg-[#E6F7F8] text-[#12B8B8] font-bold text-[11px] px-2 py-1.5 rounded-md truncate border border-[#B2DFDB] shadow-sm transition-all hover:shadow hover:-translate-y-px"
                             >
-                              {evt.title.includes(' - ') ? (
+                              {(evt.title || '').includes(' - ') ? (
                                 <>
                                   <span className="font-medium">
-                                    {evt.title.split(' - ')[0]}
+                                    {(evt.title || '').split(' - ')[0]}
                                   </span>
                                   <span> - </span>
                                   <span className="font-extrabold">
-                                    {evt.title
+                                    {(evt.title || '')
                                       .split(' - ')
                                       .slice(1)
                                       .join(' - ')}
@@ -450,14 +410,14 @@ export default function LeaveCalendarPage() {
                               key={idx}
                               className="bg-[#F0F5FF] text-[#3B82F6] font-bold text-[11px] px-2 py-1.5 rounded-md truncate border border-blue-100 shadow-sm transition-all hover:shadow hover:-translate-y-px"
                             >
-                              {evt.title.includes(' - ') ? (
+                              {(evt.title || '').includes(' - ') ? (
                                 <>
                                   <span className="font-medium">
-                                    {evt.title.split(' - ')[0]}
+                                    {(evt.title || '').split(' - ')[0]}
                                   </span>
                                   <span> - </span>
                                   <span className="font-extrabold">
-                                    {evt.title
+                                    {(evt.title || '')
                                       .split(' - ')
                                       .slice(1)
                                       .join(' - ')}
@@ -480,16 +440,17 @@ export default function LeaveCalendarPage() {
                 );
               })}
             </div>
+            </div>
           </div>
         </div>
       </div>
 
       {/* Leave Details Modal */}
       {selectedDateLeaves && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl w-full max-w-[500px] shadow-2xl flex flex-col max-h-[85vh] animate-in zoom-in-95 duration-200 overflow-hidden">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white rounded-xl w-full max-w-[500px] shadow-2xl flex flex-col max-h-[85vh] animate-in zoom-in-95 duration-200 overflow-hidden">
             {/* Modal Header */}
-            <div className="bg-[#1f1a4e] dark:bg-slate-950 px-6 py-5 flex items-center justify-between border-b border-slate-800">
+            <div className="bg-[#1f1a4e] px-6 py-5 flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div className="w-9 h-9 rounded-full flex items-center justify-center border border-[#ffaa00]/30 text-[#ffaa00]">
                   <svg
@@ -518,7 +479,7 @@ export default function LeaveCalendarPage() {
               </div>
               <button
                 onClick={() => setSelectedDateLeaves(null)}
-                className="w-7 h-7 bg-[#ff4d4f] hover:bg-[#ff7875] text-white rounded-full flex items-center justify-center transition-colors shadow-sm cursor-pointer"
+                className="w-7 h-7 bg-[#ff4d4f] hover:bg-[#ff7875] text-white rounded-full flex items-center justify-center transition-colors shadow-sm"
               >
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
@@ -538,7 +499,7 @@ export default function LeaveCalendarPage() {
             </div>
 
             {/* Modal Body */}
-            <div className="p-6 overflow-y-auto flex-1 bg-[#f9fafb] dark:bg-[#0B1120]">
+            <div className="p-6 overflow-y-auto flex-1 bg-[#f9fafb]">
               <div className="space-y-4">
                 {selectedDateLeaves.map((leave, idx) => {
                   const empName =
@@ -551,26 +512,23 @@ export default function LeaveCalendarPage() {
                   const initial = empName.charAt(0);
                   const deptName =
                     leave.departmentName ||
-                    (typeof leave.department === 'string'
-                      ? leave.department
-                      : leave.department?.name) ||
+                    leave.department ||
                     leave.user?.department?.name ||
                     leave.employee?.department?.name ||
                     '-';
                   const positionName =
                     leave.positionName ||
-                    (typeof leave.position === 'string'
-                      ? leave.position
-                      : leave.position?.name) ||
+                    leave.position ||
                     leave.user?.position?.name ||
                     leave.employee?.position?.name ||
                     '-';
                   const leaveType = leave.type || leave.leaveTypeName || '-';
-                  const profilePic =
+                  const profilePic: string | null =
                     leave.user?.avatarUrl ||
-                    leave.user?.profilePic ||
+                    (typeof leave.user?.profilePic === 'string'
+                      ? leave.user.profilePic
+                      : undefined) ||
                     leave.employee?.user?.avatarUrl ||
-                    leave.avatarUrl ||
                     null;
 
                   // Format Date Range
@@ -591,25 +549,26 @@ export default function LeaveCalendarPage() {
                       : `${startDateStr} - ${endDateStr}`;
 
                   // Determine badge colors based on leave type
-                  let badgeBg = 'bg-blue-100 dark:bg-blue-900/40 border border-blue-200 dark:border-blue-800';
-                  let badgeText = 'text-blue-700 dark:text-blue-300';
+                  let badgeBg = 'bg-blue-100';
+                  let badgeText = 'text-blue-700';
                   if (leaveType.includes('ป่วย')) {
-                    badgeBg = 'bg-orange-100 dark:bg-orange-900/40 border border-orange-200 dark:border-orange-800';
-                    badgeText = 'text-orange-700 dark:text-orange-300';
+                    badgeBg = 'bg-orange-100';
+                    badgeText = 'text-orange-700';
                   } else if (leaveType.includes('กิจ')) {
-                    badgeBg = 'bg-cyan-100 dark:bg-cyan-900/40 border border-cyan-200 dark:border-cyan-800';
-                    badgeText = 'text-cyan-700 dark:text-cyan-300';
+                    badgeBg = 'bg-cyan-100';
+                    badgeText = 'text-cyan-700';
                   }
 
                   return (
                     <div
                       key={idx}
-                      className="bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-xl p-5 flex flex-col gap-4 shadow-sm transition-transform hover:-translate-y-0.5"
+                      className="bg-white border border-gray-100 rounded-xl p-5 flex flex-col gap-4 shadow-[0_2px_10px_rgba(0,0,0,0.02)] transition-transform hover:-translate-y-0.5"
                     >
                       {/* Top Row: User Info & Badge */}
                       <div className="flex items-center gap-4">
-                        <div className="w-[42px] h-[42px] rounded-full bg-indigo-50 dark:bg-indigo-900/40 flex items-center justify-center border border-indigo-100 dark:border-indigo-800 shrink-0 overflow-hidden relative group">
+                        <div className="w-[42px] h-[42px] rounded-full bg-indigo-50 flex items-center justify-center border border-indigo-100 shrink-0 overflow-hidden relative group">
                           {profilePic ? (
+                            // eslint-disable-next-line @next/next/no-img-element -- dynamic user avatar; next/image needs a configured remote loader
                             <img
                               src={
                                 profilePic.startsWith('http') ||
@@ -628,16 +587,16 @@ export default function LeaveCalendarPage() {
                             />
                           ) : null}
                           <span
-                            className={`text-[18px] font-bold text-indigo-700 dark:text-indigo-300 ${profilePic ? 'hidden' : ''}`}
+                            className={`text-[18px] font-bold text-indigo-700 ${profilePic ? 'hidden' : ''}`}
                           >
                             {initial}
                           </span>
                         </div>
                         <div className="flex-1 min-w-0">
-                          <h3 className="font-bold text-[15px] text-gray-900 dark:text-slate-100 truncate">
+                          <h3 className="font-bold text-[15px] text-gray-900 truncate">
                             {empName}
                           </h3>
-                          <p className="text-[12px] text-gray-400 dark:text-slate-400 font-medium truncate">
+                          <p className="text-[12px] text-gray-400 font-medium truncate">
                             {deptName} • {positionName}
                           </p>
                         </div>
@@ -649,20 +608,20 @@ export default function LeaveCalendarPage() {
                       </div>
 
                       {/* Bottom Row: Additional Details */}
-                      <div className="bg-gray-50/80 dark:bg-slate-800/80 rounded-lg p-3 space-y-2 text-[13px] border border-gray-100 dark:border-slate-700/60">
+                      <div className="bg-gray-50/80 rounded-lg p-3 space-y-2 text-[13px] border border-gray-100">
                         <div className="flex justify-between items-start">
-                          <span className="text-gray-500 dark:text-slate-400 font-bold min-w-[70px]">
+                          <span className="text-gray-500 font-bold min-w-[70px]">
                             วันที่ลา:
                           </span>
-                          <span className="text-gray-800 dark:text-slate-200 text-right">
+                          <span className="text-gray-800 text-right">
                             {dateDisplay}
                           </span>
                         </div>
                         <div className="flex justify-between items-start">
-                          <span className="text-gray-500 dark:text-slate-400 font-bold min-w-[70px]">
+                          <span className="text-gray-500 font-bold min-w-[70px]">
                             รูปแบบ:
                           </span>
-                          <span className="text-gray-800 dark:text-slate-200 text-right">
+                          <span className="text-gray-800 text-right">
                             {leave.startDate === leave.endDate
                               ? leave.startFormat === 'morning'
                                 ? 'ครึ่งวันเช้า'
@@ -670,16 +629,16 @@ export default function LeaveCalendarPage() {
                                   ? 'ครึ่งวันบ่าย'
                                   : 'เต็มวัน'
                               : 'หลายวัน'}
-                            <span className="ml-1 text-blue-600 dark:text-blue-400 font-bold">
+                            <span className="ml-1 text-blue-600 font-bold">
                               ({leave.totalDays || leave.durationDays || 0} วัน)
                             </span>
                           </span>
                         </div>
                         <div className="flex justify-between items-start">
-                          <span className="text-gray-500 dark:text-slate-400 font-bold min-w-[70px]">
+                          <span className="text-gray-500 font-bold min-w-[70px]">
                             เหตุผล:
                           </span>
-                          <span className="text-gray-800 dark:text-slate-200 text-right line-clamp-2">
+                          <span className="text-gray-800 text-right line-clamp-2">
                             {leave.reason || '-'}
                           </span>
                         </div>

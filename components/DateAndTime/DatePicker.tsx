@@ -1,8 +1,9 @@
+/* eslint-disable @typescript-eslint/ban-ts-comment, @typescript-eslint/no-explicit-any -- MUI X Date Pickers' generics don't unify across the static/mobile/desktop variants and the Buddhist-era adapter; ts-nocheck + any are a deliberate escape hatch here, not an oversight. */
 // @ts-nocheck
-"use client";
+'use client';
 
-import React, { useState, useEffect, useMemo } from 'react';
-import { Box, Typography, createTheme, ThemeProvider } from '@mui/material';
+import React from 'react';
+import { Box, Typography } from '@mui/material';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { DatePicker as MuiDatePicker } from '@mui/x-date-pickers/DatePicker';
@@ -37,36 +38,59 @@ class AdapterDayjsBuddhist extends AdapterDayjs {
   }
 }
 
-// Common styles with Sarabun font
-const pickerStyles = {
-  fontFamily: 'var(--font-sarabun), Sarabun, system-ui, sans-serif',
-  '& .MuiOutlinedInput-root': {
-    fontFamily: 'var(--font-sarabun), Sarabun, system-ui, sans-serif',
-    borderRadius: 2,
-    bgcolor: 'background.paper',
-    height: 38,
-    transition: 'all 0.2s',
-    '&:hover': {
-      borderColor: '#2563eb',
+// Common styles to enforce EPP's premium purple design
+const getPickerStyles = (borderless = false, customSx = {}) => {
+  if (borderless) {
+    return {
+      '& .MuiOutlinedInput-root': {
+        bgcolor: 'transparent !important',
+        height: '100%',
+        minHeight: 0,
+        boxShadow: 'none !important',
+        '& fieldset': {
+          border: 'none !important',
+        },
+        '& .MuiOutlinedInput-notchedOutline': {
+          border: 'none !important',
+        },
+        '&:hover': {
+          borderColor: 'transparent !important',
+        },
+        '&:hover fieldset': {
+          border: 'none !important',
+        },
+        '&.Mui-focused': {
+          borderColor: 'transparent !important',
+          boxShadow: 'none !important',
+        },
+        '&.Mui-focused fieldset': {
+          border: 'none !important',
+        },
+      },
+      ...customSx,
+    };
+  }
+
+  return {
+    '& .MuiOutlinedInput-root': {
+      borderRadius: 2,
+      bgcolor: 'background.paper',
+      height: 38,
+      transition: 'all 0.2s',
+      '&:hover': {
+        borderColor: '#6b38fb',
+      },
+      '&.Mui-focused': {
+        borderColor: '#6b38fb',
+        boxShadow: '0 0 0 2px rgba(107, 56, 251, 0.2)',
+      },
     },
-    '&.Mui-focused': {
-      borderColor: '#2563eb',
-      boxShadow: '0 0 0 2px rgba(37, 99, 235, 0.2)',
-    },
-  },
-  '& .MuiInputBase-input': {
-    fontFamily: 'var(--font-sarabun), Sarabun, system-ui, sans-serif',
-    fontSize: '0.875rem',
-  },
+    ...customSx,
+  };
 };
 
 const layoutStyles = (theme) => ({
-  fontFamily: 'var(--font-sarabun), Sarabun, system-ui, sans-serif',
-  '& *': {
-    fontFamily: 'var(--font-sarabun), Sarabun, system-ui, sans-serif !important',
-  },
   '& .MuiPickersLayout-root': {
-    fontFamily: 'var(--font-sarabun), Sarabun, system-ui, sans-serif',
     borderRadius: 3,
     overflow: 'hidden',
     boxShadow: theme.palette.mode === 'dark' ? '0 8px 32px rgba(0,0,0,0.5)' : '0 8px 32px rgba(0,0,0,0.08)',
@@ -74,7 +98,7 @@ const layoutStyles = (theme) => ({
     backgroundColor: theme.palette.background.paper,
   },
   '& .MuiPickersToolbar-root': {
-    backgroundColor: '#2563eb',
+    backgroundColor: '#6b38fb',
     color: '#ffffff',
     '& *': {
       color: '#ffffff !important',
@@ -88,7 +112,7 @@ const layoutStyles = (theme) => ({
     color: theme.palette.text.primary,
   },
   '& .MuiPickersArrowSwitcher-button': {
-    color: '#2563eb',
+    color: '#6b38fb',
   },
   '& .MuiDayCalendar-weekHeader .MuiTypography-root': {
     fontWeight: 'bold',
@@ -99,24 +123,24 @@ const layoutStyles = (theme) => ({
     borderRadius: '50%',
     color: theme.palette.text.primary,
     '&:hover': {
-      backgroundColor: theme.palette.mode === 'dark' ? '#3b3b3b' : '#eff6ff',
+      backgroundColor: theme.palette.mode === 'dark' ? '#3b3b3b' : '#f3e5f5',
     },
     '&.Mui-selected': {
-      backgroundColor: '#2563eb !important',
+      backgroundColor: '#6b38fb !important',
       color: '#ffffff !important',
       '&:hover': {
-        backgroundColor: '#1d4ed8 !important',
+        backgroundColor: '#5521e6 !important',
       },
     },
     '&.MuiPickersDay-today': {
-      borderColor: '#2563eb',
+      borderColor: '#6b38fb',
       '&:not(.Mui-selected)': {
-        color: '#2563eb',
+        color: '#6b38fb',
       },
     },
   },
   '& .MuiDialogActions-root .MuiButton-root': {
-    color: '#2563eb',
+    color: '#6b38fb',
     fontWeight: 'bold',
     borderRadius: 2,
     px: 2,
@@ -187,6 +211,10 @@ export interface DatePickerProps {
   disabled?: boolean;
   minDate?: any;
   maxDate?: any;
+  borderless?: boolean;
+  className?: string;
+  sx?: any;
+  slotProps?: any;
   [key: string]: any;
 }
 
@@ -203,6 +231,10 @@ export default function DatePicker({
   disabled = false,
   minDate,
   maxDate,
+  borderless = false,
+  className,
+  sx,
+  slotProps,
   ...props
 }: DatePickerProps) {
   const actualValue = value !== undefined ? value : selected;
@@ -219,62 +251,48 @@ export default function DatePicker({
   const parsedMinDate = minDate ? dayjs(minDate) : undefined;
   const parsedMaxDate = maxDate ? dayjs(maxDate) : undefined;
 
-  const [isDark, setIsDark] = useState(false);
-
-  useEffect(() => {
-    const checkDark = () => {
-      setIsDark(document.documentElement.classList.contains('dark'));
-    };
-    checkDark();
-    const observer = new MutationObserver(checkDark);
-    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
-    return () => observer.disconnect();
-  }, []);
-
-  const muiTheme = useMemo(() => {
-    return createTheme({
-      palette: {
-        mode: isDark ? 'dark' : 'light',
-        primary: {
-          main: '#2563eb',
-        },
-        background: {
-          paper: isDark ? '#111827' : '#ffffff',
-          default: isDark ? '#0b1120' : '#ffffff',
-        },
-        text: {
-          primary: isDark ? '#f8fafc' : '#1e293b',
-          secondary: isDark ? '#cbd5e1' : '#64748b',
-        },
-        divider: isDark ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0, 0, 0, 0.12)',
-      },
-      typography: {
-        fontFamily: 'var(--font-sarabun), "Sarabun", system-ui, -apple-system, sans-serif',
-      },
-    });
-  }, [isDark]);
-
   const { data: holidaysData = [] } = useHolidaysQuery();
 
   const handleDateChange = (newValue) => {
-    if (onChange) {
-      if (newValue && dayjs.isDayjs(newValue)) {
-        if (props.views && props.views.length === 2 && props.views.includes('year') && props.views.includes('month')) {
-           // If it's a month picker (like ThaiMonthPicker), return YYYY-MM
-           onChange(newValue.format('YYYY-MM'));
-        } else if (selected !== undefined) {
-           // If used as ThaiDatePicker, return a Date object
-           onChange(newValue.toDate());
-        } else {
-           onChange(newValue);
-        }
+    if (!onChange) return;
+
+    // dayjs.isDayjs() only checks the object is a dayjs instance — it says
+    // nothing about whether the date it holds is valid. MUI still calls
+    // onChange with an *invalid* dayjs object while the user is mid-typing a
+    // section (e.g. a year that doesn't parse under the BBBB/Buddhist-era
+    // format this picker uses). Treating that as a real selection used to
+    // format it to the literal string "Invalid Date" and store that in state,
+    // which made the field render as empty — wiping out whatever had been
+    // typed, and doing so independently of any other field on the page.
+    if (newValue && dayjs.isDayjs(newValue) && newValue.isValid()) {
+      if (props.views && props.views.length === 2 && props.views.includes('year') && props.views.includes('month')) {
+         // If it's a month picker (like ThaiMonthPicker), return YYYY-MM
+         onChange(newValue.format('YYYY-MM'));
+      } else if (selected !== undefined) {
+         // If used as ThaiDatePicker, return a Date object
+         onChange(newValue.toDate());
       } else {
-        onChange(newValue);
+         onChange(newValue);
       }
+      return;
+    }
+
+    // A genuine clear (user emptied the field) comes through as exactly
+    // `null`; forward that. An invalid-but-incomplete dayjs object should not
+    // clear whatever value is already committed.
+    if (newValue === null) {
+      onChange(null);
     }
   };
 
   const renderPicker = () => {
+    const resolvedViews = props.views || ['year', 'month', 'day'];
+    const resolvedOpenTo =
+      props.openTo ||
+      (resolvedViews.includes('day')
+        ? 'day'
+        : resolvedViews[resolvedViews.length - 1]);
+
     switch (variant) {
       case 'inline':
         return (
@@ -285,8 +303,8 @@ export default function DatePicker({
               disabled={disabled}
               minDate={parsedMinDate}
               maxDate={parsedMaxDate}
-              views={props.views || ['year', 'month', 'day']}
-              openTo={props.openTo || 'day'}
+              views={resolvedViews}
+              openTo={resolvedOpenTo}
               slots={{
                 day: CustomDay,
               }}
@@ -308,24 +326,29 @@ export default function DatePicker({
             format={format}
             minDate={parsedMinDate}
             maxDate={parsedMaxDate}
-            views={props.views || ['year', 'month', 'day']}
-            openTo={props.openTo || 'day'}
+            views={resolvedViews}
+            openTo={resolvedOpenTo}
             slots={{
               day: CustomDay,
             }}
             slotProps={{
+              ...slotProps,
               toolbar: {
                 toolbarTitle: 'BASIC',
                 hidden: false,
+                ...slotProps?.toolbar,
               },
               textField: {
                 size: 'small',
                 fullWidth: fullWidth,
                 placeholder: actualPlaceholder,
-                sx: pickerStyles,
+                className: className,
+                sx: getPickerStyles(borderless, slotProps?.textField?.sx || sx),
+                ...slotProps?.textField,
               },
               layout: {
                 sx: layoutStyles,
+                ...slotProps?.layout,
               },
               dialog: {
                 PaperProps: {
@@ -334,8 +357,9 @@ export default function DatePicker({
                     overflow: 'hidden',
                   },
                 },
+                ...slotProps?.dialog,
               },
-              day: { holidays: holidaysData } as any,
+              day: { holidays: holidaysData, ...slotProps?.day } as any,
             }}
             {...props}
           />
@@ -350,22 +374,26 @@ export default function DatePicker({
             format={format}
             minDate={parsedMinDate}
             maxDate={parsedMaxDate}
-            views={props.views || ['year', 'month', 'day']}
-            openTo={props.openTo || 'day'}
+            views={resolvedViews}
+            openTo={resolvedOpenTo}
             slots={{
               day: CustomDay,
             }}
             slotProps={{
+              ...slotProps,
               textField: {
                 size: 'small',
                 fullWidth: fullWidth,
                 placeholder: actualPlaceholder,
-                sx: pickerStyles,
+                className: className,
+                sx: getPickerStyles(borderless, slotProps?.textField?.sx || sx),
+                ...slotProps?.textField,
               },
               layout: {
                 sx: layoutStyles,
+                ...slotProps?.layout,
               },
-              day: { holidays: holidaysData } as any,
+              day: { holidays: holidaysData, ...slotProps?.day } as any,
             }}
             {...props}
           />
@@ -374,21 +402,26 @@ export default function DatePicker({
   };
 
   return (
-    <ThemeProvider theme={muiTheme}>
-      <LocalizationProvider dateAdapter={AdapterDayjsBuddhist} adapterLocale="th">
-        <Box sx={{ width: '100%' }}>
-          {label && (
-            <Typography
-              variant="body2"
-              fontWeight="bold"
-              sx={{ mb: 0.5, color: 'text.primary' }}
-            >
-              {label}
-            </Typography>
-          )}
-          {renderPicker()}
-        </Box>
-      </LocalizationProvider>
-    </ThemeProvider>
+    <LocalizationProvider dateAdapter={AdapterDayjsBuddhist} adapterLocale="th">
+      <Box
+        sx={{
+          width: '100%',
+          height: borderless ? '100%' : 'auto',
+          display: borderless ? 'flex' : 'block',
+          alignItems: borderless ? 'center' : undefined,
+        }}
+      >
+        {label && (
+          <Typography
+            variant="body2"
+            fontWeight="bold"
+            sx={{ mb: 0.5, color: 'text.primary' }}
+          >
+            {label}
+          </Typography>
+        )}
+        {renderPicker()}
+      </Box>
+    </LocalizationProvider>
   );
 }

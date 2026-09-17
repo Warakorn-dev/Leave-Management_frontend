@@ -1,15 +1,17 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Calendar as CalendarIcon, X, User, Check, Clock, AlertCircle } from "lucide-react";
+import { Calendar as CalendarIcon } from "lucide-react";
 import Swal from "sweetalert2";
-import { isSameYearMonth } from "@/lib/api/utils";
+import { LeaveDetailModal } from "@/components/LeaveDetailModal";
+import type { Leave } from "@/lib/api/types";
+import { getErrorMessage } from "@/lib/api/utils";
 
 const getToken = () =>
   typeof window !== "undefined" ? sessionStorage.getItem("accessToken") : "";
 
 /** Fetch pending leave requests for the manager's department via dedicated endpoint */
-async function fetchManagerPending(): Promise<any[]> {
+async function fetchManagerPending(): Promise<Leave[]> {
   const res = await fetch("/api/manager/pending", {
     headers: { Authorization: `Bearer ${getToken()}` },
   });
@@ -76,7 +78,7 @@ function formatMonthYear(yyyyMM: string) {
   return `${months[parseInt(month) - 1]} ${parseInt(year) + 543}`;
 }
 
-function mapRequest(r: any) {
+function mapRequest(r: Leave) {
   let dateRangeStr = getDayRange(r.startDate, r.endDate);
   let daysStr = `${r.totalDays || 1} วัน`;
 
@@ -98,7 +100,7 @@ function mapRequest(r: any) {
     lastName: emp.lastName || "",
     department: emp.department?.name || "-",
     position: emp.position?.name || "-",
-    type: r.leaveType?.name || r.type || "-",
+    type: (typeof r.leaveType === 'object' ? r.leaveType?.name : r.leaveType) || r.type || "-",
     dateRange: `${dateRangeStr} (${daysStr})`,
     formattedDays: daysStr,
   };
@@ -107,7 +109,7 @@ function mapRequest(r: any) {
 // ──────────────── component ────────────────
 
 export default function HRDeptApprovePage() {
-  const [rawRequests, setRawRequests] = useState<any[]>([]);
+  const [rawRequests, setRawRequests] = useState<ReturnType<typeof mapRequest>[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   const [selectedMonthRaw, setSelectedMonthRaw] = useState(() => {
@@ -117,9 +119,8 @@ export default function HRDeptApprovePage() {
   const [isPickerOpen, setIsPickerOpen] = useState(false);
   const [tempYear, setTempYear] = useState(new Date().getFullYear());
 
-  const [selectedRequest, setSelectedRequest] = useState<any>(null);
+  const [selectedRequest, setSelectedRequest] = useState<ReturnType<typeof mapRequest> | null>(null);
   const [approverReason, setApproverReason] = useState("");
-  const [previewAttachment, setPreviewAttachment] = useState<{ url: string; isImage: boolean } | null>(null);
 
   const refetch = useCallback(async () => {
     setIsLoading(true);
@@ -142,7 +143,12 @@ export default function HRDeptApprovePage() {
   }, [selectedRequest]);
 
   // Filter by selected month
-  const requests = rawRequests.filter((r) => isSameYearMonth(r.startDate, selectedMonthRaw));
+  const requests = rawRequests.filter((r) => {
+    if (!r.startDate) return false;
+    const d = new Date(r.startDate);
+    const yyyyMM = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+    return yyyyMM === selectedMonthRaw;
+  });
 
   const handleMonthSelect = (monthIndex: number) => {
     setSelectedMonthRaw(`${tempYear}-${(monthIndex + 1).toString().padStart(2, "0")}`);
@@ -150,7 +156,7 @@ export default function HRDeptApprovePage() {
   };
 
   // ── approve ──
-  const handleApproveClick = async (req: any, comment?: string) => {
+  const handleApproveClick = async (req: ReturnType<typeof mapRequest>, comment?: string) => {
     const result = await Swal.fire({
       title: "ยืนยันการอนุมัติ",
       text: `อนุมัติคำขอลาของ ${req.firstName} ${req.lastName} (${req.formattedDays})?`,
@@ -168,13 +174,13 @@ export default function HRDeptApprovePage() {
       setSelectedRequest(null);
       refetch();
       Swal.fire({ icon: "success", title: "อนุมัติสำเร็จ", timer: 1500, showConfirmButton: false });
-    } catch (err: any) {
-      Swal.fire({ icon: "error", title: "เกิดข้อผิดพลาด", text: err.message });
+    } catch (err) {
+      Swal.fire({ icon: "error", title: "เกิดข้อผิดพลาด", text: getErrorMessage(err) });
     }
   };
 
   // ── reject ──
-  const handleRejectClick = async (req: any, prefillReason?: string) => {
+  const handleRejectClick = async (req: ReturnType<typeof mapRequest>, prefillReason?: string) => {
     const { value: reason, isConfirmed } = await Swal.fire({
       title: "ยืนยันการปฏิเสธ",
       html: `<p class="text-sm text-gray-600 mb-3">ปฏิเสธคำขอลาของ <strong>${req.firstName} ${req.lastName}</strong></p>`,
@@ -201,41 +207,51 @@ export default function HRDeptApprovePage() {
       setSelectedRequest(null);
       refetch();
       Swal.fire({ icon: "success", title: "ปฏิเสธคำขอสำเร็จ", timer: 1500, showConfirmButton: false });
-    } catch (err: any) {
-      Swal.fire({ icon: "error", title: "เกิดข้อผิดพลาด", text: err.message });
+    } catch (err) {
+      Swal.fire({ icon: "error", title: "เกิดข้อผิดพลาด", text: getErrorMessage(err) });
     }
   };
 
   return (
-    <div className="min-h-[calc(100vh-4rem)] bg-[#E2E4E9] font-sans text-slate-800 p-6 md:p-10 flex flex-col items-center">
-      <div className="w-full max-w-[1200px] bg-white rounded-xl shadow-md border border-gray-100 p-8 md:p-12 animate-in fade-in slide-in-from-bottom-4 duration-500">
-
-        {/* Header */}
-        <div className="mb-6">
-          <h1 className="text-2xl font-bold text-gray-800 mb-2 tracking-tight">รายการคำขอรออนุมัติ (หัวหน้าแผนก HR)</h1>
-          <p className="text-sm text-gray-400 font-medium">พิจารณาอนุมัติหรือปฏิเสธคำขอลาของพนักงานในแผนกของคุณ</p>
+    <div className="min-h-[calc(100vh-4rem)] bg-[#E2E4E9] font-sans text-slate-800 flex flex-col">
+      {/* Top Banner */}
+      <div className="bg-white flex items-center gap-3 sm:gap-4 px-4 sm:px-8 py-3 sm:py-5 shadow-sm z-10 shrink-0">
+        <div className="w-9 h-9 sm:w-11 sm:h-11 bg-blue-100 text-blue-600 rounded-xl flex items-center justify-center shrink-0">
+          <CalendarIcon className="w-6 h-6" strokeWidth={2} />
         </div>
+        <div>
+          <h1 className="text-base sm:text-xl font-bold text-black tracking-tight">
+            รายการคำขอรออนุมัติ (หัวหน้าแผนก HR)
+          </h1>
+          <p className="text-xs text-gray-500 mt-1 font-medium">
+            พิจารณาอนุมัติหรือปฏิเสธคำขอลาของพนักงานในแผนกของคุณ
+          </p>
+        </div>
+      </div>
+
+      <div className="flex-1 p-6 md:p-10 flex flex-col items-center">
+      <div className="w-full max-w-[1200px] bg-white rounded-xl shadow-md border border-gray-100 p-8 md:p-12 animate-in fade-in slide-in-from-bottom-4 duration-500">
 
         {/* Month Picker */}
         <div className="mb-8 relative inline-block">
           <button
             onClick={() => setIsPickerOpen(!isPickerOpen)}
-            className="border border-gray-300 dark:border-slate-700 text-gray-700 dark:text-slate-200 text-sm font-bold py-2 px-5 rounded-full shadow-sm flex items-center gap-3 bg-white dark:bg-slate-800 hover:bg-gray-50 dark:hover:bg-slate-700/80 transition-all active:scale-95"
+            className="border border-gray-300 text-gray-700 text-sm font-bold py-2 px-5 rounded-full shadow-sm flex items-center gap-3 hover:bg-gray-50 transition-all active:scale-95"
           >
             {formatMonthYear(selectedMonthRaw)}
-            <CalendarIcon className="w-4 h-4 text-gray-700 dark:text-slate-200" strokeWidth={2.5} />
+            <CalendarIcon className="w-4 h-4 text-gray-700" strokeWidth={2.5} />
           </button>
 
           {isPickerOpen && (
             <>
               <div className="fixed inset-0 z-40" onClick={() => setIsPickerOpen(false)} />
-              <div className="absolute top-full left-0 mt-3 bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-gray-100 dark:border-slate-700 p-5 w-[340px] z-50 animate-in fade-in zoom-in-95 duration-200">
+              <div className="absolute top-full left-0 mt-3 bg-white rounded-2xl shadow-2xl border border-gray-100 p-4 sm:p-5 w-[calc(100vw-2rem)] max-w-[340px] z-50 animate-in fade-in zoom-in-95 duration-200">
                 <div className="flex items-center justify-between mb-5 px-1">
-                  <button onClick={() => setTempYear((y) => y - 1)} className="p-2 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-full transition-colors text-gray-500 dark:text-slate-400 hover:text-black dark:hover:text-white">
+                  <button onClick={() => setTempYear((y) => y - 1)} className="p-2 hover:bg-gray-100 rounded-full transition-colors text-gray-500 hover:text-black">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6" /></svg>
                   </button>
-                  <span className="font-bold text-lg text-black dark:text-white tracking-wide">{tempYear + 543}</span>
-                  <button onClick={() => setTempYear((y) => y + 1)} className="p-2 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-full transition-colors text-gray-500 dark:text-slate-400 hover:text-black dark:hover:text-white">
+                  <span className="font-bold text-lg text-black tracking-wide">{tempYear + 543}</span>
+                  <button onClick={() => setTempYear((y) => y + 1)} className="p-2 hover:bg-gray-100 rounded-full transition-colors text-gray-500 hover:text-black">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m9 18 6-6-6-6" /></svg>
                   </button>
                 </div>
@@ -243,7 +259,7 @@ export default function HRDeptApprovePage() {
                   {["ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."].map((m, i) => {
                     const isSelected = selectedMonthRaw === `${tempYear}-${(i + 1).toString().padStart(2, "0")}`;
                     return (
-                      <button key={m} onClick={() => handleMonthSelect(i)} className={`py-2.5 rounded-xl text-[14px] font-bold transition-all ${isSelected ? "bg-blue-600 text-white shadow-md shadow-blue-600/20" : "text-gray-600 dark:text-slate-300 hover:bg-blue-50 dark:hover:bg-blue-900/40 hover:text-blue-700 dark:hover:text-blue-300"}`}>
+                      <button key={m} onClick={() => handleMonthSelect(i)} className={`py-2.5 rounded-xl text-[14px] font-bold transition-all ${isSelected ? "bg-blue-600 text-white shadow-md" : "text-gray-600 hover:bg-blue-50 hover:text-blue-700"}`}>
                         {m}
                       </button>
                     );
@@ -296,7 +312,7 @@ export default function HRDeptApprovePage() {
                       <td className="py-6 px-6 text-[14px] text-gray-500 whitespace-nowrap">{req.type}</td>
                       <td className="py-6 px-6 text-[14px] text-gray-500 whitespace-nowrap">{req.dateRange}</td>
                       <td className="py-6 px-6 text-[14px] text-gray-500 whitespace-nowrap">
-                        {req.attachments?.length > 0 ? (
+                        {(req.attachments?.length ?? 0) > 0 ? (
                           <span className="text-emerald-600 font-bold">มีเอกสารแนบ</span>
                         ) : "-"}
                       </td>
@@ -333,152 +349,47 @@ export default function HRDeptApprovePage() {
 
       {/* Details Modal */}
       {selectedRequest && (
-        <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-white rounded-[24px] w-full max-w-[650px] shadow-2xl flex flex-col max-h-[90vh] animate-in zoom-in-95 duration-200 border-2 border-blue-500 overflow-hidden">
-
-            {/* Modal Header */}
-            <div className="flex items-center justify-between px-6 py-5">
-              <h2 className="text-[20px] font-bold text-black">รายละเอียดคำขอลา</h2>
-              <button onClick={() => setSelectedRequest(null)} className="w-8 h-8 flex items-center justify-center text-white bg-red-500 rounded-full hover:bg-red-600 transition-colors">
-                <X className="w-5 h-5" strokeWidth={3} />
+        <LeaveDetailModal
+          leave={selectedRequest}
+          onClose={() => setSelectedRequest(null)}
+          bodyExtra={
+            <div>
+              <h3 className="font-bold text-black text-[14px] mb-2">
+                หมายเหตุผู้อนุมัติ{' '}
+                <span className="text-gray-400 font-normal text-[13px]">
+                  (บังคับหากปฏิเสธ)
+                </span>
+              </h3>
+              <input
+                type="text"
+                placeholder="ระบุหมายเหตุ..."
+                value={approverReason}
+                onChange={(e) => setApproverReason(e.target.value)}
+                className="w-full border border-gray-300 rounded-xl p-3 text-[14px] outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-black"
+              />
+            </div>
+          }
+          footer={
+            <>
+              <button
+                onClick={() => handleApproveClick(selectedRequest, approverReason)}
+                className="bg-[#00E676] hover:bg-[#00C853] text-white text-[13px] font-bold py-2 px-6 rounded-lg shadow-sm transition-colors"
+              >
+                อนุมัติ
               </button>
-            </div>
-
-            {/* Modal Body */}
-            <div className="px-6 pb-4 overflow-y-auto flex-1 space-y-4">
-
-              {/* Employee Info */}
-              <div className="border border-gray-200 rounded-xl p-5 flex gap-4">
-                <div className="w-10 h-10 rounded-full bg-fuchsia-100 border border-fuchsia-200 text-fuchsia-500 flex items-center justify-center shrink-0">
-                  <User className="w-5 h-5" strokeWidth={2} />
-                </div>
-                <div className="flex-1">
-                  <h3 className="font-bold text-[15px] text-black mb-3">ข้อมูลพนักงาน</h3>
-                  <div className="text-[14px] text-gray-700 space-y-1.5">
-                    <p><span className="font-bold min-w-[90px] inline-block">ชื่อ-นามสกุล:</span>{selectedRequest.firstName} {selectedRequest.lastName}</p>
-                    <p><span className="font-bold min-w-[90px] inline-block">รหัสพนักงาน:</span>{selectedRequest.empCode}</p>
-                    <p><span className="font-bold min-w-[90px] inline-block">แผนก | ตำแหน่ง:</span>{selectedRequest.department} | {selectedRequest.position}</p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Leave Info */}
-              <div className="border border-gray-200 rounded-xl p-5">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="w-8 h-8 rounded-full bg-blue-50 border border-blue-100 flex items-center justify-center text-blue-500">
-                    <CalendarIcon className="w-[18px] h-[18px]" strokeWidth={2.5} />
-                  </div>
-                  <h3 className="font-bold text-[15px] text-black">รายละเอียดการลา</h3>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-[14px] text-gray-700 pl-[44px]">
-                  <div className="space-y-2">
-                    <p><span className="font-bold">รหัสการลา:</span> <span className="text-blue-500 font-semibold">{selectedRequest.requestCode || "-"}</span></p>
-                    <p><span className="font-bold">ประเภทการลา:</span> {selectedRequest.type}</p>
-                    <p><span className="font-bold">ช่วงเวลา:</span> {selectedRequest.dateRange}</p>
-                  </div>
-                  <div className="space-y-2">
-                    <p className="flex items-center gap-2">
-                      <Clock className="w-4 h-4 text-green-500 shrink-0" />
-                      <span className="font-bold">รูปแบบ:</span>
-                      {selectedRequest.startFormat === "hourly" ? `รายชั่วโมง (${selectedRequest.leaveHours} ชม.)` : selectedRequest.startFormat === "morning" ? "ครึ่งวันเช้า" : selectedRequest.startFormat === "afternoon" ? "ครึ่งวันบ่าย" : "เต็มวัน"}
-                    </p>
-                    {selectedRequest.leaveType?.isSpecial && (
-                      <p className="flex items-center gap-2 text-purple-600">
-                        <AlertCircle className="w-4 h-4 shrink-0" />
-                        <span className="font-bold">ต้องผ่านการอนุมัติจาก CEO</span>
-                      </p>
-                    )}
-                    <p>
-                      <span className="font-bold">เอกสารแนบ:</span>{" "}
-                      {selectedRequest.attachments?.length > 0 ? (
-                        <button
-                          onClick={() => {
-                            const att = selectedRequest.attachments[0];
-                            const isData = att.filePath.startsWith("data:");
-                            const fileSrc = isData ? att.filePath : `/${att.filePath.replace(/^\/+/, '')}`;
-                            const isImage = att.fileType?.includes("image") || att.filePath?.match(/\.(jpeg|jpg|gif|png)$/i);
-                            setPreviewAttachment({ url: fileSrc, isImage: Boolean(isImage) });
-                          }}
-                          className="text-blue-600 font-bold hover:underline"
-                        >
-                          ดูเอกสารแนบ
-                        </button>
-                      ) : "-"}
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Reason */}
-              <div>
-                <h3 className="font-bold text-black text-[14px] mb-2">เหตุผลการลา</h3>
-                <textarea
-                  readOnly
-                  value={selectedRequest.reason || "-"}
-                  rows={2}
-                  className="w-full border border-gray-300 rounded-xl p-3 text-[14px] text-gray-500 bg-white outline-none cursor-default resize-none"
-                />
-              </div>
-
-              {/* Approver comment */}
-              <div>
-                <h3 className="font-bold text-black text-[14px] mb-2">
-                  หมายเหตุผู้อนุมัติ <span className="text-gray-400 font-normal text-[13px]">(บังคับหากปฏิเสธ)</span>
-                </h3>
-                <input
-                  type="text"
-                  placeholder="ระบุหมายเหตุ..."
-                  value={approverReason}
-                  onChange={(e) => setApproverReason(e.target.value)}
-                  className="w-full border border-gray-300 rounded-xl p-3 text-[14px] outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-black"
-                />
-              </div>
-            </div>
-
-            {/* Modal Footer */}
-            <div className="px-6 py-4 border-t border-gray-100 bg-white flex justify-between items-center shrink-0">
-              <span className="text-[12px] text-gray-400">
-                ยื่นเมื่อ: {selectedRequest.createdAt ? new Date(selectedRequest.createdAt).toLocaleDateString("th-TH", { day: "numeric", month: "short", year: "numeric" }) : "-"}
-              </span>
-              <div className="flex items-center gap-3">
-                <button
-                  onClick={() => handleApproveClick(selectedRequest, approverReason)}
-                  className="bg-[#00E676] hover:bg-[#00C853] text-white text-[13px] font-bold py-2 px-6 rounded-lg shadow-sm transition-colors"
-                >
-                  อนุมัติ
-                </button>
-                <button
-                  onClick={() => handleRejectClick(selectedRequest, approverReason)}
-                  className="bg-[#FF0000] hover:bg-[#E50000] text-white text-[13px] font-bold py-2 px-6 rounded-lg shadow-sm transition-colors"
-                >
-                  ปฏิเสธ
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
+              <button
+                onClick={() => handleRejectClick(selectedRequest, approverReason)}
+                className="bg-[#FF0000] hover:bg-[#E50000] text-white text-[13px] font-bold py-2 px-6 rounded-lg shadow-sm transition-colors"
+              >
+                ปฏิเสธ
+              </button>
+            </>
+          }
+        />
       )}
 
-      {/* Attachment Preview */}
-      {previewAttachment && (
-        <div className="fixed inset-0 z-[140] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200" onClick={() => setPreviewAttachment(null)}>
-          <div className="bg-white rounded-[24px] w-full max-w-4xl shadow-2xl flex flex-col max-h-[90vh] overflow-hidden border-2 border-blue-500" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 bg-[#FAFAFA]">
-              <h2 className="text-[16px] font-bold text-black">ไฟล์เอกสารแนบ</h2>
-              <button onClick={() => setPreviewAttachment(null)} className="w-8 h-8 flex items-center justify-center text-white bg-red-500 rounded-full hover:bg-red-600 transition-colors">
-                <X className="w-5 h-5" strokeWidth={3} />
-              </button>
-            </div>
-            <div className="p-6 overflow-y-auto flex-1 flex items-center justify-center bg-gray-50/50">
-              {previewAttachment.isImage ? (
-                <img src={previewAttachment.url} alt="Preview" className="max-w-full max-h-[70vh] object-contain rounded-lg shadow-sm border border-gray-200" />
-              ) : (
-                <iframe src={previewAttachment.url} className="w-full h-[75vh] bg-white rounded-lg shadow-sm border border-gray-200" />
-              )}
-            </div>
-          </div>
-        </div>
-      )}
+
+      </div>
     </div>
   );
 }

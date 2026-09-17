@@ -17,6 +17,7 @@ export default function RoleGuard({
     const userRole = sessionStorage.getItem('role')?.toLowerCase() || '';
 
     if (!userRole) {
+      if (sessionStorage.getItem('idleTimeoutTriggered') === 'true') return;
       router.push('/login');
       return;
     }
@@ -30,6 +31,8 @@ export default function RoleGuard({
           router.push('/dashboard/hr/dashboard');
         } else if (userRole === 'ceo') {
           router.push('/dashboard/ceo/dashboard');
+        } else if (userRole === 'admin') {
+          router.push('/dashboard/admin/dashboard');
         } else if (userRole === 'user') {
           router.push('/dashboard/user/status');
         } else {

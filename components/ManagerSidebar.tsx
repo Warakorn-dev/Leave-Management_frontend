@@ -68,7 +68,7 @@ export function ManagerSidebar({ onNavigate }: { onNavigate?: () => void }) {
           setPosition(sessionStorage.getItem("position") || "");
           setDepartment(sessionStorage.getItem("department") || "");
         }
-      } catch (error) {
+      } catch {
         setFullName(sessionStorage.getItem("fullName") || "");
         setPosition(sessionStorage.getItem("position") || "");
         setDepartment(sessionStorage.getItem("department") || "");
@@ -105,6 +105,7 @@ export function ManagerSidebar({ onNavigate }: { onNavigate?: () => void }) {
 
       {/* Logo + Hamburger */}
       <div className={`relative flex items-center border-b border-white/10 ${isCollapsed ? 'justify-center px-0 py-4' : 'justify-center px-4 py-4'}`}>
+        {/* eslint-disable-next-line @next/next/no-img-element -- small static logo, next/image adds no benefit here */}
         {!isCollapsed && <img src="/logo.png" alt="NID PROGRESS TECHNOLOGY" className="w-[110px] h-auto object-contain" />}
         <button
           onClick={() => setIsCollapsed(!isCollapsed)}
@@ -115,8 +116,27 @@ export function ManagerSidebar({ onNavigate }: { onNavigate?: () => void }) {
         </button>
       </div>
 
+      {/* User Profile */}
+      <div className={`px-5 py-4 ${isCollapsed ? 'hidden' : 'block'}`}>
+        <div className="bg-white/5 rounded-xl p-3 flex items-center gap-3 border border-white/10">
+          <div className="bg-zinc-500 rounded-full w-11 h-11 flex items-center justify-center shrink-0 overflow-hidden">
+             {profilePic ? (
+                // eslint-disable-next-line @next/next/no-img-element -- dynamic user-uploaded avatar; next/image needs a configured remote loader
+                <img src={profilePic} alt="Profile" className="w-full h-full object-cover" />
+             ) : (
+                <User className="w-5 h-5 text-white" />
+             )}
+          </div>
+          <div className="overflow-hidden flex-1 min-w-0">
+            <h3 className="font-bold text-[13px] truncate">{fullName || username}</h3>
+            {department && <p className="text-[10px] text-blue-300/80 mt-0.5 truncate">{department}</p>}
+            {position && <p className="text-[10px] text-zinc-400 truncate">{position}</p>}
+          </div>
+        </div>
+      </div>
+
       {/* Navigation */}
-      <nav className="flex-1 px-4 space-y-3 overflow-y-auto mt-4 pb-6">
+      <nav className="flex-1 px-4 space-y-3 overflow-y-auto mt-2">
         {menuItems.map((item) => {
           const isExactActive = pathname === item.href || (item.name === "Dashboard" && pathname === "/dashboard/manager/team");
           
@@ -141,6 +161,18 @@ export function ManagerSidebar({ onNavigate }: { onNavigate?: () => void }) {
           );
         })}
       </nav>
+
+      {/* Logout */}
+      <div className="p-5 mt-auto">
+        <button 
+          onClick={handleLogout}
+          className={`w-full flex items-center ${isCollapsed ? 'justify-center' : 'justify-center gap-3'} bg-red-500/10 hover:bg-red-500/20 text-red-400 py-3.5 rounded-xl transition-colors font-semibold text-sm tracking-wide border border-red-500/20`}
+          title={isCollapsed ? "ออกจากระบบ" : undefined}
+        >
+          <LogOut className="w-5 h-5 shrink-0" strokeWidth={2.5} />
+          {!isCollapsed && <span>ออกจากระบบ</span>}
+        </button>
+      </div>
     </aside>
   );
 }

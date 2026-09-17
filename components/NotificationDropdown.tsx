@@ -43,44 +43,52 @@ function getRelativeTime(dateString: string): string {
 function getNotificationIcon(type?: string) {
   const t = (type || '').toUpperCase();
   switch (t) {
-    case 'APPROVE':
-    case 'APPROVED':
+    case 'USER_REGISTER':
       return (
-        <div className="w-9 h-9 rounded-xl bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0 shadow-xs">
+        <div className="w-9 h-9 rounded-full bg-purple-100 dark:bg-purple-950/50 text-purple-600 dark:text-purple-400 flex items-center justify-center shrink-0">
+          <UserPlus className="w-5 h-5" />
+        </div>
+      );
+    case 'NEW_ORDER':
+      return (
+        <div className="w-9 h-9 rounded-full bg-blue-100 dark:bg-blue-950/50 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
+          <ShoppingBag className="w-5 h-5" />
+        </div>
+      );
+    case 'PAYMENT_SUCCESS':
+      return (
+        <div className="w-9 h-9 rounded-full bg-emerald-100 dark:bg-emerald-950/50 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
+          <CreditCard className="w-5 h-5" />
+        </div>
+      );
+    case 'PAYMENT_FAILED':
+      return (
+        <div className="w-9 h-9 rounded-full bg-rose-100 dark:bg-rose-950/50 text-rose-600 dark:text-rose-400 flex items-center justify-center shrink-0">
+          <AlertTriangle className="w-5 h-5" />
+        </div>
+      );
+    case 'APPROVE':
+      return (
+        <div className="w-9 h-9 rounded-full bg-emerald-100 dark:bg-emerald-950/50 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
           <CheckCircle2 className="w-5 h-5" />
         </div>
       );
     case 'REJECT':
-    case 'REJECTED':
       return (
-        <div className="w-9 h-9 rounded-xl bg-rose-100 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 flex items-center justify-center shrink-0 shadow-xs">
+        <div className="w-9 h-9 rounded-full bg-rose-100 dark:bg-rose-950/50 text-rose-600 dark:text-rose-400 flex items-center justify-center shrink-0">
           <XCircle className="w-5 h-5" />
-        </div>
-      );
-    case 'NEW_ORDER':
-    case 'PENDING':
-    case 'LEAVE_REQUEST':
-      return (
-        <div className="w-9 h-9 rounded-xl bg-amber-100 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0 shadow-xs">
-          <AlertTriangle className="w-5 h-5" />
-        </div>
-      );
-    case 'USER_REGISTER':
-      return (
-        <div className="w-9 h-9 rounded-xl bg-purple-100 dark:bg-purple-950/60 text-purple-600 dark:text-purple-400 flex items-center justify-center shrink-0 shadow-xs">
-          <UserPlus className="w-5 h-5" />
         </div>
       );
     case 'SECURITY':
       return (
-        <div className="w-9 h-9 rounded-xl bg-red-100 dark:bg-red-950/60 text-red-600 dark:text-red-400 flex items-center justify-center shrink-0 shadow-xs">
+        <div className="w-9 h-9 rounded-full bg-amber-100 dark:bg-amber-950/50 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0">
           <ShieldAlert className="w-5 h-5" />
         </div>
       );
     case 'SYSTEM':
     default:
       return (
-        <div className="w-9 h-9 rounded-xl bg-blue-100 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0 shadow-xs">
+        <div className="w-9 h-9 rounded-full bg-indigo-100 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0">
           <Info className="w-5 h-5" />
         </div>
       );
@@ -94,28 +102,16 @@ export function NotificationDropdown() {
 
   const { notifications, unreadCount, markAsRead, markAllAsRead, refetch } = useNotification();
 
-  // Close dropdown on click outside or ESC key
+  // Close dropdown on click outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setIsOpen(false);
       }
     };
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        setIsOpen(false);
-      }
-    };
-
-    if (isOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
-      document.addEventListener('keydown', handleKeyDown);
-    }
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-      document.removeEventListener('keydown', handleKeyDown);
-    };
-  }, [isOpen]);
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const handleToggle = () => {
     const nextState = !isOpen;
@@ -146,8 +142,8 @@ export function NotificationDropdown() {
     }
   };
 
-  // Limit to 15 latest items
-  const displayedItems = notifications.slice(0, 15);
+  // Limit to 10 latest items
+  const displayedItems = notifications.slice(0, 10);
 
   return (
     <div className="relative" ref={dropdownRef}>

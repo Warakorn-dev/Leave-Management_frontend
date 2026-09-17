@@ -12,14 +12,7 @@ import Swal from 'sweetalert2';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { DatePicker } from '@/components/DateAndTime';
 import { holidayApi } from '@/lib/api';
-
-interface Holiday {
-  id: string;
-  name: string;
-  date: string;
-  createdAt: string;
-  updatedAt: string;
-}
+import type { PublicHoliday as Holiday } from '@/lib/api/holiday.api';
 
 export default function HolidayManagementPage() {
   const [holidays, setHolidays] = useState<Holiday[]>([]);
@@ -41,14 +34,7 @@ export default function HolidayManagementPage() {
     setIsLoading(true);
     try {
       const res = await holidayApi.getAll();
-      const data = res.data;
-      if (
-        (data as any).success ||
-        Array.isArray((data as any).data) ||
-        Array.isArray(data)
-      ) {
-        setHolidays((data as any).data || data);
-      }
+      setHolidays(res.data || []);
     } catch (error) {
       console.error('Failed to fetch holidays', error);
     } finally {
@@ -89,8 +75,7 @@ export default function HolidayManagementPage() {
         name: formData.name,
         date: dateToSave.toISOString().split('T')[0],
       });
-      const data = res.data;
-      if ((data as any).success || data) {
+      if (res.data) {
         setIsCreateModalOpen(false);
         fetchHolidays();
         Swal.fire({
@@ -102,7 +87,7 @@ export default function HolidayManagementPage() {
       } else {
         Swal.fire('ข้อผิดพลาด', 'ไม่สามารถเพิ่มวันหยุดได้', 'error');
       }
-    } catch (error) {
+    } catch {
       Swal.fire('ข้อผิดพลาด', 'เกิดข้อผิดพลาดในการเชื่อมต่อ', 'error');
     }
   };
@@ -117,8 +102,7 @@ export default function HolidayManagementPage() {
         name: formData.name,
         date: dateToSave.toISOString().split('T')[0],
       });
-      const data = res.data;
-      if ((data as any).success || data) {
+      if (res.data) {
         setIsEditModalOpen(false);
         fetchHolidays();
         Swal.fire({
@@ -130,7 +114,7 @@ export default function HolidayManagementPage() {
       } else {
         Swal.fire('ข้อผิดพลาด', 'ไม่สามารถแก้ไขวันหยุดได้', 'error');
       }
-    } catch (error) {
+    } catch {
       Swal.fire('ข้อผิดพลาด', 'เกิดข้อผิดพลาดในการเชื่อมต่อ', 'error');
     }
   };
@@ -149,14 +133,13 @@ export default function HolidayManagementPage() {
       if (result.isConfirmed) {
         try {
           const res = await holidayApi.delete(id);
-          const data = res.data;
-          if ((data as any).success || data) {
+          if (res.success) {
             Swal.fire('ลบสำเร็จ!', 'ลบวันหยุดเรียบร้อยแล้ว', 'success');
             fetchHolidays();
           } else {
             Swal.fire('ข้อผิดพลาด', 'ไม่สามารถลบวันหยุดได้', 'error');
           }
-        } catch (error) {
+        } catch {
           Swal.fire('ข้อผิดพลาด', 'เกิดข้อผิดพลาดในการเชื่อมต่อ', 'error');
         }
       }
@@ -164,74 +147,67 @@ export default function HolidayManagementPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] dark:bg-[#0B1120] text-slate-800 dark:text-slate-100 pb-12">
-      {/* Header */}
-      <div className="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 sticky top-0 z-20">
-        <div className="px-8 py-6">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 rounded-xl flex items-center justify-center">
-                <CalendarIcon className="w-6 h-6" />
-              </div>
-              <div>
-                <h1 className="text-2xl font-bold text-slate-800 dark:text-white">
-                  จัดการวันหยุดบริษัท
-                </h1>
-                <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-                  เพิ่ม แก้ไข หรือลบวันหยุดประจำปีของบริษัท
-                </p>
-              </div>
-            </div>
-
-            <button
-              onClick={handleOpenCreateModal}
-              className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-lg transition-colors font-medium shadow-sm hover:shadow-md cursor-pointer"
-            >
-              <Plus className="w-5 h-5" />
-              <span>เพิ่มวันหยุดใหม่</span>
-            </button>
-          </div>
+    <div className="min-h-[calc(100vh-4rem)] bg-[#E2E4E9] font-sans text-slate-800 flex flex-col pb-12">
+      {/* Top Banner */}
+      <div className="bg-white flex items-center gap-3 sm:gap-4 px-4 sm:px-8 py-3 sm:py-5 shadow-sm z-10 shrink-0">
+        <div className="w-9 h-9 sm:w-11 sm:h-11 bg-blue-100 text-blue-600 rounded-xl flex items-center justify-center shrink-0">
+          <CalendarIcon className="w-6 h-6" strokeWidth={2} />
+        </div>
+        <div>
+          <h1 className="text-base sm:text-xl font-bold text-black tracking-tight">
+            จัดการวันหยุดบริษัท
+          </h1>
+          <p className="text-xs text-gray-500 mt-1 font-medium">
+            เพิ่ม แก้ไข หรือลบวันหยุดประจำปีของบริษัท
+          </p>
         </div>
       </div>
 
       <div className="p-8 max-w-7xl mx-auto">
         {/* Filters */}
-        <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 p-4 mb-6">
-          <div className="relative">
+        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 mb-6 flex flex-col sm:flex-row gap-3">
+          <div className="relative flex-1">
             <Search className="w-5 h-5 text-slate-400 absolute left-4 top-1/2 -translate-y-1/2" />
             <input
               type="text"
               placeholder="ค้นหาวันหยุด (ชื่อวันหยุด)..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full bg-slate-50 dark:bg-slate-800 border-0 rounded-xl pl-12 pr-4 py-3.5 text-sm font-medium text-slate-700 dark:text-slate-100 outline-none ring-1 ring-slate-200 dark:ring-slate-700 focus:ring-2 focus:ring-blue-500/20 transition-all"
+              className="w-full bg-slate-50 border-0 rounded-xl pl-12 pr-4 py-3.5 text-sm font-medium text-slate-700 outline-none ring-1 ring-slate-200 focus:ring-2 focus:ring-blue-500/20 transition-all"
             />
           </div>
+          <button
+            onClick={handleOpenCreateModal}
+            className="flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-lg transition-colors font-medium shadow-sm hover:shadow-md shrink-0"
+          >
+            <Plus className="w-5 h-5" />
+            <span>เพิ่มวันหยุดใหม่</span>
+          </button>
         </div>
 
         {/* Content Table */}
-        <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 overflow-hidden">
+        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
-                <tr className="bg-slate-50/80 dark:bg-slate-800/80 border-b border-slate-200 dark:border-slate-800">
-                  <th className="py-4 px-6 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider w-[40%]">
+                <tr className="bg-slate-50/80 border-b border-slate-200">
+                  <th className="py-4 px-6 text-xs font-bold text-slate-500 uppercase tracking-wider w-[40%]">
                     ชื่อวันหยุด
                   </th>
-                  <th className="py-4 px-6 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider w-[40%]">
+                  <th className="py-4 px-6 text-xs font-bold text-slate-500 uppercase tracking-wider w-[40%]">
                     วันที่
                   </th>
-                  <th className="py-4 px-6 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider text-right w-[20%]">
+                  <th className="py-4 px-6 text-xs font-bold text-slate-500 uppercase tracking-wider text-right w-[20%]">
                     จัดการ
                   </th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+              <tbody className="divide-y divide-slate-100">
                 {isLoading ? (
                   <tr>
                     <td
                       colSpan={3}
-                      className="py-12 text-center text-slate-500 dark:text-slate-400"
+                      className="py-12 text-center text-slate-500"
                     >
                       กำลังโหลดข้อมูล...
                     </td>
@@ -240,8 +216,8 @@ export default function HolidayManagementPage() {
                   <tr>
                     <td colSpan={3} className="py-12 text-center">
                       <div className="flex flex-col items-center justify-center">
-                        <CalendarIcon className="w-12 h-12 text-slate-300 dark:text-slate-600 mb-3" />
-                        <p className="text-slate-500 dark:text-slate-400 font-medium">
+                        <CalendarIcon className="w-12 h-12 text-slate-300 mb-3" />
+                        <p className="text-slate-500 font-medium">
                           ไม่พบข้อมูลวันหยุด
                         </p>
                       </div>
@@ -251,15 +227,15 @@ export default function HolidayManagementPage() {
                   filteredHolidays.map((h) => (
                     <tr
                       key={h.id}
-                      className="hover:bg-slate-50/50 dark:hover:bg-slate-800/50 transition-colors group"
+                      className="hover:bg-slate-50/50 transition-colors group"
                     >
                       <td className="py-4 px-6">
-                        <p className="font-bold text-slate-800 dark:text-slate-100 line-clamp-1">
+                        <p className="font-bold text-slate-800 line-clamp-1">
                           {h.name}
                         </p>
                       </td>
                       <td className="py-4 px-6">
-                        <p className="text-sm font-bold text-blue-600 dark:text-blue-400">
+                        <p className="text-sm font-bold text-blue-600">
                           {new Date(h.date).toLocaleDateString('th-TH', {
                             weekday: 'long',
                             year: 'numeric',
@@ -272,14 +248,14 @@ export default function HolidayManagementPage() {
                         <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                           <button
                             onClick={() => handleOpenEditModal(h)}
-                            className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg transition-colors cursor-pointer"
+                            className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
                             title="แก้ไข"
                           >
                             <Edit className="w-4 h-4" />
                           </button>
                           <button
                             onClick={() => handleDelete(h.id, h.name)}
-                            className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-900/30 rounded-lg transition-colors cursor-pointer"
+                            className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                             title="ลบ"
                           >
                             <Trash2 className="w-4 h-4" />
@@ -297,9 +273,9 @@ export default function HolidayManagementPage() {
 
       {/* Create Modal */}
       <Dialog open={isCreateModalOpen} onOpenChange={setIsCreateModalOpen}>
-        <DialogContent className="sm:max-w-[500px] p-0 overflow-hidden bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-2xl">
-          <div className="px-8 py-6 border-b border-slate-100 dark:border-slate-800">
-            <h2 className="text-xl font-bold text-slate-800 dark:text-white">
+        <DialogContent className="sm:max-w-[500px] p-0 overflow-hidden bg-white rounded-3xl border-0 shadow-2xl">
+          <div className="px-8 py-6 border-b border-slate-100">
+            <h2 className="text-xl font-bold text-slate-800">
               เพิ่มวันหยุดใหม่
             </h2>
           </div>
@@ -307,7 +283,7 @@ export default function HolidayManagementPage() {
           <form onSubmit={handleCreate} className="px-8 py-6">
             <div className="space-y-5">
               <div>
-                <label className="block text-sm font-bold text-slate-700 dark:text-slate-200 mb-1.5">
+                <label className="block text-sm font-bold text-slate-700 mb-1.5">
                   ชื่อวันหยุด <span className="text-red-500">*</span>
                 </label>
                 <input
@@ -318,16 +294,17 @@ export default function HolidayManagementPage() {
                     setFormData({ ...formData, name: e.target.value })
                   }
                   placeholder="เช่น วันขึ้นปีใหม่"
-                  className="w-full bg-slate-50 dark:bg-slate-800 border-0 rounded-xl px-4 py-3 text-sm font-medium text-slate-700 dark:text-slate-100 outline-none ring-1 ring-slate-200 dark:ring-slate-700 focus:ring-2 focus:ring-blue-500/20"
+                  className="w-full bg-slate-50 border-0 rounded-xl px-4 py-3 text-sm font-medium text-slate-700 outline-none ring-1 ring-slate-200 focus:ring-2 focus:ring-blue-500/20"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-bold text-slate-700 dark:text-slate-200 mb-1.5">
+                <label className="block text-sm font-bold text-slate-700 mb-1.5">
                   วันที่ <span className="text-red-500">*</span>
                 </label>
-                <div className="relative">
+                <div className="w-full bg-slate-50 border border-slate-200 rounded-xl focus-within:ring-2 focus-within:ring-blue-500/20 transition-all [&_.MuiOutlinedInput-notchedOutline]:border-none [&_.MuiInputBase-root]:bg-transparent [&_.MuiInputBase-root]:h-[46px] [&_.MuiInputBase-input]:font-medium [&_.MuiInputBase-input]:text-sm [&_.MuiInputBase-input]:text-slate-700 [&_.MuiInputBase-input]:px-4 [&_.MuiInputBase-input]:py-3 [&_.MuiInputBase-input]:cursor-pointer [&_.MuiIconButton-root]:mr-1 [&_.MuiSvgIcon-root]:w-5 [&_.MuiSvgIcon-root]:h-5 [&_.MuiSvgIcon-root]:text-slate-500 relative">
                   <DatePicker
+                    borderless
                     selected={formData.date}
                     onChange={(date: Date | null) =>
                       date && setFormData({ ...formData, date })
@@ -342,13 +319,13 @@ export default function HolidayManagementPage() {
               <button
                 type="button"
                 onClick={() => setIsCreateModalOpen(false)}
-                className="px-6 py-2.5 text-sm font-bold text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-xl transition-colors cursor-pointer"
+                className="px-6 py-2.5 text-sm font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors"
               >
                 ยกเลิก
               </button>
               <button
                 type="submit"
-                className="px-6 py-2.5 text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-xl transition-colors shadow-sm cursor-pointer"
+                className="px-6 py-2.5 text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-xl transition-colors shadow-sm"
               >
                 บันทึก
               </button>
@@ -359,15 +336,15 @@ export default function HolidayManagementPage() {
 
       {/* Edit Modal */}
       <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
-        <DialogContent className="sm:max-w-[500px] p-0 overflow-hidden bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-2xl">
-          <div className="px-8 py-6 border-b border-slate-100 dark:border-slate-800">
-            <h2 className="text-xl font-bold text-slate-800 dark:text-white">แก้ไขวันหยุด</h2>
+        <DialogContent className="sm:max-w-[500px] p-0 overflow-hidden bg-white rounded-3xl border-0 shadow-2xl">
+          <div className="px-8 py-6 border-b border-slate-100">
+            <h2 className="text-xl font-bold text-slate-800">แก้ไขวันหยุด</h2>
           </div>
 
           <form onSubmit={handleUpdate} className="px-8 py-6">
             <div className="space-y-5">
               <div>
-                <label className="block text-sm font-bold text-slate-700 dark:text-slate-200 mb-1.5">
+                <label className="block text-sm font-bold text-slate-700 mb-1.5">
                   ชื่อวันหยุด <span className="text-red-500">*</span>
                 </label>
                 <input
@@ -377,16 +354,17 @@ export default function HolidayManagementPage() {
                   onChange={(e) =>
                     setFormData({ ...formData, name: e.target.value })
                   }
-                  className="w-full bg-slate-50 dark:bg-slate-800 border-0 rounded-xl px-4 py-3 text-sm font-medium text-slate-700 dark:text-slate-100 outline-none ring-1 ring-slate-200 dark:ring-slate-700 focus:ring-2 focus:ring-blue-500/20"
+                  className="w-full bg-slate-50 border-0 rounded-xl px-4 py-3 text-sm font-medium text-slate-700 outline-none ring-1 ring-slate-200 focus:ring-2 focus:ring-blue-500/20"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-bold text-slate-700 dark:text-slate-200 mb-1.5">
+                <label className="block text-sm font-bold text-slate-700 mb-1.5">
                   วันที่ <span className="text-red-500">*</span>
                 </label>
-                <div className="relative">
+                <div className="w-full bg-slate-50 border border-slate-200 rounded-xl focus-within:ring-2 focus-within:ring-blue-500/20 transition-all [&_.MuiOutlinedInput-notchedOutline]:border-none [&_.MuiInputBase-root]:bg-transparent [&_.MuiInputBase-root]:h-[46px] [&_.MuiInputBase-input]:font-medium [&_.MuiInputBase-input]:text-sm [&_.MuiInputBase-input]:text-slate-700 [&_.MuiInputBase-input]:px-4 [&_.MuiInputBase-input]:py-3 [&_.MuiInputBase-input]:cursor-pointer [&_.MuiIconButton-root]:mr-1 [&_.MuiSvgIcon-root]:w-5 [&_.MuiSvgIcon-root]:h-5 [&_.MuiSvgIcon-root]:text-slate-500 relative">
                   <DatePicker
+                    borderless
                     selected={formData.date}
                     onChange={(date: Date | null) =>
                       date && setFormData({ ...formData, date })
@@ -401,13 +379,13 @@ export default function HolidayManagementPage() {
               <button
                 type="button"
                 onClick={() => setIsEditModalOpen(false)}
-                className="px-6 py-2.5 text-sm font-bold text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-xl transition-colors cursor-pointer"
+                className="px-6 py-2.5 text-sm font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors"
               >
                 ยกเลิก
               </button>
               <button
                 type="submit"
-                className="px-6 py-2.5 text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-xl transition-colors shadow-sm cursor-pointer"
+                className="px-6 py-2.5 text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-xl transition-colors shadow-sm"
               >
                 บันทึกการแก้ไข
               </button>

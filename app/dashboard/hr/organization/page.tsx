@@ -6,7 +6,6 @@ import {
   Briefcase,
   Plus,
   Search,
-  MoreVertical,
   Edit,
   Trash2,
   X,
@@ -21,7 +20,6 @@ import {
   Crown,
   Code,
   PenTool,
-  Award,
   Star,
 } from 'lucide-react';
 import {
@@ -38,7 +36,7 @@ import {
 } from '@/hooks/usePosition';
 import { useEmployeesQuery } from '@/hooks/useEmployee';
 import { useRolesQuery } from '@/hooks/useRoles';
-import { Department, Position, Employee } from '@/lib/api/types';
+import { Department } from '@/lib/api/types';
 
 // Helper functions for dynamic icons and colors based on name
 const getDepartmentStyle = (name: string) => {
@@ -47,48 +45,48 @@ const getDepartmentStyle = (name: string) => {
     return {
       icon: Users,
       colorClass: 'text-blue-600 dark:text-blue-400',
-      bgClass: 'bg-blue-100 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700/60 shadow-xs',
+      bgClass: 'bg-blue-100 dark:bg-blue-900/30',
     };
   if (n.includes('account') || n.includes('finance'))
     return {
       icon: Calculator,
       colorClass: 'text-rose-600 dark:text-rose-400',
-      bgClass: 'bg-rose-100 dark:bg-rose-900/30 border border-rose-200 dark:border-rose-700/60 shadow-xs',
+      bgClass: 'bg-rose-100 dark:bg-rose-900/30',
     };
   if (n.includes('admin'))
     return {
       icon: Shield,
-      colorClass: 'text-slate-600 dark:text-slate-200',
-      bgClass: 'bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-600 shadow-xs',
+      colorClass: 'text-slate-600 dark:text-slate-400',
+      bgClass: 'bg-slate-200 dark:bg-slate-800',
     };
   if (n.includes('sale') || n.includes('market'))
     return {
       icon: Megaphone,
       colorClass: 'text-amber-600 dark:text-amber-400',
-      bgClass: 'bg-amber-100 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-700/60 shadow-xs',
+      bgClass: 'bg-amber-100 dark:bg-amber-900/30',
     };
   if (n.includes('support') || n.includes('service'))
     return {
       icon: Headset,
       colorClass: 'text-cyan-600 dark:text-cyan-400',
-      bgClass: 'bg-cyan-100 dark:bg-cyan-900/30 border border-cyan-200 dark:border-cyan-700/60 shadow-xs',
+      bgClass: 'bg-cyan-100 dark:bg-cyan-900/30',
     };
   if (n.includes('it') || n.includes('information') || n.includes('tech'))
     return {
       icon: Monitor,
       colorClass: 'text-violet-600 dark:text-violet-400',
-      bgClass: 'bg-violet-100 dark:bg-violet-900/30 border border-violet-200 dark:border-violet-700/60 shadow-xs',
+      bgClass: 'bg-violet-100 dark:bg-violet-900/30',
     };
   if (n.includes('project'))
     return {
       icon: FolderKanban,
       colorClass: 'text-emerald-600 dark:text-emerald-400',
-      bgClass: 'bg-emerald-100 dark:bg-emerald-900/30 border border-emerald-200 dark:border-emerald-700/60 shadow-xs',
+      bgClass: 'bg-emerald-100 dark:bg-emerald-900/30',
     };
   return {
     icon: Building2,
     colorClass: 'text-indigo-600 dark:text-indigo-400',
-    bgClass: 'bg-indigo-100 dark:bg-indigo-900/30 border border-indigo-200 dark:border-indigo-700/60 shadow-xs',
+    bgClass: 'bg-indigo-100 dark:bg-indigo-900/30',
   };
 };
 
@@ -105,31 +103,31 @@ const getPositionStyle = (name: string) => {
     return {
       icon: Crown,
       colorClass: 'text-amber-500 dark:text-amber-400',
-      bgClass: 'bg-amber-100 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-700/60 shadow-xs',
+      bgClass: 'bg-amber-100 dark:bg-amber-900/30',
     };
   if (n.includes('senior') || n.includes('sr'))
     return {
       icon: Star,
       colorClass: 'text-yellow-600 dark:text-yellow-400',
-      bgClass: 'bg-yellow-100 dark:bg-yellow-900/30 border border-yellow-200 dark:border-yellow-700/60 shadow-xs',
+      bgClass: 'bg-yellow-100 dark:bg-yellow-900/30',
     };
   if (n.includes('dev') || n.includes('program') || n.includes('engineer'))
     return {
       icon: Code,
       colorClass: 'text-blue-600 dark:text-blue-400',
-      bgClass: 'bg-blue-100 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700/60 shadow-xs',
+      bgClass: 'bg-blue-100 dark:bg-blue-900/30',
     };
   if (n.includes('design') || n.includes('graphic'))
     return {
       icon: PenTool,
       colorClass: 'text-fuchsia-600 dark:text-fuchsia-400',
-      bgClass: 'bg-fuchsia-100 dark:bg-fuchsia-900/30 border border-fuchsia-200 dark:border-fuchsia-700/60 shadow-xs',
+      bgClass: 'bg-fuchsia-100 dark:bg-fuchsia-900/30',
     };
   if (n.includes('account') || n.includes('finance'))
     return {
       icon: Calculator,
       colorClass: 'text-rose-600 dark:text-rose-400',
-      bgClass: 'bg-rose-100 dark:bg-rose-900/30 border border-rose-200 dark:border-rose-700/60 shadow-xs',
+      bgClass: 'bg-rose-100 dark:bg-rose-900/30',
     };
   if (
     n.includes('support') ||
@@ -140,18 +138,18 @@ const getPositionStyle = (name: string) => {
     return {
       icon: Headset,
       colorClass: 'text-cyan-600 dark:text-cyan-400',
-      bgClass: 'bg-cyan-100 dark:bg-cyan-900/30 border border-cyan-200 dark:border-cyan-700/60 shadow-xs',
+      bgClass: 'bg-cyan-100 dark:bg-cyan-900/30',
     };
   if (n.includes('hr') || n.includes('human') || n.includes('personnel'))
     return {
       icon: Users,
       colorClass: 'text-violet-600 dark:text-violet-400',
-      bgClass: 'bg-violet-100 dark:bg-violet-900/30 border border-violet-200 dark:border-violet-700/60 shadow-xs',
+      bgClass: 'bg-violet-100 dark:bg-violet-900/30',
     };
   return {
     icon: Briefcase,
     colorClass: 'text-emerald-600 dark:text-emerald-400',
-    bgClass: 'bg-emerald-100 dark:bg-emerald-900/30 border border-emerald-200 dark:border-emerald-700/60 shadow-xs',
+    bgClass: 'bg-emerald-100 dark:bg-emerald-900/30',
   };
 };
 
@@ -372,7 +370,7 @@ export default function OrganizationManagementPage() {
 
   // Derived state for filtering
   const filteredDepartments = useMemo(() => {
-    let result = departments.filter(
+    const result = departments.filter(
       (d) =>
         d.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         (d.code && d.code.toLowerCase().includes(searchTerm.toLowerCase())),
@@ -385,7 +383,7 @@ export default function OrganizationManagementPage() {
   }, [departments, searchTerm]);
 
   const filteredPositions = useMemo(() => {
-    let result = positions.filter((p) => {
+    const result = positions.filter((p) => {
       const matchSearch =
         (p.name || p.title || '')
           .toLowerCase()
@@ -420,7 +418,7 @@ export default function OrganizationManagementPage() {
     });
 
     return result;
-  }, [positions, searchTerm, departmentFilter]);
+  }, [positions, searchTerm, departmentFilter, departments]);
 
   // Helper to get employees in a specific department
   const getEmployeesInDept = (deptName: string, deptId: string) => {
@@ -449,7 +447,7 @@ export default function OrganizationManagementPage() {
       if (excludePositionId && p.id === excludePositionId) return false;
       return (
         p.roleId === managerRole.id ||
-        (p.role as any)?.name?.toLowerCase() === 'manager'
+        (p.role as { name?: string } | undefined)?.name?.toLowerCase() === 'manager'
       );
     });
   };
@@ -484,22 +482,28 @@ export default function OrganizationManagementPage() {
       // Secondary sort by first name
       return (a.firstName || '').localeCompare(b.firstName || '');
     });
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- getEmployeesInDept is a pure helper redefined each render, not a real dependency
   }, [selectedDept, employees]);
 
   return (
-    <div className="space-y-6 max-w-[1200px] mx-auto pb-10 px-4 sm:px-6 md:px-8 pt-6">
-      {/* Header Section */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white dark:bg-slate-900 p-6 rounded-3xl shadow-sm border border-slate-100 dark:border-slate-800">
+    <div className="min-h-[calc(100vh-4rem)] bg-[#E2E4E9] font-sans text-slate-800 flex flex-col">
+      {/* Top Banner */}
+      <div className="bg-white flex items-center gap-3 sm:gap-4 px-4 sm:px-8 py-3 sm:py-5 shadow-sm z-10 shrink-0">
+        <div className="w-9 h-9 sm:w-11 sm:h-11 bg-blue-100 text-blue-600 rounded-xl flex items-center justify-center shrink-0">
+          <Building2 className="w-6 h-6" strokeWidth={2} />
+        </div>
         <div>
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
-            <Building2 className="w-6 h-6 text-indigo-600" />
+          <h1 className="text-base sm:text-xl font-bold text-black tracking-tight">
             จัดการตำแหน่งและแผนก
           </h1>
-          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+          <p className="text-xs text-gray-500 mt-1 font-medium">
             เพิ่ม ลบ หรือแก้ไขข้อมูลแผนกและตำแหน่งงานภายในองค์กร
           </p>
         </div>
       </div>
+
+      <div className="flex-1 p-4 sm:p-6 md:p-8">
+        <div className="space-y-6 max-w-[1200px] mx-auto">
 
       {/* Tabs */}
       <div className="flex space-x-1 bg-slate-100/50 dark:bg-slate-800/50 p-1 rounded-2xl w-fit border border-slate-200/50 dark:border-slate-700/50">
@@ -682,12 +686,6 @@ export default function OrganizationManagementPage() {
                     </tr>
                   ) : (
                     filteredPositions.map((pos) => {
-                      // count how many employees hold this position
-                      const empsInPos = employees.filter(
-                        (e) =>
-                          e.positionId === pos.id ||
-                          e.positionName === pos.name,
-                      );
                       const style = getPositionStyle(
                         pos.name || pos.title || '',
                       );
@@ -725,7 +723,8 @@ export default function OrganizationManagementPage() {
                           <td className="px-6 py-4">
                             {pos.role ? (
                               <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-800">
-                                {(pos.role as any).name || pos.role}
+                                {(pos.role as { name?: string } | undefined)?.name ||
+                                  String(pos.role)}
                               </span>
                             ) : (
                               <span className="text-slate-400 text-xs italic">
@@ -748,7 +747,9 @@ export default function OrganizationManagementPage() {
                                       pos.department?.id ||
                                       '',
                                     roleId:
-                                      pos.roleId || (pos.role as any)?.id || '',
+                                      pos.roleId ||
+                                      (pos.role as { id?: string } | undefined)?.id ||
+                                      '',
                                   });
                                   setIsEditPosModalOpen(true);
                                 }}
@@ -1328,6 +1329,8 @@ export default function OrganizationManagementPage() {
           </div>
         </div>
       )}
+        </div>
+      </div>
     </div>
   );
 }

@@ -1,34 +1,58 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import {
-  Mail,
-  Bell,
-  Settings,
   Calendar as CalendarIcon,
-  X,
-  User,
-  Download,
+  BookOpen,
   Edit3,
   Trash2,
   Upload,
   Check,
-  Clock,
   Search,
 } from 'lucide-react';
 import { useLeave } from '@/hooks/useLeave';
-import { isSameYearMonth } from '@/lib/api/utils';
 import { useLeaveBalance } from '@/hooks/useLeaveBalance';
+import type { LeaveBalance } from '@/hooks/useLeaveBalance';
 import Swal from 'sweetalert2';
 import { DatePicker } from '@/components/DateAndTime';
 import { LeaveTimePicker } from '@/components/LeaveTimePicker';
 import { uploadApi } from '@/lib/api';
-import { getLeaveStatusText, getLeaveStatusBadgeColor } from '@/lib/api/utils';
+import { getLeaveStatusText, getLeaveStatusBadgeColor, getErrorMessage } from '@/lib/api/utils';
+import type { Leave } from '@/lib/api/types';
+import { LeaveDayAvailabilityPreview } from '@/components/LeaveDayAvailabilityPreview';
+import { buildTakenMap, isDayUnavailable } from '@/lib/leavePortions';
+import type { LeaveMode, DayPortion } from '@/lib/leavePortions';
+import { LeaveDetailModal } from '@/components/LeaveDetailModal';
+
+/** DatePicker onChange can hand back a dayjs-like object or a plain date string. */
+function formatPickerValue(val: unknown): string {
+  if (val && typeof val === 'object') {
+    const dayjsLike = val as { format?: (f: string) => string };
+    if (typeof dayjsLike.format === 'function') {
+      return dayjsLike.format('YYYY-MM-DD');
+    }
+  }
+  if (typeof val === 'string') {
+    return val.substring(0, 10);
+  }
+  return '';
+}
 
 export default function LeaveHistoryPage() {
-  const [requests, setRequests] = useState<any[]>([]);
-  const [balances, setBalances] = useState<any[]>([]);
+  interface MappedRequest {
+    id?: string;
+    requestCode?: string;
+    dateStr?: string;
+    type?: string;
+    days?: string;
+    reason?: string;
+    status?: string;
+    raw?: Leave & { attachment?: string; attachmentName?: string };
+    [key: string]: unknown;
+  }
+
+  const [requests, setRequests] = useState<MappedRequest[]>([]);
+  const [balances, setBalances] = useState<LeaveBalance[]>([]);
   const [username, setUsername] = useState('xxxxx xxxxxx');
   const [filterType, setFilterType] = useState<'daily' | 'monthly'>('monthly');
   const [selectedMonthRaw, setSelectedMonthRaw] = useState(() => {
@@ -36,17 +60,13 @@ export default function LeaveHistoryPage() {
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
   });
   const [selectedDate, setSelectedDate] = useState<Date | null>(new Date());
-  const [selectedRequest, setSelectedRequest] = useState<any>(null);
+  const [selectedRequest, setSelectedRequest] = useState<MappedRequest | null>(null);
   const [searchCode, setSearchCode] = useState('');
 
-  const router = useRouter();
   const [showConfirmEdit, setShowConfirmEdit] = useState(false);
-  const [previewAttachment, setPreviewAttachment] = useState<{
-    url: string;
-    isImage: boolean;
-  } | null>(null);
 
   const [isEditing, setIsEditing] = useState(false);
+  const [editHasConflict, setEditHasConflict] = useState(false);
   const [editAttachment, setEditAttachment] = useState<File | null>(null);
   const [editForm, setEditForm] = useState({
     type: '',
@@ -108,6 +128,28 @@ export default function LeaveHistoryPage() {
   const { useLeaveBalancesQuery } = useLeaveBalance();
   const { data: allBalances = [] } = useLeaveBalancesQuery();
 
+  const currentUserId =
+    typeof window !== 'undefined' ? sessionStorage.getItem('userId') : '';
+
+  // Half-day slots this employee has booked, excluding the request being edited.
+  const editTakenMap = useMemo(
+    () =>
+      buildTakenMap(
+        Array.isArray(allLeaves) ? allLeaves : [],
+        currentUserId,
+        selectedRequest?.id,
+      ),
+    [allLeaves, currentUserId, selectedRequest?.id],
+  );
+
+  const isEditDateDisabled = (date: unknown) =>
+    isDayUnavailable(
+      date,
+      editForm.leaveMode as LeaveMode,
+      (editForm.period as DayPortion) ?? 'full',
+      editTakenMap,
+    );
+
   useEffect(() => {
     const storedUsername = sessionStorage.getItem('username');
     if (storedUsername && storedUsername !== 'User') {
@@ -122,7 +164,7 @@ export default function LeaveHistoryPage() {
   useEffect(() => {
     const myId = sessionStorage.getItem('userId');
     const myLeaves = allLeaves.filter((l) => String(l.userId) === myId);
-    const filtered = myLeaves.filter((r: any) => {
+    const filtered = myLeaves.filter((r) => {
       if (searchCode.trim() !== '') {
         return r.requestCode
           ?.toLowerCase()
@@ -130,7 +172,10 @@ export default function LeaveHistoryPage() {
       }
 
       if (filterType === 'monthly') {
-        return isSameYearMonth(r.startDate, selectedMonthRaw);
+        if (!r.startDate) return false;
+        const d = new Date(r.startDate);
+        const yyyyMM = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+        return yyyyMM === selectedMonthRaw;
       } else {
         if (!selectedDate) return true;
         const selectedStr = `${selectedDate.getFullYear()}-${String(selectedDate.getMonth() + 1).padStart(2, '0')}-${String(selectedDate.getDate()).padStart(2, '0')}`;
@@ -141,13 +186,13 @@ export default function LeaveHistoryPage() {
     });
 
     const sorted = [...filtered].sort(
-      (a: any, b: any) =>
+      (a, b) =>
         new Date(b.createdAt || b.startDate).getTime() -
         new Date(a.createdAt || a.startDate).getTime(),
     );
 
     setRequests(
-      sorted.map((r: any) => {
+      sorted.map((r) => {
         let dateStr =
           r.startDate.split('T')[0] === r.endDate.split('T')[0]
             ? formatDate(r.startDate)
@@ -178,7 +223,7 @@ export default function LeaveHistoryPage() {
           id: r.id,
           requestCode: r.requestCode,
           dateStr,
-          type: r.leaveType?.name || r.type,
+          type: (typeof r.leaveType === 'object' ? r.leaveType?.name : r.leaveType) || r.type,
           days: daysStr,
           reason: r.reason || '-',
           status: r.status,
@@ -202,10 +247,10 @@ export default function LeaveHistoryPage() {
       const updatedReq = requests.find((r) => r.id === selectedRequest.id);
       if (updatedReq) {
         const wasHRPhase = ['PENDING_VERIFY', 'REVIEWING_HR'].includes(
-          selectedRequest.status,
+          selectedRequest.status || '',
         );
         const isNowHRPhase = ['PENDING_VERIFY', 'REVIEWING_HR'].includes(
-          updatedReq.status,
+          updatedReq.status || '',
         );
 
         if (wasHRPhase && !isNowHRPhase) {
@@ -254,7 +299,8 @@ export default function LeaveHistoryPage() {
     }
   }, [requests, selectedRequest, isEditing]);
 
-  const handleDelete = async (isApprovedCancel = false) => {
+  const handleDelete = async () => {
+    const isApprovedCancel = selectedRequest?.status?.toLowerCase().includes('approved');
     const result = await Swal.fire({
       title: isApprovedCancel
         ? 'ยืนยันการขอยกเลิกวันลา'
@@ -272,7 +318,7 @@ export default function LeaveHistoryPage() {
 
     if (result.isConfirmed) {
       try {
-        await deleteLeave(selectedRequest.id);
+        await deleteLeave(selectedRequest?.id || '');
         setSelectedRequest(null);
         refetchLeaves();
         Swal.fire({
@@ -286,10 +332,10 @@ export default function LeaveHistoryPage() {
           showConfirmButton: false,
           timer: 1500,
         });
-      } catch (err: any) {
+      } catch (err) {
         Swal.fire(
           'ข้อผิดพลาด',
-          err.message || 'Failed to cancel request',
+          getErrorMessage(err, 'Failed to cancel request'),
           'error',
         );
       }
@@ -297,6 +343,7 @@ export default function LeaveHistoryPage() {
   };
 
   const handleEditClick = () => {
+    if (!selectedRequest) return;
     let mode = 'full_day';
     let prd = 'full';
 
@@ -331,12 +378,12 @@ export default function LeaveHistoryPage() {
 
     setEditForm({
       type: selectedRequest.raw?.type || selectedRequest.raw?.leaveTypeId || '',
-      startDate: formatDateLocal(selectedRequest.raw?.startDate),
-      endDate: formatDateLocal(selectedRequest.raw?.endDate),
+      startDate: formatDateLocal(selectedRequest.raw?.startDate || ''),
+      endDate: formatDateLocal(selectedRequest.raw?.endDate || ''),
       reason: selectedRequest.raw?.reason || '',
       leaveMode: mode,
       period: prd,
-      leaveDate: formatDateLocal(selectedRequest.raw?.startDate),
+      leaveDate: formatDateLocal(selectedRequest.raw?.startDate || ''),
       startTime:
         selectedRequest.raw?.startFormat === 'hourly'
           ? new Date(selectedRequest.raw.startDate).toLocaleTimeString(
@@ -353,6 +400,7 @@ export default function LeaveHistoryPage() {
           : '',
     });
     setEditAttachment(null);
+    setEditHasConflict(false);
     setIsEditing(true);
   };
 
@@ -379,6 +427,15 @@ export default function LeaveHistoryPage() {
         alert('กรุณากรอกข้อมูลให้ครบถ้วน');
         return;
       }
+      if (editHasConflict) {
+        Swal.fire({
+          icon: 'warning',
+          title: 'ช่วงวันที่ทับซ้อนกับการลาอื่น',
+          text: 'บางวันในช่วงที่เลือกทับซ้อนกับการลาอื่นของคุณ กรุณาปรับช่วงวันที่ หรือเปลี่ยนรูปแบบการลาให้ตรงกับช่วงเวลาที่ยังว่าง',
+          confirmButtonColor: '#3085d6',
+        });
+        return;
+      }
     }
 
     setShowConfirmEdit(true);
@@ -386,7 +443,7 @@ export default function LeaveHistoryPage() {
 
   const confirmAndSave = async () => {
     try {
-      const payload: any = {
+      const payload: Record<string, unknown> = {
         leaveTypeId: editForm.type,
         reason: editForm.reason,
         leaveMode: editForm.leaveMode,
@@ -404,11 +461,11 @@ export default function LeaveHistoryPage() {
       }
 
       await updateLeave({
-        id: selectedRequest.id,
+        id: selectedRequest?.id || '',
         data: payload,
       });
 
-      if (editAttachment && selectedRequest.id) {
+      if (editAttachment && selectedRequest?.id) {
         const formData = new FormData();
         formData.append('file', editAttachment);
         formData.append('leaveRequestId', selectedRequest.id);
@@ -421,7 +478,7 @@ export default function LeaveHistoryPage() {
       }
 
       refetchLeaves();
-    } catch (err) {
+    } catch {
       alert('Failed to update request');
     }
 
@@ -433,9 +490,12 @@ export default function LeaveHistoryPage() {
   return (
     <div className="min-h-[calc(100vh-4rem)] bg-[#F8F9FA] font-sans text-slate-800 flex flex-col relative">
       {/* Top Banner */}
-      <div className="bg-white flex items-center justify-between px-8 py-5 shadow-sm z-10">
+      <div className="bg-white flex items-center gap-3 sm:gap-4 px-4 sm:px-8 py-3 sm:py-5 shadow-sm z-10 shrink-0">
+        <div className="w-9 h-9 sm:w-11 sm:h-11 bg-blue-100 text-blue-600 rounded-xl flex items-center justify-center shrink-0">
+          <BookOpen className="w-6 h-6" strokeWidth={2} />
+        </div>
         <div>
-          <h1 className="text-xl font-bold text-black tracking-tight">
+          <h1 className="text-base sm:text-xl font-bold text-black tracking-tight">
             ประวัติการลา (Leave History)
           </h1>
           <p className="text-xs text-gray-500 mt-1 font-medium">
@@ -445,40 +505,41 @@ export default function LeaveHistoryPage() {
       </div>
 
       {/* Main Content Container */}
-      <div className="flex-1 p-6 md:p-8">
+      <div className="flex-1 p-4 sm:p-6 md:p-8">
         <div className="max-w-[1200px] mx-auto animate-in fade-in slide-in-from-bottom-4 duration-500">
           {/* Custom Date Picker and View Toggle */}
           <div className="mb-6 md:mb-8 flex flex-wrap items-center justify-between gap-4 relative">
-            <div className="flex bg-white rounded-xl shadow-sm border border-gray-200 focus-within:ring-2 focus-within:ring-blue-100 focus-within:border-blue-400 transition-all">
+            <div className="flex items-center bg-white rounded-xl shadow-sm border border-gray-200 focus-within:ring-2 focus-within:ring-blue-100 focus-within:border-blue-400 transition-all h-[42px]">
               <select
                 value={filterType}
                 onChange={(e) =>
                   setFilterType(e.target.value as 'daily' | 'monthly')
                 }
-                className="bg-gray-50/50 pl-4 pr-2 py-3 text-[14px] font-bold text-blue-600 outline-none appearance-none border-r border-gray-200 cursor-pointer hover:bg-gray-50 transition-colors rounded-l-xl"
+                className="h-full bg-gray-50/70 pl-3.5 pr-8 text-[13px] font-bold text-blue-600 outline-none appearance-none border-r border-gray-200 cursor-pointer hover:bg-gray-100/70 transition-colors rounded-l-xl shrink-0"
                 style={{
                   backgroundImage:
                     'url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%232563EB%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E")',
                   backgroundRepeat: 'no-repeat',
-                  backgroundPosition: 'right 12px top 55%',
-                  backgroundSize: '10px auto',
-                  paddingRight: '32px',
+                  backgroundPosition: 'right 10px center',
+                  backgroundSize: '9px auto',
                 }}
               >
                 <option value="monthly">รายเดือน</option>
                 <option value="daily">รายวัน</option>
               </select>
 
-              <div className="relative inline-block w-[180px]">
+              <div className="relative flex items-center w-[165px] h-full [&_.MuiInputBase-root]:h-full [&_.MuiInputBase-input]:text-[13px] [&_.MuiInputBase-input]:font-semibold [&_.MuiInputBase-input]:text-slate-800 [&_.MuiInputBase-input]:py-0 [&_.MuiInputBase-input]:pl-3.5 [&_.MuiIconButton-root]:p-1.5 [&_.MuiIconButton-root]:mr-1.5 [&_.MuiIconButton-root]:text-slate-500">
                 {filterType === 'monthly' ? (
                   <DatePicker
+                    borderless
                     value={selectedMonthRaw}
-                    onChange={(newMonth: any) => setSelectedMonthRaw(newMonth)}
+                    onChange={(newMonth: string) => setSelectedMonthRaw(newMonth)}
                     views={['year', 'month']}
                     format="MM/BBBB"
                   />
                 ) : (
                   <DatePicker
+                    borderless
                     selected={selectedDate}
                     onChange={(date: Date | null) => setSelectedDate(date)}
                     placeholderText="เลือกวันที่"
@@ -567,9 +628,9 @@ export default function LeaveHistoryPage() {
                         </td>
                         <td className="px-6 py-5 text-center whitespace-nowrap">
                           <span
-                            className={`inline-block px-5 py-1.5 rounded-full text-[13px] font-bold text-white shadow-sm min-w-[120px] text-center ${getLeaveStatusBadgeColor(req.status)}`}
+                            className={`inline-block px-5 py-1.5 rounded-full text-[13px] font-bold text-white shadow-sm min-w-[120px] text-center ${getLeaveStatusBadgeColor(req.status || '')}`}
                           >
-                            {getLeaveStatusText(req.status)}
+                            {getLeaveStatusText(req.status || '')}
                           </span>
                         </td>
                         <td className="px-6 py-5 text-center whitespace-nowrap">
@@ -592,462 +653,62 @@ export default function LeaveHistoryPage() {
 
       {/* Leave Details Modal */}
       {selectedRequest && !isEditing && (
-        <div className="fixed inset-0 z-[999] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-white rounded-[24px] w-full max-w-[650px] shadow-2xl flex flex-col max-h-[90vh] animate-in zoom-in-95 duration-200 border-2 border-blue-500 overflow-hidden relative">
-            {/* Header */}
-            <div className="flex items-center justify-between px-6 py-5">
-              <h2 className="text-[20px] font-bold text-black">
-                รายละเอียดคำขอลา (Leave Request Details)
-              </h2>
-              <button
-                onClick={() => setSelectedRequest(null)}
-                className="w-8 h-8 flex items-center justify-center text-white bg-red-500 rounded-full hover:bg-red-600 transition-colors shadow-sm"
-              >
-                <X className="w-5 h-5" strokeWidth={3} />
-              </button>
-            </div>
-
-            {/* Body */}
-            <div
-              className="px-6 pb-6 overflow-y-auto flex-1
-             space-y-4"
-            >
-              {/* Employee Info */}
-              <div className="border border-gray-300 rounded-xl p-5 flex gap-4 bg-white">
-                <div className="w-[38px] h-[38px] rounded-full bg-fuchsia-100/50 border border-fuchsia-200 text-fuchsia-500 flex items-center justify-center shrink-0">
-                  <User className="w-5 h-5" strokeWidth={2} />
-                </div>
-                <div className="flex-1">
-                  <h3 className="font-bold text-[15px] text-black mb-3">
-                    ข้อมูลพนักงาน (Employee Info)
-                  </h3>
-                  <div className="text-[14px] text-gray-800 space-y-2">
-                    <p className="flex items-center gap-2">
-                      <span className="font-bold min-w-[90px]">ชื่อ:</span>{' '}
-                      {username}
-                    </p>
-                    <p className="flex items-center gap-2">
-                      <span className="font-bold min-w-[90px]">
-                        แผนก|ตำแหน่ง:
-                      </span>{' '}
-                      {selectedRequest.raw?.user?.department?.name ||
-                        sessionStorage.getItem('department') ||
-                        '-'}{' '}
-                      |{' '}
-                      {selectedRequest.raw?.user?.position?.name ||
-                        sessionStorage.getItem('positionName') ||
-                        '-'}
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Leave Info */}
-              <div className="border border-gray-300 rounded-xl p-5 bg-white">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="w-[32px] h-[32px] rounded-full bg-blue-50 border border-blue-100 flex items-center justify-center text-blue-500">
-                    <CalendarIcon
-                      className="w-[18px] h-[18px]"
-                      strokeWidth={2.5}
-                    />
-                  </div>
-                  <h3 className="font-bold text-[15px] text-black">
-                    รายละเอียดการลา (Leave Information)
-                  </h3>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-[14px] text-gray-800 pl-[44px]">
-                  <div className="space-y-3">
-                    <p className="flex gap-2">
-                      <span className="font-bold min-w-[80px]">
-                        ประเภทการลา:
-                      </span>{' '}
-                      {selectedRequest.type}
-                    </p>
-                    <p className="flex gap-2">
-                      <span className="font-bold min-w-[80px]">ช่วงเวลา:</span>
-                      {(() => {
-                        const raw = selectedRequest.raw || {};
-                        const mode = raw.startFormat || raw.leaveMode;
-                        const start = raw.startDate;
-                        const end = raw.endDate;
-                        let timeAddon = '';
-                        if (
-                          mode === 'hourly' ||
-                          (raw.leaveHours &&
-                            raw.leaveHours < 8 &&
-                            mode !== 'full' &&
-                            mode !== 'full_day' &&
-                            mode !== 'half_day' &&
-                            mode !== 'morning' &&
-                            mode !== 'afternoon')
-                        ) {
-                          let startT = raw.startTime;
-                          if (!startT && start && start.includes('T')) {
-                            startT = new Date(start).toLocaleTimeString(
-                              'th-TH',
-                              { hour: '2-digit', minute: '2-digit' },
-                            );
-                          }
-                          let endT = raw.endTime;
-                          if (!endT && end && end.includes('T')) {
-                            endT = new Date(end).toLocaleTimeString('th-TH', {
-                              hour: '2-digit',
-                              minute: '2-digit',
-                            });
-                          }
-                          if (startT && endT && startT !== endT) {
-                            timeAddon = ` (${startT} - ${endT} น.)`;
-                          }
-                        }
-                        return `${selectedRequest.dateStr}${timeAddon}`;
-                      })()}{' '}
-                      (
-                      {selectedRequest.days.includes('ชั่วโมง')
-                        ? selectedRequest.days
-                        : `${selectedRequest.days.replace(' วัน', '')} วัน`}
-                      )
-                    </p>
-                  </div>
-                  <div className="space-y-3">
-                    <p className="flex items-center gap-2">
-                      <span className="w-[26px] h-[26px] bg-green-100 text-green-600 flex items-center justify-center rounded-full shrink-0">
-                        <Clock
-                          className="w-[14px] h-[14px]"
-                          strokeWidth={2.5}
-                        />
-                      </span>
-                      <span className="font-bold min-w-[80px]">
-                        รูปแบบการลา:
-                      </span>{' '}
-                      {selectedRequest.raw?.startFormat === 'hourly'
-                        ? `รายชั่วโมง (${selectedRequest.raw?.leaveHours || 1} ชม.)`
-                        : selectedRequest.raw?.startFormat === 'morning'
-                          ? 'ครึ่งวันเช้า'
-                          : selectedRequest.raw?.startFormat === 'afternoon'
-                            ? 'ครึ่งวันบ่าย'
-                            : 'เต็มวัน'}
-                    </p>
-                    <p className="flex items-center gap-2">
-                      <span className="w-[26px] h-[26px] bg-yellow-100 text-yellow-600 flex items-center justify-center rounded-full shrink-0">
-                        <svg
-                          width="14"
-                          height="14"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2.5"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        >
-                          <path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48" />
-                        </svg>
-                      </span>
-                      <span className="font-bold min-w-[80px]">เอกสารแนบ:</span>{' '}
-                      {selectedRequest.raw?.attachments &&
-                      selectedRequest.raw.attachments.length > 0 ? (
-                        <>
-                          <span className="text-blue-500 font-medium truncate max-w-[150px]">
-                            {selectedRequest.raw.attachments[0].fileType.includes(
-                              'image',
-                            )
-                              ? 'รูปภาพแนบ'
-                              : 'ไฟล์แนบ'}
-                          </span>
-                          <button
-                            className="ml-auto p-1.5 border border-gray-300 rounded-md hover:bg-gray-100 text-black"
-                            onClick={() => {
-                              const att = selectedRequest.raw.attachments[0];
-                              const isData = att.filePath.startsWith('data:');
-                              const fileSrc = isData
-                                ? att.filePath
-                                : att.filePath.startsWith('http')
-                                  ? att.filePath
-                                  : `/${att.filePath.replace(/^\/+/, '')}`;
-                              const isImage =
-                                att.fileType.includes('image') ||
-                                (!isData &&
-                                  att.filePath.match(/\.(jpeg|jpg|gif|png)$/i));
-
-                              setPreviewAttachment({ url: fileSrc, isImage });
-                            }}
-                          >
-                            <Download
-                              className="w-[14px] h-[14px]"
-                              strokeWidth={2.5}
-                            />
-                          </button>
-                        </>
-                      ) : (
-                        <span className="text-gray-400">-</span>
-                      )}
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Reason */}
-              <div>
-                <h3 className="font-bold text-black text-[14px] mb-2">
-                  เหตุผลการลา
-                </h3>
-                <textarea
-                  readOnly
-                  value={selectedRequest.reason}
-                  className="w-full border border-gray-300 rounded-xl p-3 text-[14px] text-gray-500 bg-white outline-none cursor-default resize-none min-h-[60px]"
-                  rows={2}
-                />
-              </div>
-
-              {/* Approval Timeline */}
-              <div className="mt-2">
-                <h3
-                  className={`font-bold flex items-center gap-2 text-[15px] mb-3 ${selectedRequest.status === 'APPROVED' ? 'text-[#00A859]' : selectedRequest.status === 'REJECTED' ? 'text-red-500' : 'text-yellow-600'}`}
-                >
-                  การอนุมัติ (Approval Timeline)
-                </h3>
-
-                {/* Overall Status */}
-                <div className="flex items-center gap-3 mb-4 p-3 bg-[#F8F9FA] border border-gray-200 rounded-xl">
-                  <span className="text-[12px] font-bold text-black">
-                    สถานะปัจจุบัน:
-                  </span>
-                  <span
-                    className={`px-3 py-1.5 rounded-full text-sm font-bold text-white shadow-sm ${getLeaveStatusBadgeColor(selectedRequest.status)}`}
+        <LeaveDetailModal
+          leave={selectedRequest.raw ?? selectedRequest}
+          onClose={() => setSelectedRequest(null)}
+          fallbackName={username}
+          fallbackDepartment={
+            typeof window !== 'undefined'
+              ? sessionStorage.getItem('department') || undefined
+              : undefined
+          }
+          fallbackPosition={
+            typeof window !== 'undefined'
+              ? sessionStorage.getItem('position') || undefined
+              : undefined
+          }
+          footer={
+            <>
+              {(selectedRequest.status || '').toLowerCase() === 'approved' &&
+                selectedRequest.raw?.startDate &&
+                new Date(selectedRequest.raw.startDate).setHours(
+                  0,
+                  0,
+                  0,
+                  0,
+                ) > new Date().setHours(0, 0, 0, 0) && (
+                  <button
+                    onClick={handleDelete}
+                    className="font-bold text-[14px] flex items-center gap-1.5 transition-colors text-red-500 hover:text-red-600 bg-red-50 hover:bg-red-100 px-4 py-2 rounded-lg"
                   >
-                    {getLeaveStatusText(selectedRequest.status)}
-                  </span>
-                </div>
-
-                {/* Timeline Steps */}
-                {(() => {
-                  const raw = selectedRequest.raw || {};
-                  const approvals: any[] = raw.approvals || [];
-                  const steps = [
-                    {
-                      role: 'HR',
-                      label: 'ตรวจสอบ (HR)',
-                      statuses: [
-                        'PENDING_VERIFY',
-                        'REVIEWING_HR',
-                        'PENDING_SUPERVISOR',
-                        'PENDING_EXECUTIVE',
-                        'APPROVED',
-                        'REJECTED',
-                        'CANCELLED',
-                        'PENDING_CANCELLATION',
-                      ],
-                    },
-                    {
-                      role: 'Manager',
-                      label: 'หัวหน้างาน (Manager)',
-                      statuses: [
-                        'PENDING_SUPERVISOR',
-                        'PENDING_EXECUTIVE',
-                        'APPROVED',
-                        'REJECTED',
-                        'CANCELLED',
-                      ],
-                    },
-                    {
-                      role: 'CEO',
-                      label: 'ผู้บริหาร (CEO)',
-                      statuses: [
-                        'PENDING_EXECUTIVE',
-                        'APPROVED',
-                        'REJECTED',
-                        'CANCELLED',
-                      ],
-                    },
-                  ];
-
-                  const currentStatus = selectedRequest.status;
-
-                  return (
-                    <div className="space-y-3">
-                      {steps.map((step, idx) => {
-                        const approval = approvals.find(
-                          (a: any) =>
-                            a.role === step.role ||
-                            a.approverRole === step.role,
-                        );
-                        const isReached = step.statuses.includes(currentStatus);
-
-                        let dotColor = 'bg-gray-300';
-                        let labelColor = 'text-gray-400';
-                        let statusText = 'รอดำเนินการ';
-                        let statusBg = 'bg-gray-100 text-gray-400';
-
-                        if (approval) {
-                          if (approval.status === 'APPROVED') {
-                            dotColor = 'bg-emerald-500';
-                            labelColor = 'text-gray-800';
-                            statusText = 'ผ่าน';
-                            statusBg = 'bg-emerald-100 text-emerald-700';
-                          } else if (approval.status === 'REJECTED') {
-                            dotColor = 'bg-red-500';
-                            labelColor = 'text-gray-800';
-                            statusText = 'ตีกลับ';
-                            statusBg = 'bg-red-100 text-red-600';
-                          } else {
-                            dotColor = 'bg-blue-400';
-                            labelColor = 'text-gray-700';
-                            statusText = 'กำลังตรวจ';
-                            statusBg = 'bg-blue-100 text-blue-600';
-                          }
-                        } else if (isReached && idx === 0) {
-                          dotColor =
-                            currentStatus === 'REVIEWING_HR'
-                              ? 'bg-blue-400 animate-pulse'
-                              : 'bg-emerald-400';
-                          labelColor = 'text-gray-700';
-                          statusText =
-                            currentStatus === 'REVIEWING_HR'
-                              ? 'กำลังตรวจ'
-                              : 'ผ่านแล้ว';
-                          statusBg =
-                            currentStatus === 'REVIEWING_HR'
-                              ? 'bg-blue-100 text-blue-600'
-                              : 'bg-emerald-100 text-emerald-700';
-                        }
-
-                        return (
-                          <div
-                            key={step.role}
-                            className="flex items-start gap-3"
-                          >
-                            <div className="flex flex-col items-center shrink-0">
-                              <div
-                                className={`w-3 h-3 rounded-full mt-1 ${dotColor}`}
-                              />
-                              {idx < steps.length - 1 && (
-                                <div className="w-px h-8 bg-gray-200 mt-1" />
-                              )}
-                            </div>
-                            <div className="flex-1 pb-2">
-                              <div className="flex items-center gap-2 flex-wrap">
-                                <span
-                                  className={`text-[13px] font-bold ${labelColor}`}
-                                >
-                                  {step.label}
-                                </span>
-                                <span
-                                  className={`px-2 py-0.5 rounded-full text-[11px] font-bold ${statusBg}`}
-                                >
-                                  {statusText}
-                                </span>
-                                {approval?.createdAt && (
-                                  <span className="text-[11px] text-gray-400">
-                                    {new Date(
-                                      approval.createdAt,
-                                    ).toLocaleDateString('th-TH', {
-                                      day: 'numeric',
-                                      month: 'short',
-                                      year: 'numeric',
-                                    })}
-                                  </span>
-                                )}
-                              </div>
-                              {approval?.comment && (
-                                <p className="text-[12px] text-gray-500 mt-1 pl-1">
-                                  เหตุผล: {approval.comment}
-                                </p>
-                              )}
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  );
-                })()}
-              </div>
-            </div>
-
-            {/* Footer */}
-            {!selectedRequest.status.includes('Approved') &&
-              !['Cancelled', 'CANCELLED', 'PENDING_CANCELLATION'].includes(
-                selectedRequest.status,
-              ) && (
-                <div className="px-6 py-4 border-t border-gray-100 flex items-center justify-between bg-white mt-auto shrink-0">
-                  <span className="text-[13px] font-medium text-gray-300">
-                    วันที่ยื่นคำขอ :{' '}
-                    {selectedRequest.raw?.createdAt
-                      ? new Date(
-                          selectedRequest.raw.createdAt,
-                        ).toLocaleDateString('th-TH', {
-                          day: 'numeric',
-                          month: 'short',
-                          year: 'numeric',
-                          hour: '2-digit',
-                          minute: '2-digit',
-                        }) + ' น.'
-                      : '-'}
-                  </span>
-                  <div className="flex items-center gap-5">
-                    <button
-                      onClick={() => handleDelete()}
-                      className="text-gray-400 hover:text-red-500 font-bold text-[14px] flex items-center gap-1.5 transition-colors"
-                    >
-                      <Trash2 className="w-4 h-4" strokeWidth={2.5} />
-                      ยกเลิกคำขอลา
-                    </button>
-                    {['PENDING_VERIFY'].includes(selectedRequest.status) &&
-                      !selectedRequest.raw?.isViewedByHr && (
-                        <button
-                          onClick={handleEditClick}
-                          className="text-blue-600 hover:text-blue-700 font-bold text-[14px] flex items-center gap-1.5 transition-colors"
-                        >
-                          <Edit3 className="w-4 h-4" strokeWidth={2.5} />
-                          แก้ไขข้อมูล
-                        </button>
-                      )}
-                  </div>
-                </div>
-              )}
-            {(selectedRequest.status.includes('Approved') ||
-              ['Cancelled', 'CANCELLED', 'PENDING_CANCELLATION'].includes(
-                selectedRequest.status,
-              )) && (
-              <div className="px-6 py-4 border-t border-gray-100 flex items-center justify-between bg-white mt-auto shrink-0">
-                <span className="text-[13px] font-medium text-gray-300">
-                  วันที่ยื่นคำขอ :{' '}
-                  {selectedRequest.raw?.createdAt
-                    ? new Date(
-                        selectedRequest.raw.createdAt,
-                      ).toLocaleDateString('th-TH', {
-                        day: 'numeric',
-                        month: 'short',
-                        year: 'numeric',
-                        hour: '2-digit',
-                        minute: '2-digit',
-                      }) + ' น.'
-                    : '-'}
-                </span>
-
-                {selectedRequest.status.includes('Approved') &&
-                  selectedRequest.raw?.startDate &&
-                  new Date(selectedRequest.raw.startDate).setHours(0, 0, 0, 0) >
-                    new Date().setHours(0, 0, 0, 0) && (
-                    <button
-                      onClick={() => handleDelete(true)}
-                      className="text-red-500 hover:text-red-600 font-bold text-[14px] flex items-center gap-1.5 transition-colors bg-red-50 hover:bg-red-100 px-4 py-2 rounded-lg"
-                    >
-                      <Trash2 className="w-4 h-4" strokeWidth={2.5} />
-                      ขอยกเลิกวันลา
-                    </button>
-                  )}
-              </div>
-            )}
-          </div>
-        </div>
+                    <Trash2 className="w-4 h-4" strokeWidth={2.5} />
+                    ขอยกเลิกวันลา
+                  </button>
+                )}
+              {['pending_verify'].includes(
+                (selectedRequest.status || '').toLowerCase(),
+              ) &&
+                !selectedRequest.raw?.isViewedByHr && (
+                  <button
+                    onClick={handleEditClick}
+                    className="text-blue-600 hover:text-blue-700 font-bold text-[14px] flex items-center gap-1.5 transition-colors"
+                  >
+                    <Edit3 className="w-4 h-4" strokeWidth={2.5} />
+                    แก้ไขข้อมูล
+                  </button>
+                )}
+            </>
+          }
+        />
       )}
 
       {/* Edit Form Modal (Fullscreen) */}
       {isEditing && (
-        <div className="fixed inset-0 z-[999] bg-[#E2E4E9] overflow-y-auto">
+        <div className="fixed inset-0 z-[120] bg-[#E2E4E9] overflow-y-auto">
           {/* Top Banner (Inside Edit) */}
           <div className="bg-white flex flex-col md:flex-row md:items-center justify-between px-8 py-5 shadow-sm sticky top-0 z-10 gap-4 border-2 border-blue-500">
             <div>
-              <h1 className="text-xl font-bold text-black tracking-tight">
+              <h1 className="text-base sm:text-xl font-bold text-black tracking-tight">
                 แก้ไขคำขอลา (Edit Leave Request)
               </h1>
               <p className="text-[13px] text-gray-500 mt-1 font-medium">
@@ -1091,7 +752,7 @@ export default function LeaveHistoryPage() {
                       <option value="" disabled>
                         เลือกประเภทการลา
                       </option>
-                      {balances.map((b: any) => (
+                      {balances.map((b) => (
                         <option key={b.leaveTypeId} value={b.leaveTypeId}>
                           {b.leaveType?.name || 'ไม่ระบุ'} (เหลือ{' '}
                           {b.remainingDays} วัน)
@@ -1169,24 +830,11 @@ export default function LeaveHistoryPage() {
                         </label>
                         <DatePicker
                           value={editForm.leaveDate || null}
-                          onChange={(val: any) => {
-                            if (
-                              val &&
-                              typeof val === 'object' &&
-                              typeof val.format === 'function'
-                            ) {
-                              setEditForm({
-                                ...editForm,
-                                leaveDate: val.format('YYYY-MM-DD'),
-                              });
-                            } else if (typeof val === 'string') {
-                              setEditForm({
-                                ...editForm,
-                                leaveDate: val.substring(0, 10),
-                              });
-                            } else {
-                              setEditForm({ ...editForm, leaveDate: '' });
-                            }
+                          onChange={(val: unknown) => {
+                            setEditForm({
+                              ...editForm,
+                              leaveDate: formatPickerValue(val),
+                            });
                           }}
                           placeholderText="วว/ดด/ปปปป"
                         />
@@ -1212,25 +860,13 @@ export default function LeaveHistoryPage() {
                         </label>
                         <DatePicker
                           value={editForm.startDate || null}
-                          onChange={(val: any) => {
-                            if (
-                              val &&
-                              typeof val === 'object' &&
-                              typeof val.format === 'function'
-                            ) {
-                              setEditForm({
-                                ...editForm,
-                                startDate: val.format('YYYY-MM-DD'),
-                              });
-                            } else if (typeof val === 'string') {
-                              setEditForm({
-                                ...editForm,
-                                startDate: val.substring(0, 10),
-                              });
-                            } else {
-                              setEditForm({ ...editForm, startDate: '' });
-                            }
+                          onChange={(val: unknown) => {
+                            setEditForm({
+                              ...editForm,
+                              startDate: formatPickerValue(val),
+                            });
                           }}
+                          shouldDisableDate={isEditDateDisabled}
                           placeholderText="วว/ดด/ปปปป"
                         />
                         {editForm.leaveMode === 'half_day' && (
@@ -1276,28 +912,30 @@ export default function LeaveHistoryPage() {
                         </label>
                         <DatePicker
                           value={editForm.endDate || null}
-                          onChange={(val: any) => {
-                            if (
-                              val &&
-                              typeof val === 'object' &&
-                              typeof val.format === 'function'
-                            ) {
-                              setEditForm({
-                                ...editForm,
-                                endDate: val.format('YYYY-MM-DD'),
-                              });
-                            } else if (typeof val === 'string') {
-                              setEditForm({
-                                ...editForm,
-                                endDate: val.substring(0, 10),
-                              });
-                            } else {
-                              setEditForm({ ...editForm, endDate: '' });
-                            }
+                          onChange={(val: unknown) => {
+                            setEditForm({
+                              ...editForm,
+                              endDate: formatPickerValue(val),
+                            });
                           }}
+                          shouldDisableDate={isEditDateDisabled}
                           placeholderText="วว/ดด/ปปปป"
                         />
                       </div>
+                      <LeaveDayAvailabilityPreview
+                        startDate={editForm.startDate}
+                        endDate={editForm.endDate}
+                        leaveMode={editForm.leaveMode as LeaveMode}
+                        period={
+                          editForm.leaveMode === 'half_day'
+                            ? (editForm.period as DayPortion)
+                            : 'full'
+                        }
+                        leaves={Array.isArray(allLeaves) ? allLeaves : []}
+                        currentUserId={currentUserId}
+                        excludeRequestId={selectedRequest?.id}
+                        onConflictChange={setEditHasConflict}
+                      />
                     </>
                   )}
                 </div>
@@ -1410,44 +1048,7 @@ export default function LeaveHistoryPage() {
           )}
         </div>
       )}
-      {/* Preview Attachment Modal */}
-      {previewAttachment && (
-        <div
-          className="fixed inset-0 z-[140] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200"
-          onClick={() => setPreviewAttachment(null)}
-        >
-          <div
-            className="bg-white rounded-[24px] w-full max-w-4xl shadow-2xl flex flex-col max-h-[90vh] animate-in zoom-in-95 duration-200 border-2 border-blue-500 overflow-hidden relative"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 bg-[#FAFAFA]">
-              <h2 className="text-[16px] font-bold text-black">
-                ไฟล์เอกสารแนบ (Attachment)
-              </h2>
-              <button
-                onClick={() => setPreviewAttachment(null)}
-                className="w-8 h-8 flex items-center justify-center text-white bg-red-500 rounded-full hover:bg-red-600 transition-colors shadow-sm"
-              >
-                <X className="w-5 h-5" strokeWidth={3} />
-              </button>
-            </div>
-            <div className="p-6 overflow-y-auto flex-1 flex items-center justify-center bg-gray-50/50">
-              {previewAttachment.isImage ? (
-                <img
-                  src={previewAttachment.url}
-                  alt="Preview"
-                  className="max-w-full max-h-[70vh] object-contain rounded-lg shadow-sm border border-gray-200"
-                />
-              ) : (
-                <iframe
-                  src={previewAttachment.url}
-                  className="w-full h-[75vh] bg-white rounded-lg shadow-sm border border-gray-200"
-                />
-              )}
-            </div>
-          </div>
-        </div>
-      )}
+
     </div>
   );
 }

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useLeave } from '@/hooks/useLeave';
 import { useLeaveType } from '@/hooks/useLeaveType';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
@@ -11,12 +11,16 @@ import {
   FileDown,
   Search,
   Filter,
-  RefreshCw
+  RefreshCw,
+  BarChart3,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { DatePicker } from '@/components/DateAndTime';
+import type { Leave } from '@/lib/api/types';
 
 export default function HRReports() {
   const { useLeavesQuery } = useLeave();
@@ -32,8 +36,12 @@ export default function HRReports() {
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
 
+  // Pagination
+  const itemsPerPage = 10;
+  const [currentPage, setCurrentPage] = useState(1);
+
   // Helper to format date display cleanly
-  const formatDateDisplay = (startStr: string, endStr: string, leave: any) => {
+  const formatDateDisplay = (startStr: string, endStr: string, leave: Leave) => {
     try {
       const start = new Date(startStr);
       const end = new Date(endStr);
@@ -65,7 +73,7 @@ export default function HRReports() {
   };
 
   // Helper to format duration text cleanly
-  const formatDurationText = (l: any) => {
+  const formatDurationText = (l: Leave) => {
     const mode = l.startFormat || l.leaveMode;
     const days = Number(l.durationDays ?? l.totalDays ?? 0);
     const isFull = mode === 'full' || mode === 'full_day';
@@ -78,6 +86,15 @@ export default function HRReports() {
       return `0.5 วัน`;
     }
     return `${days} วัน`;
+  };
+
+  // Helper to resolve department name if it's an object
+  const resolveDepartmentName = (l: Leave): string => {
+    const dept = l.departmentName || l.department || l.employee?.departmentName || l.employee?.department || l.user?.departmentName || l.user?.department;
+    if (typeof dept === 'object' && dept !== null) {
+      return (dept as { name?: string }).name || '-';
+    }
+    return (dept as string) || '-';
   };
 
   // Helper to fetch Sarabun Thai font as Base64 for jsPDF
@@ -103,7 +120,7 @@ export default function HRReports() {
     const matchesSearch =
       (l.employeeName || l.userId || '').toLowerCase().includes(search.toLowerCase()) ||
       (l.employeeId || '').toLowerCase().includes(search.toLowerCase()) ||
-      (l.departmentName || l.department || '').toLowerCase().includes(search.toLowerCase());
+      resolveDepartmentName(l).toLowerCase().includes(search.toLowerCase());
 
     const matchesStatus = statusFilter === 'all' || (l.status || '').toLowerCase() === statusFilter.toLowerCase();
     const matchesType = typeFilter === 'all' || l.leaveTypeId === typeFilter;
@@ -118,6 +135,19 @@ export default function HRReports() {
 
     return matchesSearch && matchesStatus && matchesType && matchesDate;
   });
+
+  // Pagination derived values
+  const totalPages = Math.max(1, Math.ceil(filteredLeaves.length / itemsPerPage));
+  const safePage = Math.min(currentPage, totalPages);
+  const paginatedLeaves = filteredLeaves.slice(
+    (safePage - 1) * itemsPerPage,
+    safePage * itemsPerPage,
+  );
+
+  // Reset to first page whenever the filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [search, statusFilter, typeFilter, startDate, endDate]);
 
   // Handle excel export
   const handleExportExcel = () => {
@@ -136,9 +166,9 @@ export default function HRReports() {
       'รหัสพนักงาน': l.employeeCode || l.employee?.employeeCode || (l.employeeId?.startsWith('EMP-') ? l.employeeId : `EMP-${String(l.employeeId || '').substring(0, 6).toUpperCase()}`),
       'ชื่อ': firstName,
       'นามสกุล': lastName,
-      'แผนกงาน': l.departmentName || l.department || '-',
+      'แผนกงาน': resolveDepartmentName(l),
       'วันที่ยื่นคำขอ': new Date(l.createdAt || 0).toLocaleDateString('th-TH'),
-      'ประเภทการลา': l.leaveTypeName || l.type || '-',
+      'ประเภทการลา': l.leaveTypeName || l.type || (leaveTypes.find(t => t.id === l.leaveTypeId)?.name) || '-',
       'วันที่ลา': formatDateDisplay(l.startDate, l.endDate, l),
       'ระยะเวลา': formatDurationText(l),
       'เหตุผลการลา': l.reason || '-',
@@ -196,8 +226,8 @@ export default function HRReports() {
       l.employeeCode || l.employee?.employeeCode || (l.employeeId?.startsWith('EMP-') ? l.employeeId : `EMP-${String(l.employeeId || '').substring(0, 6).toUpperCase()}`),
       firstName,
       lastName,
-      l.departmentName || l.department || '-',
-      l.leaveTypeName || l.type || '-',
+      resolveDepartmentName(l),
+      l.leaveTypeName || l.type || (leaveTypes.find(t => t.id === l.leaveTypeId)?.name) || '-',
       formatDateDisplay(l.startDate, l.endDate, l),
       formatDurationText(l),
       (l.status || '').toLowerCase().includes('approved') ? 'อนุมัติแล้ว' : (l.status || '').toLowerCase() === 'pending' ? 'รออนุมัติ' : 'ปฏิเสธ'
@@ -235,21 +265,27 @@ export default function HRReports() {
   };
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto pb-10">
-
-      {/* Title Header & Action Buttons */}
-      <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+    <div className="min-h-[calc(100vh-4rem)] bg-[#E2E4E9] font-sans text-slate-800 flex flex-col">
+      {/* Top Banner */}
+      <div className="bg-white flex items-center gap-3 sm:gap-4 px-4 sm:px-8 py-3 sm:py-5 shadow-sm z-10 shrink-0">
+        <div className="w-9 h-9 sm:w-11 sm:h-11 bg-blue-100 text-blue-600 rounded-xl flex items-center justify-center shrink-0">
+          <BarChart3 className="w-6 h-6" strokeWidth={2} />
+        </div>
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900">
+          <h1 className="text-base sm:text-xl font-bold text-black tracking-tight">
             รายงานการลางาน (Leave Reports)
           </h1>
-          <p className="text-sm text-slate-500 mt-1">
+          <p className="text-xs text-gray-500 mt-1 font-medium">
             วิเคราะห์ สรุปผลยอดสถิติการลางานพนักงาน คัดกรองช่วงวัน และส่งออกข้อมูลเป็นไฟล์ Excel หรือ PDF
           </p>
         </div>
+      </div>
 
-        {/* Export Buttons */}
-        <div className="flex flex-wrap items-center gap-3 shrink-0">
+      <div className="flex-1 p-4 sm:p-6 md:p-8">
+        <div className="space-y-6 max-w-7xl mx-auto">
+
+      {/* Export Buttons */}
+      <div className="bg-white rounded-2xl p-4 shadow-sm border border-slate-100 flex flex-wrap items-center justify-end gap-3">
           <button
             onClick={handleExportExcel}
             className="inline-flex items-center space-x-2 px-5 py-2.5 rounded-xl text-sm font-bold text-white bg-[#00C853] hover:bg-emerald-600 cursor-pointer shadow-sm transition-all active:scale-95"
@@ -264,7 +300,6 @@ export default function HRReports() {
             <FileDown className="w-4 h-4" />
             <span>ส่งออก PDF Report</span>
           </button>
-        </div>
       </div>
 
       {/* Advanced Filter Panel */}
@@ -404,13 +439,15 @@ export default function HRReports() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 text-slate-700">
-                {filteredLeaves.map((l) => {
+                {paginatedLeaves.map((l) => {
                   const empCode = l.employeeCode || l.employee?.employeeCode || (l.employeeId?.startsWith('EMP-') ? l.employeeId : `EMP-${String(l.employeeId || '').substring(0, 6).toUpperCase()}`);
                   const empName = l.employeeName || l.userId || 'ไม่ระบุชื่อ';
                   const firstName = l.employee?.firstName || l.user?.firstName || (empName !== 'ไม่ระบุชื่อ' ? empName.split(' ')[0] : 'ไม่ระบุชื่อ');
                   const lastName = l.employee?.lastName || l.user?.lastName || (empName !== 'ไม่ระบุชื่อ' && empName.split(' ').length > 1 ? empName.split(' ').slice(1).join(' ') : '');
-                  const deptName = l.departmentName || l.department || '-';
-                  const shortTypeName = (l.leaveTypeName || l.type || '').split(' ')[0];
+                  const deptName = resolveDepartmentName(l);
+                  const foundType = leaveTypes.find(t => t.id === l.leaveTypeId);
+                  const typeName = l.leaveTypeName || l.type || foundType?.name || '';
+                  const shortTypeName = typeName ? typeName.split(' ')[0] : '-';
                   const datesDisplay = formatDateDisplay(l.startDate, l.endDate, l);
                   const durationDisplay = formatDurationText(l);
 
@@ -461,10 +498,44 @@ export default function HRReports() {
                 })}
               </tbody>
             </table>
+
+            {/* Pagination */}
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-3 px-5 py-4 border-t border-slate-100">
+              <span className="text-xs font-medium text-slate-500">
+                แสดง {(safePage - 1) * itemsPerPage + 1}
+                {' - '}
+                {Math.min(safePage * itemsPerPage, filteredLeaves.length)}
+                {' จากทั้งหมด '}
+                {filteredLeaves.length} รายการ
+              </span>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                  disabled={safePage <= 1}
+                  className="flex items-center gap-1 px-3 py-1.5 rounded-lg border border-slate-200 text-sm font-semibold text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                  ก่อนหน้า
+                </button>
+                <span className="text-sm font-bold px-3 py-1 bg-blue-50 text-blue-600 rounded-lg">
+                  {safePage} / {totalPages}
+                </span>
+                <button
+                  onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                  disabled={safePage >= totalPages}
+                  className="flex items-center gap-1 px-3 py-1.5 rounded-lg border border-slate-200 text-sm font-semibold text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                >
+                  ถัดไป
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
           </div>
         )}
       </Card>
 
+        </div>
+      </div>
     </div>
   );
 }

@@ -2,7 +2,6 @@
 
 import React from 'react';
 import { useLeave } from '@/hooks/useLeave';
-import { useEmployee } from '@/hooks/useEmployee';
 import { calculateLeaveDays } from '@/lib/api/store';
 import { SkeletonTable } from '@/components/ui/skeleton';
 import { useDepartment } from '@/hooks/useDepartment';
@@ -19,27 +18,27 @@ import {
   ResponsiveContainer,
 } from 'recharts';
 import {
-  Calendar,
-  FileDown,
   Eye,
   X,
   User,
   Calendar as CalendarIcon,
   Clock,
+  BarChart3,
 } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { th } from 'date-fns/locale';
 import { leaveApi, employeeApi, ceoApi } from '@/lib/api';
 import { DatePicker } from '@/components/DateAndTime';
 import { getLeaveStatusBadgeColor, getLeaveStatusText } from '@/lib/api/utils';
+import type { Leave, Employee } from '@/lib/api/types';
 
 export default function CEOReport() {
   const { useDepartmentsQuery } = useDepartment();
   const { data: departments = [], isLoading: isDeptsLoading } =
     useDepartmentsQuery();
 
-  const [leaves, setLeaves] = React.useState<any[]>([]);
-  const [employees, setEmployees] = React.useState<any[]>([]);
+  const [leaves, setLeaves] = React.useState<Leave[]>([]);
+  const [employees, setEmployees] = React.useState<Employee[]>([]);
   const { useHolidaysQuery } = useLeave();
   const { data: holidaysData = [] } = useHolidaysQuery();
   const [isLeavesLoading, setIsLeavesLoading] = React.useState(true);
@@ -48,10 +47,14 @@ export default function CEOReport() {
   const [selectedDept, setSelectedDept] = React.useState('');
   const [selectedDate, setSelectedDate] = React.useState('');
   const [selectedRequest, setSelectedRequest] = React.useState<{
-    leave: any;
-    employee: any;
+    leave: Leave;
+    employee?: Employee;
   } | null>(null);
-  const [statsData, setStatsData] = React.useState<any>(null);
+  const [statsData, setStatsData] = React.useState<{
+    workStatusData?: { name: string; value: number; color: string }[];
+    leaveTypesData?: { name: string; percent: number; color: string }[];
+    trendData?: { day: string; value: number }[];
+  } | null>(null);
 
   const [currentPage, setCurrentPage] = React.useState(1);
   const ITEMS_PER_PAGE = 10;
@@ -64,14 +67,12 @@ export default function CEOReport() {
           employeeApi.getAll(),
         ]);
 
-        if (leavesRes.success || leavesRes.data || leavesRes) {
-          const leavesData = (leavesRes as any).data ?? leavesRes;
-          setLeaves((leavesData as any).data ?? leavesData);
+        if (leavesRes.success || leavesRes.data) {
+          setLeaves(leavesRes.data ?? []);
         }
 
-        if (empRes.success || empRes.data || empRes) {
-          const empData = (empRes as any).data ?? empRes;
-          setEmployees((empData as any).data ?? empData);
+        if (empRes.success || empRes.data) {
+          setEmployees(empRes.data ?? []);
         }
       } catch (err) {
         console.error('Failed to fetch data', err);
@@ -96,7 +97,10 @@ export default function CEOReport() {
   }, []);
 
   React.useEffect(() => {
-    (window as any).handleViewCEOAttachment = (urlOrBase64: string) => {
+    const win = window as typeof window & {
+      handleViewCEOAttachment?: (urlOrBase64: string) => void;
+    };
+    win.handleViewCEOAttachment = (urlOrBase64: string) => {
       if (urlOrBase64.startsWith('data:')) {
         const win = window.open();
         if (win) {
@@ -118,7 +122,7 @@ export default function CEOReport() {
       }
     };
     return () => {
-      delete (window as any).handleViewCEOAttachment;
+      delete win.handleViewCEOAttachment;
     };
   }, []);
 
@@ -128,7 +132,7 @@ export default function CEOReport() {
   const formatDateRange = (
     startDateStr: string,
     endDateStr: string,
-    leave?: any,
+    leave?: Leave,
   ) => {
     try {
       const start = parseISO(startDateStr);
@@ -282,7 +286,7 @@ export default function CEOReport() {
   const trendData = statsData?.trendData || defaultTrendData;
 
   const totalStatEmployees = workStatusData.reduce(
-    (acc: number, curr: any) => acc + curr.value,
+    (acc: number, curr) => acc + curr.value,
     0,
   );
   const workingPercent =
@@ -357,8 +361,6 @@ export default function CEOReport() {
       const deptName =
         employee?.departmentName || l.departmentName || l.department || '-';
       const dates = formatDateRange(l.startDate, l.endDate, l);
-      // Escape commas for CSV
-      const reason = `"${(l.reason || '').replace(/"/g, '""')}"`;
       const shortTypeName = (l.leaveTypeName || l.type || '').split(' ')[0];
       const statusText =
         (l.status || '').toLowerCase() === 'approved'
@@ -427,19 +429,29 @@ export default function CEOReport() {
     });
   };
 
-  const handleViewDetails = (leave: any, employee: any) => {
+  const handleViewDetails = (leave: Leave, employee?: Employee) => {
     setSelectedRequest({ leave, employee });
   };
 
   return (
-    <div className="p-6 md:p-8 w-full min-h-full bg-[#F8F9FA]">
-      <div className="space-y-6 max-w-7xl mx-auto pb-10">
-        {/* Title */}
+    <div className="min-h-[calc(100vh-4rem)] bg-[#E2E4E9] font-sans text-slate-800 flex flex-col">
+      {/* Top Banner */}
+      <div className="bg-white flex items-center gap-3 sm:gap-4 px-4 sm:px-8 py-3 sm:py-5 shadow-sm z-10 shrink-0">
+        <div className="w-9 h-9 sm:w-11 sm:h-11 bg-blue-100 text-blue-600 rounded-xl flex items-center justify-center shrink-0">
+          <BarChart3 className="w-6 h-6" strokeWidth={2} />
+        </div>
         <div>
-          <h1 className="text-3xl font-black tracking-tight text-slate-800 bg-white inline-block px-8 py-3 rounded-t-xl rounded-br-3xl shadow-sm">
+          <h1 className="text-base sm:text-xl font-bold text-black tracking-tight">
             รายงานการลา (CEO Insights)
           </h1>
+          <p className="text-xs text-gray-500 mt-1 font-medium">
+            ภาพรวมสถิติและแนวโน้มการลางานของทั้งองค์กร
+          </p>
         </div>
+      </div>
+
+      <div className="flex-1 p-6 md:p-8 w-full">
+        <div className="space-y-6 max-w-7xl mx-auto pb-4">
 
         {/* Top 3 Cards Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -462,12 +474,12 @@ export default function CEOReport() {
                     paddingAngle={3}
                     cornerRadius={4}
                   >
-                    {workStatusData.map((entry: any, index: number) => (
+                    {workStatusData.map((entry, index: number) => (
                       <Cell key={`cell-${index}`} fill={entry.color} />
                     ))}
                   </Pie>
                   <Tooltip
-                    formatter={(value: any) => [`${value} คน`, 'จำนวน']}
+                    formatter={(value) => [`${value} คน`, 'จำนวน']}
                     contentStyle={{
                       borderRadius: '12px',
                       border: 'none',
@@ -489,7 +501,7 @@ export default function CEOReport() {
 
               {/* Legend */}
               <div className="absolute flex flex-col gap-3 right-2 top-1/2 -translate-y-1/2">
-                {workStatusData.map((entry: any, index: number) => (
+                {workStatusData.map((entry, index: number) => (
                   <div
                     key={index}
                     className="flex items-center gap-2 text-[13px] font-bold text-slate-700"
@@ -514,7 +526,7 @@ export default function CEOReport() {
               ประเภทการลาที่พบบ่อย (เดือนนี้)
             </h3>
             <div className="space-y-5 flex-1 justify-center flex flex-col">
-              {leaveTypesData.map((item: any, i: number) => (
+              {leaveTypesData.map((item, i: number) => (
                 <div key={i} className="flex items-center gap-4">
                   <span className="font-bold text-slate-700 w-16 text-sm">
                     {item.name}
@@ -905,7 +917,6 @@ export default function CEOReport() {
           (() => {
             const leave = selectedRequest.leave;
             const employee = selectedRequest.employee;
-            const empId = employee?.employeeId || leave.employeeId || '-';
             const empName = employee
               ? `${employee.firstName} ${employee.lastName}`
               : leave.employeeName || leave.userId || 'ไม่ระบุชื่อ';
@@ -1016,7 +1027,7 @@ export default function CEOReport() {
                               แผนก|ตำแหน่ง:
                             </span>{' '}
                             {dept} |{' '}
-                            {employee?.position?.name ||
+                            {employee?.position ||
                               employee?.positionName ||
                               '-'}
                           </p>
@@ -1097,20 +1108,18 @@ export default function CEOReport() {
                             <span className="font-bold min-w-[80px]">
                               เอกสารแนบ:
                             </span>
-                            {(leave as any).attachmentUrl ||
+                            {leave.attachmentUrl ||
                             leave.attachment ? (
                               <button
                                 onClick={() => {
                                   const base64 =
-                                    (leave as any).attachmentUrl ||
+                                    leave.attachmentUrl ||
                                     leave.attachment;
-                                  if (
-                                    base64 &&
-                                    (window as any).handleViewCEOAttachment
-                                  ) {
-                                    (window as any).handleViewCEOAttachment(
-                                      base64,
-                                    );
+                                  const win = window as typeof window & {
+                                    handleViewCEOAttachment?: (url: string) => void;
+                                  };
+                                  if (base64 && win.handleViewCEOAttachment) {
+                                    win.handleViewCEOAttachment(base64);
                                   }
                                 }}
                                 className="text-blue-600 font-bold hover:underline ml-2"
@@ -1213,6 +1222,7 @@ export default function CEOReport() {
               </div>
             );
           })()}
+        </div>
       </div>
     </div>
   );

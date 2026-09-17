@@ -13,8 +13,23 @@ export interface LoginRequest {
   captchaId?: string;
 }
 
+export interface LoginUser {
+  id: string;
+  role: string;
+  username?: string;
+  email?: string;
+  firstName?: string;
+  lastName?: string;
+  department?: { name?: string };
+  departmentName?: string;
+  position?: string;
+  positionName?: string;
+  employeeCode?: string;
+  profilePic?: string;
+}
+
 export interface LoginResponse {
-  user: any;
+  user: LoginUser;
   accessToken: string;
   refreshToken?: string;
 }
@@ -30,12 +45,12 @@ export const authApi = {
     return response.data;
   },
 
-  forgotPassword: async (username: string): Promise<ApiResponse<any>> => {
+  forgotPassword: async (username: string): Promise<ApiResponse<unknown>> => {
     const response = await axiosInstance.post('/auth/forgot-password', { username });
     return response.data;
   },
 
-  resetPassword: async (data: any): Promise<ApiResponse<any>> => {
+  resetPassword: async (data: { token: string; newPassword: string }): Promise<ApiResponse<unknown>> => {
     const response = await axiosInstance.post('/auth/reset-password', data);
     return response.data;
   }
