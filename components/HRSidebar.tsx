@@ -127,8 +127,8 @@ export function HRSidebar({ onNavigate }: { onNavigate?: () => void }) {
         key={item.name}
         href={item.href}
         className={`flex items-center ${isCollapsed ? 'justify-center px-0' : 'gap-4 px-5'} ${opts.child ? 'py-2.5' : 'py-3.5'} rounded-xl transition-all relative overflow-hidden ${active
-            ? 'bg-white/10 text-white'
-            : 'text-white/60 hover:text-white hover:bg-white/5'
+          ? 'bg-white/10 text-white'
+          : 'text-white/60 hover:text-white hover:bg-white/5'
           }`}
         title={isCollapsed ? item.name : undefined}
         onClick={onNavigate}
@@ -194,8 +194,8 @@ export function HRSidebar({ onNavigate }: { onNavigate?: () => void }) {
               }
             }}
             className={`w-full flex items-center ${isCollapsed ? 'justify-center px-0' : 'gap-4 px-5'} py-3.5 rounded-xl transition-all relative overflow-hidden ${manageActive
-                ? 'bg-white/10 text-white'
-                : 'text-white/60 hover:text-white hover:bg-white/5'
+              ? 'bg-white/10 text-white'
+              : 'text-white/60 hover:text-white hover:bg-white/5'
               }`}
             title={isCollapsed ? manageGroup.name : undefined}
           >

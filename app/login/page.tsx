@@ -122,7 +122,7 @@ export default function LoginPage() {
         err.message?.includes('Too Many Requests') ||
         err.message?.includes('ThrottlerException')
       ) {
-        // ✨ ดักจับเมื่อกดยิงถี่เกินไป แล้วแสดงข้อความนี้แทน
+        //  ดักจับเมื่อกดยิงถี่เกินไป แล้วแสดงข้อความนี้แทน
         setError("คุณพยายามเข้าสู่ระบบถี่เกินไป กรุณารอ 1 นาทีแล้วลองใหม่อีกครั้ง");
       } else {
         // ข้อความอื่นๆ เช่น แจ้งเตือนการล็อคบัญชี 15 นาทีจาก Backend
