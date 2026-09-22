@@ -2,13 +2,10 @@
 
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { fetchDashboardStats } from '@/lib/api/store';
 import { Button } from '@/components/ui/button';
 import {
-  Users,
   CheckCircle2,
   Clock,
-  CalendarDays,
   ChevronDown,
   Paperclip,
   Calendar,
@@ -25,29 +22,6 @@ import {
   ResponsiveContainer,
 } from 'recharts';
 import Link from 'next/link';
-
-interface DashboardData {
-  stats: {
-    remaining: number;
-    pending: number;
-    approved: number;
-    rejected: number;
-  };
-  monthlyStats: { month: string; value: number }[];
-  announcements: {
-    id: string;
-    title: string;
-    subtitle: string;
-    isImportant?: boolean;
-  }[];
-  activities: {
-    id: string;
-    title: string;
-    time: string;
-    type: 'leave' | 'approve' | 'system';
-  }[];
-}
-
 import { useDashboardStats } from '@/hooks/useDashboard';
 
 export default function ManagerPersonalDashboard() {
@@ -283,14 +257,14 @@ export default function ManagerPersonalDashboard() {
             {data.announcements &&
               [...data.announcements]
                 .filter(
-                  (ann: any) =>
-                    new Date(ann.createdAt).getFullYear() === announcementYear,
+                  (ann) =>
+                    new Date(ann.createdAt || 0).getFullYear() === announcementYear,
                 )
-                .sort((a: any, b: any) => {
+                .sort((a, b) => {
                   if (a.isImportant === b.isImportant) return 0;
                   return a.isImportant ? -1 : 1;
                 })
-                .map((ann: any, i: number) => (
+                .map((ann, i: number) => (
                   <div
                     key={i}
                     className={`p-4 rounded-xl ${ann.isImportant ? 'bg-[#3b82f6]/20 border border-[#3b82f6]/50' : 'bg-[#2A3175]'} shadow-sm relative overflow-hidden`}
@@ -314,8 +288,8 @@ export default function ManagerPersonalDashboard() {
                         onClick={(e) =>
                           previewAttachment(
                             e,
-                            ann.attachmentData,
-                            ann.attachmentName,
+                            ann.attachmentData || '',
+                            ann.attachmentName || '',
                           )
                         }
                       >
@@ -372,7 +346,7 @@ export default function ManagerPersonalDashboard() {
               {/* Vertical line connecting timeline items */}
               <div className="absolute left-[7px] top-2 bottom-4 w-px bg-gray-200"></div>
 
-              {data.activities?.map((act: any, i: number) => (
+              {data.activities?.map((act, i: number) => (
                 <div key={i} className="relative">
                   {/* Timeline dot */}
                   <div

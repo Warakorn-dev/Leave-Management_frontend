@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { useEmployee } from "@/hooks/useEmployee";
 import Swal from "sweetalert2";
+import { getErrorMessage } from "@/lib/api/utils";
 import { Moon, Sun } from "lucide-react";
 
 export default function ForgotPasswordPage() {
@@ -51,8 +52,8 @@ export default function ForgotPasswordPage() {
       } else {
         setError("Error generating reset token.");
       }
-    } catch (err: any) {
-      setError(err.message || "Cannot request password reset. Please try again.");
+    } catch (err) {
+      setError(getErrorMessage(err, "Cannot request password reset. Please try again."));
     } finally {
       setIsLoading(false);
     }

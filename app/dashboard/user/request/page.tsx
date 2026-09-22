@@ -3,13 +3,30 @@
 import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useLeaveBalance } from "@/hooks/useLeaveBalance";
+import type { LeaveBalance } from "@/hooks/useLeaveBalance";
 import { useLeave } from "@/hooks/useLeave";
-import { Mail, Bell, Settings, Upload, Check, X, FilePlus2 } from "lucide-react";
+import { Upload, Check, X, FilePlus2 } from "lucide-react";
 import { DatePicker } from "@/components/DateAndTime";
 import { LeaveTimePicker } from "@/components/LeaveTimePicker";
 import { userApi, uploadApi } from "@/lib/api";
 import { LeaveDayAvailabilityPreview } from "@/components/LeaveDayAvailabilityPreview";
 import { buildTakenMap, isDayUnavailable } from "@/lib/leavePortions";
+import { getErrorMessage } from "@/lib/api/utils";
+import type { CreateLeavePayload } from "@/hooks/useLeave";
+
+/** DatePicker onChange can hand back a dayjs-like object or a plain date string. */
+function formatPickerValue(val: unknown): string {
+  if (val && typeof val === 'object') {
+    const dayjsLike = val as { format?: (f: string) => string };
+    if (typeof dayjsLike.format === 'function') {
+      return dayjsLike.format('YYYY-MM-DD');
+    }
+  }
+  if (typeof val === 'string') {
+    return val.substring(0, 10);
+  }
+  return '';
+}
 
 export default function RequestLeavePage() {
   const [type, setType] = useState("");
@@ -30,14 +47,19 @@ export default function RequestLeavePage() {
   const [showErrorModal, setShowErrorModal] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [balances, setBalances] = useState<any[]>([]);
+  const [balances, setBalances] = useState<LeaveBalance[]>([]);
   const router = useRouter();
-  const [userProfile, setUserProfile] = useState<any>(null);
+  const [userProfile, setUserProfile] = useState<{
+    firstName?: string;
+    lastName?: string;
+    department: { name?: string };
+    position: { name?: string };
+  } | null>(null);
   const [attachmentFile, setAttachmentFile] = useState<File | null>(null);
   const [attachmentName, setAttachmentName] = useState<string | null>(null);
 
   const { useLeaveBalancesQuery } = useLeaveBalance();
-  const { data: balancesData = [], isLoading: isBalancesLoading } = useLeaveBalancesQuery();
+  const { data: balancesData = [] } = useLeaveBalancesQuery();
   const { useCreateLeaveMutation, useHolidaysQuery, useLeavesQuery } = useLeave();
   const { mutateAsync: createLeave } = useCreateLeaveMutation();
   const { data: holidaysData = [] } = useHolidaysQuery();
@@ -54,7 +76,7 @@ export default function RequestLeavePage() {
 
   // Disable a day only when there is no room left for what the user is booking:
   // full day -> any existing half blocks it; half day -> only the chosen half.
-  const isDateDisabled = (date: any) =>
+  const isDateDisabled = (date: unknown) =>
     isDayUnavailable(date, leaveMode, period, takenMap);
 
   useEffect(() => {
@@ -130,7 +152,7 @@ export default function RequestLeavePage() {
     if (isSubmitting) return;
     setIsSubmitting(true);
     try {
-      const payload: any = {
+      const payload: CreateLeavePayload = {
         leaveTypeId: type,
         leaveMode,
         reason
@@ -160,11 +182,9 @@ export default function RequestLeavePage() {
           formData.append('file', attachmentFile);
           formData.append('leaveRequestId', leaveRequestId);
           await uploadApi.uploadFile(formData);
-        } catch (uploadErr: any) {
+        } catch (uploadErr) {
           console.error("File upload failed:", uploadErr);
-          const uploadMsg = uploadErr?.response?.data?.message 
-            || uploadErr?.message 
-            || 'ไม่สามารถอัปโหลดไฟล์แนบได้';
+          const uploadMsg = getErrorMessage(uploadErr, 'ไม่สามารถอัปโหลดไฟล์แนบได้');
           setShowConfirmModal(false);
           setErrorMsg(`ส่งคำขอลาสำเร็จ แต่อัปโหลดไฟล์แนบไม่สำเร็จ: ${uploadMsg}`);
           setShowErrorModal(true);
@@ -175,9 +195,9 @@ export default function RequestLeavePage() {
 
       setShowConfirmModal(false);
       router.push("/dashboard/user/status");
-    } catch (err: any) {
+    } catch (err) {
       setShowConfirmModal(false);
-      setErrorMsg(err.message || "ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้");
+      setErrorMsg(getErrorMessage(err, "ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้"));
       setShowErrorModal(true);
     } finally {
       setIsSubmitting(false);
@@ -187,19 +207,19 @@ export default function RequestLeavePage() {
   return (
     <div className="min-h-[calc(100vh-4rem)] bg-[#F8F9FA] font-sans text-slate-800 flex flex-col">
       {/* Top Banner */}
-      <div className="bg-white flex items-center gap-4 px-8 py-5 shadow-sm z-10 shrink-0">
-        <div className="w-11 h-11 bg-blue-100 text-blue-600 rounded-xl flex items-center justify-center shrink-0">
+      <div className="bg-white flex items-center gap-3 sm:gap-4 px-4 sm:px-8 py-3 sm:py-5 shadow-sm z-10 shrink-0">
+        <div className="w-9 h-9 sm:w-11 sm:h-11 bg-blue-100 text-blue-600 rounded-xl flex items-center justify-center shrink-0">
           <FilePlus2 className="w-6 h-6" strokeWidth={2} />
         </div>
         <div>
-          <h1 className="text-xl font-bold text-black tracking-tight">แบบฟอร์มยื่นลา (Leave Request)</h1>
+          <h1 className="text-base sm:text-xl font-bold text-black tracking-tight">แบบฟอร์มยื่นลา (Leave Request)</h1>
           <p className="text-xs text-gray-500 mt-1 font-medium">กรุณากรอกข้อมูลให้ครบถ้วนเพื่อส่งให้หัวหน้างานอนุมัติ</p>
         </div>
       </div>
 
       {/* Main Content Container */}
-      <div className="flex-1 p-6 md:p-8">
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8 max-w-[1000px] mx-auto animate-in fade-in slide-in-from-bottom-4 duration-500">
+      <div className="flex-1 p-4 sm:p-6 md:p-8">
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-8 max-w-[1000px] mx-auto animate-in fade-in slide-in-from-bottom-4 duration-500">
           
           {/* User Info Box */}
           <div className="bg-[#F4F5F7] rounded-xl p-6 flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8">
@@ -238,16 +258,16 @@ export default function RequestLeavePage() {
                       if (name.includes('พักผ่อน')) return 3;
                       return 99;
                     };
-                    const orderA = getOrder(a.leaveType.name);
-                    const orderB = getOrder(b.leaveType.name);
+                    const orderA = getOrder(a.leaveType?.name || '');
+                    const orderB = getOrder(b.leaveType?.name || '');
                     if (orderA !== orderB) return orderA - orderB;
-                    return a.leaveType.name.localeCompare(b.leaveType.name, 'th');
-                  }).map((b: any) => {
-                    const isOutOfQuota = b.effectiveRemainingDays <= 0;
+                    return (a.leaveType?.name || '').localeCompare(b.leaveType?.name || '', 'th');
+                  }).map((b) => {
+                    const isOutOfQuota = (b.effectiveRemainingDays ?? 0) <= 0;
 
                     let isTenureNotMet = false;
-                    const requiredTenure = (b.leaveType.name.includes('พักร้อน') || b.leaveType.name.includes('พักผ่อน')) ? 365 : b.leaveType.minTenureDays;
-                    
+                    const requiredTenure = (b.leaveType?.name?.includes('พักร้อน') || b.leaveType?.name?.includes('พักผ่อน')) ? 365 : (b.leaveType?.minTenureDays ?? 0);
+
                     if (requiredTenure > 0 && b.employeeHireDate) {
                        const hireDate = new Date(b.employeeHireDate);
                        const diffMs = new Date().getTime() - hireDate.getTime();
@@ -258,20 +278,20 @@ export default function RequestLeavePage() {
                     }
 
                     const isDisabled = isOutOfQuota || isTenureNotMet;
-                    let label = `${b.leaveType.name} `;
+                    let label = `${b.leaveType?.name} `;
                     if (isTenureNotMet) {
                         label += `(อายุงานไม่ครบ ${requiredTenure >= 365 ? (requiredTenure / 365).toFixed(0) + ' ปี' : requiredTenure + ' วัน'})`;
                     } else if (isOutOfQuota) {
                         label += `(หมดโควต้า)`;
                     } else {
-                        const pendingStr = b.pendingDays > 0 ? ` + รออนุมัติ ${b.pendingDays} วัน` : '';
+                        const pendingStr = (b.pendingDays ?? 0) > 0 ? ` + รออนุมัติ ${b.pendingDays} วัน` : '';
                         label += `(เหลือ ${b.effectiveRemainingDays} วัน${pendingStr})`;
                     }
 
                     return (
-                      <option 
-                        key={b.leaveType.id} 
-                        value={b.leaveType.id} 
+                      <option
+                        key={b.leaveType?.id}
+                        value={b.leaveType?.id}
                         disabled={isDisabled}
                         className={isDisabled ? "text-gray-400 bg-gray-50 font-medium" : "text-gray-800"}
                       >
@@ -308,14 +328,8 @@ export default function RequestLeavePage() {
                     <label className="text-[13px] font-semibold text-gray-800 block mb-2">วันที่ลา</label>
                     <DatePicker 
                       value={leaveDate || null}
-                      onChange={(val: any) => {
-                        if (val && typeof val === 'object' && typeof val.format === 'function') {
-                          setLeaveDate(val.format('YYYY-MM-DD'));
-                        } else if (typeof val === 'string') {
-                          setLeaveDate(val.substring(0, 10));
-                        } else {
-                          setLeaveDate('');
-                        }
+                      onChange={(val: unknown) => {
+                        setLeaveDate(formatPickerValue(val));
                       }}
                       shouldDisableDate={isDateDisabled}
                       placeholderText="วว/ดด/ปปปป"
@@ -337,14 +351,8 @@ export default function RequestLeavePage() {
                     <label className="text-[13px] font-semibold text-gray-800 block mb-2">วันที่เริ่มต้น</label>
                     <DatePicker 
                       value={startDate || null}
-                      onChange={(val: any) => {
-                        if (val && typeof val === 'object' && typeof val.format === 'function') {
-                          setStartDate(val.format('YYYY-MM-DD'));
-                        } else if (typeof val === 'string') {
-                          setStartDate(val.substring(0, 10));
-                        } else {
-                          setStartDate('');
-                        }
+                      onChange={(val: unknown) => {
+                        setStartDate(formatPickerValue(val));
                       }}
                       shouldDisableDate={isDateDisabled}
                       placeholderText="วว/ดด/ปปปป"
@@ -367,14 +375,8 @@ export default function RequestLeavePage() {
                     <DatePicker 
                       value={endDate || null}
                       minDate={startDate ? startDate : undefined}
-                      onChange={(val: any) => {
-                        if (val && typeof val === 'object' && typeof val.format === 'function') {
-                          setEndDate(val.format('YYYY-MM-DD'));
-                        } else if (typeof val === 'string') {
-                          setEndDate(val.substring(0, 10));
-                        } else {
-                          setEndDate('');
-                        }
+                      onChange={(val: unknown) => {
+                        setEndDate(formatPickerValue(val));
                       }}
                       shouldDisableDate={isDateDisabled}
                       placeholderText="วว/ดด/ปปปป"

@@ -14,17 +14,7 @@ import Swal from 'sweetalert2';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { previewAttachment } from '@/lib/api/attachmentPreview';
 import { hrApi } from '@/lib/api';
-
-interface Announcement {
-  id: string;
-  title: string;
-  subtitle: string;
-  isImportant: boolean;
-  createdAt: string;
-  updatedAt: string;
-  attachmentData?: string;
-  attachmentName?: string;
-}
+import type { Announcement } from '@/lib/api/hr.api';
 
 export default function AnnouncementManagementPage() {
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
@@ -49,14 +39,7 @@ export default function AnnouncementManagementPage() {
     setIsLoading(true);
     try {
       const res = await hrApi.getAnnouncements(100); // Fetch up to 100 for HR
-      const data = res.data;
-      if (
-        (data as any).success ||
-        Array.isArray((data as any).data) ||
-        Array.isArray(data)
-      ) {
-        setAnnouncements((data as any).data || data);
-      }
+      setAnnouncements(res.data || []);
     } catch (error) {
       console.error('Failed to fetch announcements', error);
     } finally {
@@ -72,7 +55,7 @@ export default function AnnouncementManagementPage() {
     .filter(
       (ann) =>
         ann.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        ann.subtitle.toLowerCase().includes(searchTerm.toLowerCase()),
+        (ann.subtitle || '').toLowerCase().includes(searchTerm.toLowerCase()),
     )
     .sort((a, b) => {
       if (a.isImportant === b.isImportant) return 0;
@@ -95,8 +78,8 @@ export default function AnnouncementManagementPage() {
     setFormData({
       id: ann.id,
       title: ann.title,
-      subtitle: ann.subtitle,
-      isImportant: ann.isImportant,
+      subtitle: ann.subtitle || '',
+      isImportant: ann.isImportant || false,
       attachmentData: ann.attachmentData || '',
       attachmentName: ann.attachmentName || '',
     });
@@ -113,8 +96,7 @@ export default function AnnouncementManagementPage() {
         attachmentData: formData.attachmentData,
         attachmentName: formData.attachmentName,
       });
-      const data = res.data;
-      if ((data as any).success || data) {
+      if (res.data) {
         setIsCreateModalOpen(false);
         fetchAnnouncements();
         Swal.fire({
@@ -126,7 +108,7 @@ export default function AnnouncementManagementPage() {
       } else {
         Swal.fire('ข้อผิดพลาด', 'ไม่สามารถเพิ่มประกาศได้', 'error');
       }
-    } catch (error) {
+    } catch {
       Swal.fire('ข้อผิดพลาด', 'เกิดข้อผิดพลาดในการเชื่อมต่อ', 'error');
     }
   };
@@ -141,8 +123,7 @@ export default function AnnouncementManagementPage() {
         attachmentData: formData.attachmentData,
         attachmentName: formData.attachmentName,
       });
-      const data = res.data;
-      if ((data as any).success || data) {
+      if (res.data) {
         setIsEditModalOpen(false);
         fetchAnnouncements();
         Swal.fire({
@@ -154,7 +135,7 @@ export default function AnnouncementManagementPage() {
       } else {
         Swal.fire('ข้อผิดพลาด', 'ไม่สามารถแก้ไขประกาศได้', 'error');
       }
-    } catch (error) {
+    } catch {
       Swal.fire('ข้อผิดพลาด', 'เกิดข้อผิดพลาดในการเชื่อมต่อ', 'error');
     }
   };
@@ -205,8 +186,7 @@ export default function AnnouncementManagementPage() {
       if (result.isConfirmed) {
         try {
           const res = await hrApi.deleteAnnouncement(id);
-          const data = res.data;
-          if ((data as any).success || data) {
+          if (res.success) {
             Swal.fire({
               title: 'ลบสำเร็จ!',
               text: 'ข้อมูลประกาศถูกลบเรียบร้อยแล้ว',
@@ -221,7 +201,7 @@ export default function AnnouncementManagementPage() {
           } else {
             Swal.fire('ข้อผิดพลาด', 'ไม่สามารถลบประกาศได้', 'error');
           }
-        } catch (error) {
+        } catch {
           Swal.fire('ข้อผิดพลาด', 'เกิดข้อผิดพลาดในการเชื่อมต่อ', 'error');
         }
       }
@@ -231,12 +211,12 @@ export default function AnnouncementManagementPage() {
   return (
     <div className="min-h-[calc(100vh-4rem)] bg-[#E2E4E9] font-sans text-slate-800 flex flex-col pb-12">
       {/* Top Banner */}
-      <div className="bg-white flex items-center gap-4 px-8 py-5 shadow-sm z-10 shrink-0">
-        <div className="w-11 h-11 bg-blue-100 text-blue-600 rounded-xl flex items-center justify-center shrink-0">
+      <div className="bg-white flex items-center gap-3 sm:gap-4 px-4 sm:px-8 py-3 sm:py-5 shadow-sm z-10 shrink-0">
+        <div className="w-9 h-9 sm:w-11 sm:h-11 bg-blue-100 text-blue-600 rounded-xl flex items-center justify-center shrink-0">
           <FileText className="w-6 h-6" strokeWidth={2} />
         </div>
         <div>
-          <h1 className="text-xl font-bold text-black tracking-tight">
+          <h1 className="text-base sm:text-xl font-bold text-black tracking-tight">
             จัดการประกาศบริษัท
           </h1>
           <p className="text-xs text-gray-500 mt-1 font-medium">
@@ -356,7 +336,7 @@ export default function AnnouncementManagementPage() {
                       </td>
                       <td className="py-4 px-6">
                         <p className="text-sm text-slate-600 font-medium">
-                          {new Date(ann.updatedAt).toLocaleDateString('th-TH', {
+                          {new Date(ann.updatedAt || ann.createdAt || 0).toLocaleDateString('th-TH', {
                             year: 'numeric',
                             month: 'short',
                             day: 'numeric',

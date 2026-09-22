@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { useEmployee } from "@/hooks/useEmployee";
 import Swal from "sweetalert2";
+import { getErrorMessage } from "@/lib/api/utils";
 import { Eye, EyeOff, Moon, Sun } from "lucide-react";
 
 function ResetPasswordForm() {
@@ -70,8 +71,8 @@ function ResetPasswordForm() {
       }).then(() => {
         router.push("/login");
       });
-    } catch (err: any) {
-      setError(err.message || "ไม่สามารถตั้งรหัสผ่านใหม่ได้ โทเคนอาจหมดอายุแล้ว");
+    } catch (err) {
+      setError(getErrorMessage(err, "ไม่สามารถตั้งรหัสผ่านใหม่ได้ โทเคนอาจหมดอายุแล้ว"));
     } finally {
       setIsLoading(false);
     }

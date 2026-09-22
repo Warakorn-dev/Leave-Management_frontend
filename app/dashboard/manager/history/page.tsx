@@ -18,9 +18,23 @@ import { useLeaveBalance } from '@/hooks/useLeaveBalance';
 import Swal from 'sweetalert2';
 import { DatePicker } from '@/components/DateAndTime';
 import { LeaveTimePicker } from '@/components/LeaveTimePicker';
-import { uploadApi } from '@/lib/api';
 import { getLeaveStatusBadgeColor, getLeaveStatusText } from '@/lib/api/utils';
+import type { Leave } from '@/lib/api/types';
 import { LeaveDetailModal } from '@/components/LeaveDetailModal';
+
+/** DatePicker onChange can hand back a dayjs-like object or a plain date string. */
+function formatPickerValue(val: unknown): string {
+  if (val && typeof val === 'object') {
+    const dayjsLike = val as { format?: (f: string) => string };
+    if (typeof dayjsLike.format === 'function') {
+      return dayjsLike.format('YYYY-MM-DD');
+    }
+  }
+  if (typeof val === 'string') {
+    return val.substring(0, 10);
+  }
+  return '';
+}
 
 const formatDate = (dateString: string) => {
   if (!dateString) return '-';
@@ -33,7 +47,25 @@ const formatDate = (dateString: string) => {
 };
 
 export default function LeaveHistoryPage() {
-  const [requests, setRequests] = useState<any[]>([]);
+  interface MappedRequest {
+    id?: string;
+    empId?: string;
+    firstName?: string;
+    lastName?: string;
+    department?: string;
+    positionName?: string;
+    name?: string;
+    dateStr?: string;
+    days?: string;
+    reason?: string;
+    requestCode?: string;
+    status?: string;
+    type?: string;
+    raw?: Leave & { attachment?: string; attachmentName?: string };
+    [key: string]: unknown;
+  }
+
+  const [requests, setRequests] = useState<MappedRequest[]>([]);
   const [username, setUsername] = useState('xxxxx xxxxxx');
   const [filterType, setFilterType] = useState<'daily' | 'monthly'>('monthly');
   const [selectedMonthRaw, setSelectedMonthRaw] = useState(() => {
@@ -41,12 +73,11 @@ export default function LeaveHistoryPage() {
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
   });
   const [selectedDate, setSelectedDate] = useState<Date | null>(new Date());
-  const [selectedRequest, setSelectedRequest] = useState<any>(null);
+  const [selectedRequest, setSelectedRequest] = useState<MappedRequest | null>(null);
   const [viewMode, setViewMode] = useState<'department' | 'personal'>(
     'department',
   );
   const [searchCode, setSearchCode] = useState('');
-  const [editAttachment, setEditAttachment] = useState<File | null>(null);
 
   const router = useRouter();
   const [showConfirmEdit, setShowConfirmEdit] = useState(false);
@@ -104,28 +135,28 @@ export default function LeaveHistoryPage() {
     const storedUserId = sessionStorage.getItem('userId') || '';
     const storedDept = sessionStorage.getItem('department') || '';
 
-    let targetRequests = [];
+    let targetRequests: Leave[] = [];
     if (searchCode.trim() !== '') {
       targetRequests = allLeaves.filter(
-        (r: any) =>
+        (r) =>
           String(r.userId) === storedUserId ||
           r.user?.department?.name === storedDept ||
           r.department === storedDept,
       );
     } else if (viewMode === 'personal') {
       targetRequests = allLeaves.filter(
-        (r: any) => String(r.userId) === storedUserId,
+        (r) => String(r.userId) === storedUserId,
       );
     } else {
       targetRequests = allLeaves.filter(
-        (r: any) =>
+        (r) =>
           String(r.userId) !== storedUserId &&
           (r.user?.department?.name === storedDept ||
             r.department === storedDept),
       );
     }
 
-    const filtered = targetRequests.filter((r: any) => {
+    const filtered = targetRequests.filter((r) => {
       if (searchCode.trim() !== '') {
         return r.requestCode
           ?.toLowerCase()
@@ -146,13 +177,13 @@ export default function LeaveHistoryPage() {
       }
     });
     const sorted = [...filtered].sort(
-      (a: any, b: any) =>
+      (a, b) =>
         new Date(b.createdAt || b.startDate).getTime() -
         new Date(a.createdAt || a.startDate).getTime(),
     );
 
     setRequests(
-      sorted.map((r: any) => ({
+      sorted.map((r) => ({
         id: r.id,
         empId:
           r.employee?.employeeCode ||
@@ -169,7 +200,7 @@ export default function LeaveHistoryPage() {
           r.startDate.split('T')[0] === r.endDate.split('T')[0]
             ? formatDate(r.startDate)
             : `${formatDate(r.startDate)} - ${formatDate(r.endDate)}`,
-        type: r.leaveType?.name || r.type,
+        type: (typeof r.leaveType === 'object' ? r.leaveType?.name : r.leaveType) || r.type,
         requestCode: r.requestCode,
         days: `${r.totalDays || 1} วัน`,
         reason: r.reason || '-',
@@ -202,10 +233,10 @@ export default function LeaveHistoryPage() {
       const updatedReq = requests.find((r) => r.id === selectedRequest.id);
       if (updatedReq) {
         const wasHRPhase = ['PENDING_VERIFY', 'REVIEWING_HR'].includes(
-          selectedRequest.status,
+          selectedRequest.status || '',
         );
         const isNowHRPhase = ['PENDING_VERIFY', 'REVIEWING_HR'].includes(
-          updatedReq.status,
+          updatedReq.status || '',
         );
 
         if (wasHRPhase && !isNowHRPhase) {
@@ -273,7 +304,7 @@ export default function LeaveHistoryPage() {
 
     if (result.isConfirmed) {
       try {
-        await deleteLeave(selectedRequest.id);
+        await deleteLeave(selectedRequest?.id || '');
         setSelectedRequest(null);
         refetchLeaves();
         Swal.fire({
@@ -282,7 +313,7 @@ export default function LeaveHistoryPage() {
           text: 'ยกเลิกคำขอลาเรียบร้อยแล้ว',
           confirmButtonColor: '#3b82f6',
         });
-      } catch (error) {
+      } catch {
         Swal.fire({
           icon: 'error',
           title: 'เกิดข้อผิดพลาด',
@@ -329,12 +360,12 @@ export default function LeaveHistoryPage() {
     setEditForm({
       type:
         selectedRequest?.raw?.type || selectedRequest?.raw?.leaveTypeId || '',
-      startDate: formatDateLocal(selectedRequest?.raw?.startDate),
-      endDate: formatDateLocal(selectedRequest?.raw?.endDate),
+      startDate: formatDateLocal(selectedRequest?.raw?.startDate || ''),
+      endDate: formatDateLocal(selectedRequest?.raw?.endDate || ''),
       reason: selectedRequest?.raw?.reason || '',
       leaveMode: mode,
       period: prd,
-      leaveDate: formatDateLocal(selectedRequest?.raw?.startDate),
+      leaveDate: formatDateLocal(selectedRequest?.raw?.startDate || ''),
       startTime:
         selectedRequest?.raw?.startFormat === 'hourly'
           ? new Date(selectedRequest.raw.startDate).toLocaleTimeString(
@@ -350,7 +381,6 @@ export default function LeaveHistoryPage() {
           })
           : '',
     });
-    setEditAttachment(null);
     setIsEditing(true);
   };
 
@@ -384,7 +414,7 @@ export default function LeaveHistoryPage() {
 
   const confirmAndSave = async () => {
     try {
-      const payload: any = {
+      const payload: Record<string, unknown> = {
         leaveTypeId: editForm.type,
         reason: editForm.reason,
         leaveMode: editForm.leaveMode,
@@ -401,11 +431,11 @@ export default function LeaveHistoryPage() {
       }
 
       await updateLeave({
-        id: selectedRequest.id,
+        id: selectedRequest?.id || '',
         data: payload,
       });
       refetchLeaves();
-    } catch (err) {
+    } catch {
       alert('Failed to update request');
     }
 
@@ -420,12 +450,12 @@ export default function LeaveHistoryPage() {
   return (
     <div className="min-h-[calc(100vh-4rem)] bg-[#E2E4E9] font-sans text-slate-800 flex flex-col relative">
       {/* Top Banner */}
-      <div className="bg-white flex items-center gap-4 px-8 py-5 shadow-sm z-10 shrink-0">
-        <div className="w-11 h-11 bg-blue-100 text-blue-600 rounded-xl flex items-center justify-center shrink-0">
+      <div className="bg-white flex items-center gap-3 sm:gap-4 px-4 sm:px-8 py-3 sm:py-5 shadow-sm z-10 shrink-0">
+        <div className="w-9 h-9 sm:w-11 sm:h-11 bg-blue-100 text-blue-600 rounded-xl flex items-center justify-center shrink-0">
           <BookOpen className="w-6 h-6" strokeWidth={2} />
         </div>
         <div>
-          <h1 className="text-xl font-bold text-black tracking-tight">
+          <h1 className="text-base sm:text-xl font-bold text-black tracking-tight">
             ประวัติการลา (Leave History) - Manager
           </h1>
           <p className="text-xs text-gray-500 mt-1 font-medium">
@@ -437,7 +467,7 @@ export default function LeaveHistoryPage() {
       </div>
 
       {/* Main Content Container */}
-      <div className="flex-1 p-6 md:p-8">
+      <div className="flex-1 p-4 sm:p-6 md:p-8">
         <div className="max-w-[1200px] mx-auto animate-in fade-in slide-in-from-bottom-4 duration-500">
           {/* Custom Date Picker and View Toggle */}
           <div className="mb-4 flex flex-wrap items-center justify-between gap-4 relative">
@@ -465,7 +495,7 @@ export default function LeaveHistoryPage() {
                   <DatePicker
                     borderless
                     value={selectedMonthRaw}
-                    onChange={(newMonth: any) => setSelectedMonthRaw(newMonth)}
+                    onChange={(newMonth: string) => setSelectedMonthRaw(newMonth)}
                     views={['year', 'month']}
                     format="MM/BBBB"
                   />
@@ -626,9 +656,9 @@ export default function LeaveHistoryPage() {
                           <td className="px-6 py-5 text-center whitespace-nowrap">
                             <div className="flex flex-col items-center gap-1.5">
                               <span
-                                className={`inline-block px-5 py-1.5 rounded-full text-xs font-bold text-white shadow-sm min-w-[80px] text-center ${getLeaveStatusBadgeColor(req.status)}`}
+                                className={`inline-block px-5 py-1.5 rounded-full text-xs font-bold text-white shadow-sm min-w-[80px] text-center ${getLeaveStatusBadgeColor(req.status || '')}`}
                               >
-                                {getLeaveStatusText(req.status)}
+                                {getLeaveStatusText(req.status || '')}
                               </span>
                               <button
                                 onClick={() => setSelectedRequest(req)}
@@ -655,9 +685,9 @@ export default function LeaveHistoryPage() {
                           <>
                             <td className="px-6 py-5 text-center whitespace-nowrap">
                               <span
-                                className={`inline-block px-5 py-1.5 rounded-full text-[13px] font-bold text-white shadow-sm min-w-[120px] text-center ${getLeaveStatusBadgeColor(req.status)}`}
+                                className={`inline-block px-5 py-1.5 rounded-full text-[13px] font-bold text-white shadow-sm min-w-[120px] text-center ${getLeaveStatusBadgeColor(req.status || '')}`}
                               >
-                                {getLeaveStatusText(req.status)}
+                                {getLeaveStatusText(req.status || '')}
                               </span>
                             </td>
                             <td className="px-6 py-5 text-center whitespace-nowrap">
@@ -689,7 +719,7 @@ export default function LeaveHistoryPage() {
           footer={
             (viewMode === 'personal' || selectedRequest.name === username) &&
               !['cancelled', 'pending_cancellation'].includes(
-                selectedRequest.status.toLowerCase(),
+                (selectedRequest.status || '').toLowerCase(),
               ) &&
               selectedRequest.raw?.startDate &&
               new Date(selectedRequest.raw.startDate).setHours(0, 0, 0, 0) >
@@ -697,19 +727,19 @@ export default function LeaveHistoryPage() {
               <>
                 <button
                   onClick={handleDelete}
-                  className={`font-bold text-[14px] flex items-center gap-1.5 transition-colors ${selectedRequest.status.toLowerCase().includes('approved')
+                  className={`font-bold text-[14px] flex items-center gap-1.5 transition-colors ${(selectedRequest.status || '').toLowerCase().includes('approved')
                       ? 'text-red-500 hover:text-red-600 bg-red-50 hover:bg-red-100 px-4 py-2 rounded-lg'
                       : 'text-gray-400 hover:text-red-500'
                     }`}
                 >
                   <Trash2 className="w-4 h-4" strokeWidth={2.5} />
-                  {selectedRequest.status.toLowerCase().includes('approved')
+                  {(selectedRequest.status || '').toLowerCase().includes('approved')
                     ? 'ขอยกเลิกวันลา'
                     : 'ยกเลิกการลา'}
                 </button>
-                {!selectedRequest.status.toLowerCase().includes('approved') &&
+                {!(selectedRequest.status || '').toLowerCase().includes('approved') &&
                   ['pending_verify'].includes(
-                    selectedRequest.status.toLowerCase(),
+                    (selectedRequest.status || '').toLowerCase(),
                   ) &&
                   !selectedRequest.raw?.isViewedByHr && (
                     <button
@@ -732,7 +762,7 @@ export default function LeaveHistoryPage() {
           {/* Top Banner (Inside Edit) */}
           <div className="bg-white flex flex-col md:flex-row md:items-center justify-between px-8 py-5 shadow-sm sticky top-0 z-10 gap-4 border-b border-gray-200">
             <div>
-              <h1 className="text-xl font-bold text-black tracking-tight">
+              <h1 className="text-base sm:text-xl font-bold text-black tracking-tight">
                 แบบฟอร์มยื่นลา (Leave Request)
               </h1>
               <p className="text-[13px] text-gray-500 mt-1 font-medium">
@@ -790,24 +820,24 @@ export default function LeaveHistoryPage() {
                       <option value="" disabled>
                         -- กรุณาเลือกประเภทการลา --
                       </option>
-                      {balances.map((b: any) => (
+                      {balances.map((b) => (
                         <option
-                          key={b.leaveType.id}
-                          value={b.leaveType.id}
+                          key={b.leaveType?.id}
+                          value={b.leaveType?.id}
                           disabled={
-                            b.remainingDays <= 0 &&
-                            editForm.type !== String(b.leaveType.id)
+                            (b.remainingDays ?? 0) <= 0 &&
+                            editForm.type !== String(b.leaveType?.id)
                           }
                           className={
-                            b.remainingDays <= 0 &&
-                              editForm.type !== String(b.leaveType.id)
+                            (b.remainingDays ?? 0) <= 0 &&
+                              editForm.type !== String(b.leaveType?.id)
                               ? 'text-gray-400 bg-gray-50 font-medium'
                               : 'text-gray-800'
                           }
                         >
-                          {b.leaveType.name}{' '}
-                          {b.remainingDays <= 0 &&
-                            editForm.type !== String(b.leaveType.id)
+                          {b.leaveType?.name}{' '}
+                          {(b.remainingDays ?? 0) <= 0 &&
+                            editForm.type !== String(b.leaveType?.id)
                             ? '(หมดโควต้า)'
                             : `(เหลือ ${b.remainingDays} วัน)`}
                         </option>
@@ -882,24 +912,11 @@ export default function LeaveHistoryPage() {
                         </label>
                         <DatePicker
                           value={editForm.leaveDate || null}
-                          onChange={(val: any) => {
-                            if (
-                              val &&
-                              typeof val === 'object' &&
-                              typeof val.format === 'function'
-                            ) {
-                              setEditForm({
-                                ...editForm,
-                                leaveDate: val.format('YYYY-MM-DD'),
-                              });
-                            } else if (typeof val === 'string') {
-                              setEditForm({
-                                ...editForm,
-                                leaveDate: val.substring(0, 10),
-                              });
-                            } else {
-                              setEditForm({ ...editForm, leaveDate: '' });
-                            }
+                          onChange={(val: unknown) => {
+                            setEditForm({
+                              ...editForm,
+                              leaveDate: formatPickerValue(val),
+                            });
                           }}
                           placeholderText="วว/ดด/ปปปป"
                         />
@@ -925,24 +942,11 @@ export default function LeaveHistoryPage() {
                         </label>
                         <DatePicker
                           value={editForm.startDate || null}
-                          onChange={(val: any) => {
-                            if (
-                              val &&
-                              typeof val === 'object' &&
-                              typeof val.format === 'function'
-                            ) {
-                              setEditForm({
-                                ...editForm,
-                                startDate: val.format('YYYY-MM-DD'),
-                              });
-                            } else if (typeof val === 'string') {
-                              setEditForm({
-                                ...editForm,
-                                startDate: val.substring(0, 10),
-                              });
-                            } else {
-                              setEditForm({ ...editForm, startDate: '' });
-                            }
+                          onChange={(val: unknown) => {
+                            setEditForm({
+                              ...editForm,
+                              startDate: formatPickerValue(val),
+                            });
                           }}
                           placeholderText="วว/ดด/ปปปป"
                         />
@@ -989,24 +993,11 @@ export default function LeaveHistoryPage() {
                         </label>
                         <DatePicker
                           value={editForm.endDate || null}
-                          onChange={(val: any) => {
-                            if (
-                              val &&
-                              typeof val === 'object' &&
-                              typeof val.format === 'function'
-                            ) {
-                              setEditForm({
-                                ...editForm,
-                                endDate: val.format('YYYY-MM-DD'),
-                              });
-                            } else if (typeof val === 'string') {
-                              setEditForm({
-                                ...editForm,
-                                endDate: val.substring(0, 10),
-                              });
-                            } else {
-                              setEditForm({ ...editForm, endDate: '' });
-                            }
+                          onChange={(val: unknown) => {
+                            setEditForm({
+                              ...editForm,
+                              endDate: formatPickerValue(val),
+                            });
                           }}
                           placeholderText="วว/ดด/ปปปป"
                           disabled={editForm.leaveMode === 'half_day'}

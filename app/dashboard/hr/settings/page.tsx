@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { userApi } from '@/lib/api';
 import Swal from 'sweetalert2';
+import { getErrorMessage } from '@/lib/api/utils';
 
 export default function HRSettingsPage() {
   const [username, setUsername] = useState('');
@@ -101,7 +102,7 @@ export default function HRSettingsPage() {
           if (avatar) {
             try {
               sessionStorage.setItem('profilePic', avatar);
-            } catch (e) {
+            } catch {
               console.warn('Quota exceeded, skipping sessionStorage');
             }
           }
@@ -133,7 +134,7 @@ export default function HRSettingsPage() {
           setProfilePic(result);
           try {
             sessionStorage.setItem('profilePic', result);
-          } catch (e) {
+          } catch {
             console.warn('Quota exceeded');
           }
           setIsUploading(false);
@@ -147,10 +148,10 @@ export default function HRSettingsPage() {
           }).then(() => {
             window.location.reload();
           });
-        } catch (err: any) {
+        } catch (err) {
           console.error(err);
           setIsUploading(false);
-          const errorMessage = err.response?.data?.message || 'เกิดข้อผิดพลาดในการอัปโหลดรูปภาพ';
+          const errorMessage = getErrorMessage(err, 'เกิดข้อผิดพลาดในการอัปโหลดรูปภาพ');
           Swal.fire({
             icon: 'error',
             title: 'เกิดข้อผิดพลาด',
@@ -180,10 +181,10 @@ export default function HRSettingsPage() {
       }).then(() => {
         window.location.reload();
       });
-    } catch (err: any) {
+    } catch (err) {
       console.error(err);
       setIsUploading(false);
-      const errorMessage = err.response?.data?.message || 'เกิดข้อผิดพลาดในการลบรูปภาพ';
+      const errorMessage = getErrorMessage(err, 'เกิดข้อผิดพลาดในการลบรูปภาพ');
       Swal.fire({
         icon: 'error',
         title: 'เกิดข้อผิดพลาด',
@@ -225,12 +226,12 @@ export default function HRSettingsPage() {
   return (
     <div className="min-h-[calc(100vh-4rem)] bg-[#E2E4E9] font-sans text-slate-800 flex flex-col relative overflow-hidden">
       {/* Top Banner */}
-      <div className="bg-white flex items-center gap-4 px-8 py-5 shadow-sm z-10 shrink-0">
-        <div className="w-11 h-11 bg-blue-100 text-blue-600 rounded-xl flex items-center justify-center shrink-0">
+      <div className="bg-white flex items-center gap-3 sm:gap-4 px-4 sm:px-8 py-3 sm:py-5 shadow-sm z-10 shrink-0">
+        <div className="w-9 h-9 sm:w-11 sm:h-11 bg-blue-100 text-blue-600 rounded-xl flex items-center justify-center shrink-0">
           <User className="w-6 h-6" strokeWidth={2} />
         </div>
         <div>
-          <h1 className="text-xl font-bold text-black tracking-tight">
+          <h1 className="text-base sm:text-xl font-bold text-black tracking-tight">
             ข้อมูลส่วนตัว
           </h1>
           <p className="text-xs text-gray-500 mt-1 font-medium">
@@ -241,12 +242,13 @@ export default function HRSettingsPage() {
 
       {/* Main Content Container */}
       <div className="flex-1 p-6 md:p-8 z-10">
-        <div className="bg-white/70 backdrop-blur-xl rounded-3xl shadow-xl border border-white/50 p-8 max-w-[850px] mx-auto animate-in fade-in slide-in-from-bottom-8 duration-700 ease-out flex flex-col md:flex-row gap-12">
+        <div className="bg-white/70 backdrop-blur-xl rounded-3xl shadow-xl border border-white/50 p-4 sm:p-8 max-w-[850px] mx-auto animate-in fade-in slide-in-from-bottom-8 duration-700 ease-out flex flex-col md:flex-row gap-6 md:gap-12">
           {/* Profile Picture Section (Left) */}
           <div className="flex flex-col items-center justify-start md:w-1/3 pt-4">
             <div className="relative group cursor-pointer mb-4">
               <div className="w-40 h-40 rounded-full border-[6px] border-white shadow-2xl overflow-hidden bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center relative transition-transform duration-300 group-hover:scale-105">
                 {profilePic ? (
+                  // eslint-disable-next-line @next/next/no-img-element -- dynamic user-uploaded avatar preview; next/image needs a configured remote loader
                   <img
                     src={profilePic}
                     alt="Profile"

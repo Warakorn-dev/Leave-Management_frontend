@@ -5,19 +5,15 @@ import axiosInstance from '@/lib/api/axios';
 import {
   FileSpreadsheet,
   Filter,
-  FileDown,
   RefreshCw,
   Loader2,
-  Search,
   Download,
   ChevronDown,
   X,
   FileText,
-  Calendar,
 } from 'lucide-react';
 import { DatePicker } from '@/components/DateAndTime';
 import jsPDF from 'jspdf';
-import autoTable from 'jspdf-autotable';
 import * as XLSX from 'xlsx';
 
 // --- TypeScript Interfaces ---
@@ -91,23 +87,27 @@ export default function LeaveSummaryView() {
         };
 
         const sortedApiLeaveTypes = apiLeaveTypes
-          .map((lt: any) => ({
+          .map((lt: { name?: string; [key: string]: unknown }) => ({
             ...lt,
             name:
               lt.name === 'ลาพักผ่อนประจำปี (พักร้อน)'
                 ? 'ลาพักผ่อนประจำปี'
                 : lt.name,
           }))
-          .sort((a: any, b: any) => {
-            const orderA = customOrder[a.name] || 99;
-            const orderB = customOrder[b.name] || 99;
+          .sort((a: { name?: string }, b: { name?: string }) => {
+            const orderA = customOrder[a.name || ''] || 99;
+            const orderB = customOrder[b.name || ''] || 99;
             return orderA - orderB;
           });
 
         setLeaveTypes(sortedApiLeaveTypes);
 
         // Map summary data keys if name was changed
-        const mappedSummary = apiSummary.map((row: any) => {
+        const mappedSummary = apiSummary.map((row: {
+          leaveData?: Record<string, unknown>;
+          remainingData?: Record<string, unknown>;
+          [key: string]: unknown;
+        }) => {
           if (
             row.leaveData &&
             row.leaveData['ลาพักผ่อนประจำปี (พักร้อน)'] !== undefined
@@ -146,6 +146,7 @@ export default function LeaveSummaryView() {
 
     // Cleanup interval on unmount
     return () => clearInterval(intervalId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- fetchSummaryData is redefined each render; only these filters should retrigger the fetch
   }, [searchQuery, fromDate, toDate, filterType, filterStatus]);
 
   const resetFilters = () => {
@@ -277,7 +278,7 @@ export default function LeaveSummaryView() {
 
   const handleDownloadExcel = () => {
     const exportData = summaryData.map((row, index) => {
-      const baseData: any = {
+      const baseData: Record<string, unknown> = {
         ลำดับ: index + 1,
         รหัสพนักงาน: row.employeeCode,
         ชื่อ: row.firstName,
@@ -314,12 +315,12 @@ export default function LeaveSummaryView() {
   return (
     <div className="min-h-[calc(100vh-4rem)] bg-[#E2E4E9] font-sans text-slate-800 flex flex-col">
       {/* Top Banner */}
-      <div className="bg-white flex items-center gap-4 px-8 py-5 shadow-sm z-10 shrink-0">
-        <div className="w-11 h-11 bg-blue-100 text-blue-600 rounded-xl flex items-center justify-center shrink-0">
+      <div className="bg-white flex items-center gap-3 sm:gap-4 px-4 sm:px-8 py-3 sm:py-5 shadow-sm z-10 shrink-0">
+        <div className="w-9 h-9 sm:w-11 sm:h-11 bg-blue-100 text-blue-600 rounded-xl flex items-center justify-center shrink-0">
           <FileSpreadsheet className="w-6 h-6" strokeWidth={2} />
         </div>
         <div>
-          <h1 className="text-xl font-bold text-black tracking-tight">
+          <h1 className="text-base sm:text-xl font-bold text-black tracking-tight">
             สรุปการลา (Leave Summary)
           </h1>
           <p className="text-xs text-gray-500 mt-1 font-medium">

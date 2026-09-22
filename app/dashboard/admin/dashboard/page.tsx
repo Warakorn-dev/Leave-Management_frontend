@@ -5,8 +5,25 @@ import RoleGuard from "@/components/RoleGuard";
 import { Users, AlertTriangle, ShieldCheck, Activity } from "lucide-react";
 import api from "@/lib/api/axios";
 
+interface AuditLogEntry {
+  id: string;
+  action: string;
+  createdAt: string;
+  details?: string;
+  ipAddress?: string;
+  user?: { username?: string; email?: string };
+}
+
+interface AdminStats {
+  totalUsers?: number;
+  activeUsers?: number;
+  failedLogins24h?: number;
+  recentLogs?: AuditLogEntry[];
+  usersByRole?: { role?: string; count?: number }[];
+}
+
 export default function AdminDashboardPage() {
-  const [stats, setStats] = useState<any>(null);
+  const [stats, setStats] = useState<AdminStats | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -23,7 +40,7 @@ export default function AdminDashboardPage() {
     fetchStats();
   }, []);
 
-  const getUserDisplay = (log: any) => {
+  const getUserDisplay = (log: AuditLogEntry) => {
     if (log.user) return log.user.username || log.user.email || 'ระบบ';
     
     if (log.details && log.details.includes('Username: ')) {
@@ -38,9 +55,9 @@ export default function AdminDashboardPage() {
 
   return (
     <RoleGuard allowedRoles={["admin"]}>
-      <div className="p-6 max-w-7xl mx-auto space-y-6">
+      <div className="p-4 sm:p-6 max-w-7xl mx-auto space-y-4 sm:space-y-6">
         <div>
-          <h1 className="text-2xl font-bold text-slate-800">ภาพรวมผู้ดูแลระบบ</h1>
+          <h1 className="text-xl sm:text-2xl font-bold text-slate-800">ภาพรวมผู้ดูแลระบบ</h1>
           <p className="text-slate-500">สรุปข้อมูลระบบและการเฝ้าระวังความปลอดภัย</p>
         </div>
 
@@ -108,7 +125,7 @@ export default function AdminDashboardPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {stats?.recentLogs?.map((log: any) => (
+                    {stats?.recentLogs?.map((log) => (
                       <tr key={log.id} className="hover:bg-slate-50 text-sm">
                         <td className="p-3 border-b text-slate-600">
                           {new Date(log.createdAt).toLocaleString('th-TH')}

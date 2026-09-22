@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Card, CardContent } from '@/components/ui/card';
 import {
   Calendar,
   Clock,
@@ -13,6 +12,7 @@ import {
 } from 'lucide-react';
 import { useDashboardStats } from '@/hooks/useDashboard';
 import { previewAttachment } from '@/lib/api/attachmentPreview';
+import type { Announcement } from '@/lib/api/hr.api';
 
 export default function UserDashboard() {
   const [username, setUsername] = useState('ชื่อ xxxxx xxxx');
@@ -27,17 +27,16 @@ export default function UserDashboard() {
     approved: 5,
     rejected: 1,
   });
-  const [chartData, setChartData] = useState<any[]>([]);
-  const [activities, setActivities] = useState<any[]>([]);
-  const [announcements, setAnnouncements] = useState<any[]>([]);
+  const [chartData, setChartData] = useState<{ month?: string; value: number }[]>([]);
+  const [activities, setActivities] = useState<{ title?: string; message?: string; time?: string; color?: string }[]>([]);
+  const [announcements, setAnnouncements] = useState<Announcement[]>([]);
 
   // Round max value up to nearest multiple of 4 for clean division on the Y-axis (at least 4)
   const rawMax = Math.max(4, ...chartData.map((d) => d.value || 0));
   const dynamicMax = Math.ceil(rawMax / 4) * 4;
   const step = dynamicMax / 4;
 
-  const { data: dashboardData, isLoading: isDashboardLoading } =
-    useDashboardStats(selectedYear);
+  const { data: dashboardData } = useDashboardStats(selectedYear);
 
   useEffect(() => {
     const fullName =
@@ -60,7 +59,7 @@ export default function UserDashboard() {
 
       if (dashboardData.chartData && dashboardData.chartData.length === 12) {
         setChartData(
-          dashboardData.chartData.map((d: any) => ({
+          dashboardData.chartData.map((d) => ({
             month: d.name,
             value: d.value,
           })),
@@ -69,9 +68,9 @@ export default function UserDashboard() {
     }
 
     if (dashboardData?.activities) {
-      const formattedActivities = dashboardData.activities.map((a: any) => ({
+      const formattedActivities = dashboardData.activities.map((a) => ({
         ...a,
-        time: new Date(a.time).toLocaleDateString('th-TH'),
+        time: a.time ? new Date(a.time).toLocaleDateString('th-TH') : '',
       }));
       setActivities(formattedActivities);
     }
@@ -264,12 +263,12 @@ export default function UserDashboard() {
           <div className="space-y-4 flex-1 overflow-y-auto pr-2 custom-scrollbar">
             {announcements.filter(
               (ann) =>
-                new Date(ann.createdAt).getFullYear() === announcementYear,
+                new Date(ann.createdAt || 0).getFullYear() === announcementYear,
             ).length > 0 ? (
               [...announcements]
                 .filter(
                   (ann) =>
-                    new Date(ann.createdAt).getFullYear() === announcementYear,
+                    new Date(ann.createdAt || 0).getFullYear() === announcementYear,
                 )
                 .sort((a, b) => {
                   if (a.isImportant === b.isImportant) return 0;
@@ -299,8 +298,8 @@ export default function UserDashboard() {
                         onClick={(e) =>
                           previewAttachment(
                             e,
-                            ann.attachmentData,
-                            ann.attachmentName,
+                            ann.attachmentData || '',
+                            ann.attachmentName || '',
                           )
                         }
                       >

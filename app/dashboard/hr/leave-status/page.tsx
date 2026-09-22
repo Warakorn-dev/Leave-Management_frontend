@@ -1,15 +1,18 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import {
-  getLeaveRequests,
-  LeaveRequest,
-  calculateLeaveDays,
-} from '@/lib/api/store';
-import { Mail, Bell, Settings, Activity } from 'lucide-react';
+import { Activity } from 'lucide-react';
 import { getLeaveStatusText, getLeaveStatusBadgeColor } from '@/lib/api/utils';
+import type { Leave } from '@/lib/api/types';
 
-const getLeaveDetails = (req: any) => {
+interface LeaveWithExtras extends Leave {
+  approverReason?: string;
+  user?: Leave['user'] & { role?: string; position?: string | { name?: string } };
+  employee?: Leave['employee'] & { role?: string };
+  leaveType?: (string | { id?: string; name?: string; isSpecial?: boolean });
+}
+
+const getLeaveDetails = (req: LeaveWithExtras) => {
   if (req.startFormat === 'hourly' || req.leaveMode === 'hourly') {
     let startT = req.startTime;
     if (!startT && req.startDate) {
@@ -47,7 +50,7 @@ const getLeaveDetails = (req: any) => {
 };
 
 const getStageStatus = (
-  req: any,
+  req: LeaveWithExtras,
   stage: 'HR' | 'MANAGER' | 'CEO',
 ) => {
   const currentStatus = req.status || 'PENDING_VERIFY';
@@ -55,10 +58,6 @@ const getStageStatus = (
     return 'cancelled';
 
   const approvals = req.approvals || [];
-  // approvals are sorted desc, so approvals[0] is the latest
-  const rejectedIndex = currentStatus === 'REJECTED' ? approvals.length : -1; 
-  // If rejected, approvals.length tells us how many steps it took. 
-  // 1 = HR rejected, 2 = Manager rejected (usually), 3 = CEO rejected.
 
   if (stage === 'HR') {
     if (currentStatus === 'PENDING_VERIFY' || currentStatus === 'PENDING_CANCELLATION') return 'pending';
@@ -73,7 +72,7 @@ const getStageStatus = (
     if (currentStatus === 'PENDING_SUPERVISOR') return 'pending';
     if (currentStatus === 'REJECTED') {
       if (approvals.length === 1) return 'waiting'; // HR rejected, Manager never saw it
-      if (approvals.length === 2 && req.leaveType?.isSpecial) return 'waiting'; // HR -> CEO, Manager skipped
+      if (approvals.length === 2 && (typeof req.leaveType === 'object' ? req.leaveType?.isSpecial : undefined)) return 'waiting'; // HR -> CEO, Manager skipped
       return approvals.length === 2 ? 'rejected' : 'approved';
     }
     return 'approved';
@@ -84,7 +83,7 @@ const getStageStatus = (
     if (currentStatus === 'PENDING_EXECUTIVE') return 'pending';
     if (currentStatus === 'REJECTED') {
       if (approvals.length === 1) return 'waiting';
-      if (approvals.length === 2 && !req.leaveType?.isSpecial) return 'waiting';
+      if (approvals.length === 2 && !(typeof req.leaveType === 'object' ? req.leaveType?.isSpecial : undefined)) return 'waiting';
       return 'rejected';
     }
     if (currentStatus === 'APPROVED') return 'approved';
@@ -99,29 +98,24 @@ import { useLeave } from '@/hooks/useLeave';
 export default function LeaveStatusPage() {
   const { useLeavesQuery } = useLeave();
   const { data: allLeaves = [] } = useLeavesQuery();
-  const [requests, setRequests] = useState<any[]>([]);
-  const [username, setUsername] = useState('User');
+  const [requests, setRequests] = useState<LeaveWithExtras[]>([]);
 
   useEffect(() => {
-    const storedUsername = sessionStorage.getItem('username');
-    if (storedUsername && storedUsername !== 'User') {
-      setUsername(sessionStorage.getItem('fullName') || storedUsername);
-    }
     const storedUserId = sessionStorage.getItem('userId');
 
     const myLeaves = allLeaves.filter(
-      (r: any) => String(r.userId) === storedUserId,
+      (r) => String(r.userId) === storedUserId,
     );
     const sorted = [...myLeaves].sort(
-      (a: any, b: any) =>
-        new Date(b.createdAt || b.startDate).getTime() -
-        new Date(a.createdAt || a.startDate).getTime(),
+      (a, b) =>
+        new Date(b.createdAt || b.startDate || 0).getTime() -
+        new Date(a.createdAt || a.startDate || 0).getTime(),
     );
 
     setRequests(
-      sorted.map((r: any) => ({
+      sorted.map((r) => ({
         ...r,
-        type: r.leaveType?.name || r.type,
+        type: (typeof r.leaveType === 'object' ? r.leaveType?.name : r.leaveType) || r.type,
         startDate: r.startDate,
         endDate: r.endDate,
       })),
@@ -131,12 +125,12 @@ export default function LeaveStatusPage() {
   return (
     <div className="min-h-[calc(100vh-4rem)] bg-[#E2E4E9] font-sans text-slate-800 flex flex-col">
       {/* Top Banner */}
-      <div className="bg-white flex items-center gap-4 px-8 py-5 shadow-sm z-10 shrink-0">
-        <div className="w-11 h-11 bg-blue-100 text-blue-600 rounded-xl flex items-center justify-center shrink-0">
+      <div className="bg-white flex items-center gap-3 sm:gap-4 px-4 sm:px-8 py-3 sm:py-5 shadow-sm z-10 shrink-0">
+        <div className="w-9 h-9 sm:w-11 sm:h-11 bg-blue-100 text-blue-600 rounded-xl flex items-center justify-center shrink-0">
           <Activity className="w-6 h-6" strokeWidth={2} />
         </div>
         <div>
-          <h1 className="text-xl font-bold text-black tracking-tight">
+          <h1 className="text-base sm:text-xl font-bold text-black tracking-tight">
             ตรวจสอบสถานะการลา
           </h1>
           <p className="text-xs text-gray-500 mt-1 font-medium">
@@ -146,7 +140,7 @@ export default function LeaveStatusPage() {
       </div>
 
       {/* Main Content Container */}
-      <div className="flex-1 p-6 md:p-8">
+      <div className="flex-1 p-4 sm:p-6 md:p-8">
         <div className="max-w-[1000px] mx-auto animate-in fade-in slide-in-from-bottom-4 duration-500">
           {requests.length === 0 ? (
             <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center">
@@ -170,7 +164,7 @@ export default function LeaveStatusPage() {
                   requesterPosition.toLowerCase().includes('manager') ||
                   requesterRole.toLowerCase().includes('leader');
                 
-                const isNormalLeave = req.leaveType?.isSpecial === false;
+                const isNormalLeave = (typeof req.leaveType === 'object' ? req.leaveType?.isSpecial : undefined) === false;
                 const showCEO =
                   !isNormalLeave ||
                   isRequesterManagerOrCEO ||
@@ -250,7 +244,7 @@ export default function LeaveStatusPage() {
                           ส่งคำขอสำเร็จ
                         </h4>
                         <p className="text-[11px] font-medium text-gray-500 mt-0.5">
-                          {new Date(req.createdAt).toLocaleString('th-TH', {
+                          {new Date(req.createdAt || req.startDate).toLocaleString('th-TH', {
                             day: 'numeric',
                             month: 'short',
                             year: 'numeric',

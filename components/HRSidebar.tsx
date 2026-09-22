@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { LogOut, PieChart, FileEdit, Activity, BookOpen, Calendar, User, UserCog, Building, Briefcase, ListTodo, FileText, Settings, Menu, ChevronLeft, ChevronDown, Boxes, XCircle, FileCheck } from "lucide-react";
+import { LogOut, PieChart, FileEdit, Activity, BookOpen, Calendar, User, UserCog, Building, ListTodo, FileText, Settings, Menu, ChevronLeft, ChevronDown, Boxes, XCircle, FileCheck } from "lucide-react";
 
 type MenuLink = { name: string; href: string; icon: React.ComponentType<{ className?: string; strokeWidth?: number }> };
 
@@ -33,7 +33,6 @@ export function HRSidebar({ onNavigate }: { onNavigate?: () => void }) {
   }, []);
 
   useEffect(() => {
-    const userId = sessionStorage.getItem("userId");
     setUsername(sessionStorage.getItem("username") || "");
     const storedPic = sessionStorage.getItem("profilePic");
     if (storedPic) setProfilePic(storedPic);
@@ -127,8 +126,8 @@ export function HRSidebar({ onNavigate }: { onNavigate?: () => void }) {
         key={item.name}
         href={item.href}
         className={`flex items-center ${isCollapsed ? 'justify-center px-0' : 'gap-4 px-5'} ${opts.child ? 'py-2.5' : 'py-3.5'} rounded-xl transition-all relative overflow-hidden ${active
-          ? 'bg-white/10 text-white'
-          : 'text-white/60 hover:text-white hover:bg-white/5'
+            ? 'bg-white/10 text-white'
+            : 'text-white/60 hover:text-white hover:bg-white/5'
           }`}
         title={isCollapsed ? item.name : undefined}
         onClick={onNavigate}
@@ -149,6 +148,7 @@ export function HRSidebar({ onNavigate }: { onNavigate?: () => void }) {
 
       {/* Logo + Hamburger */}
       <div className={`relative flex items-center border-b border-white/10 ${isCollapsed ? 'justify-center px-0 py-4' : 'justify-center px-4 py-4'}`}>
+        {/* eslint-disable-next-line @next/next/no-img-element -- small static logo, next/image adds no benefit here */}
         {!isCollapsed && <img src="/logo.png" alt="NID PROGRESS TECHNOLOGY" className="w-[110px] h-auto object-contain" />}
         <button
           onClick={() => setIsCollapsed(!isCollapsed)}
@@ -165,6 +165,7 @@ export function HRSidebar({ onNavigate }: { onNavigate?: () => void }) {
         <div className="bg-white/5 rounded-xl p-3 flex items-center gap-3 border border-white/10">
           <div className="bg-zinc-500 rounded-full w-11 h-11 flex items-center justify-center shrink-0 overflow-hidden">
             {profilePic ? (
+              // eslint-disable-next-line @next/next/no-img-element -- dynamic user-uploaded avatar; next/image needs a configured remote loader
               <img src={profilePic} alt="Profile" className="w-full h-full object-cover" />
             ) : (
               <User className="w-5 h-5 text-white" />
@@ -194,8 +195,8 @@ export function HRSidebar({ onNavigate }: { onNavigate?: () => void }) {
               }
             }}
             className={`w-full flex items-center ${isCollapsed ? 'justify-center px-0' : 'gap-4 px-5'} py-3.5 rounded-xl transition-all relative overflow-hidden ${manageActive
-              ? 'bg-white/10 text-white'
-              : 'text-white/60 hover:text-white hover:bg-white/5'
+                ? 'bg-white/10 text-white'
+                : 'text-white/60 hover:text-white hover:bg-white/5'
               }`}
             title={isCollapsed ? manageGroup.name : undefined}
           >

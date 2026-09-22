@@ -1,7 +1,77 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Leave } from '@/lib/api/types';
 
-const API_URL = '/api/leaves';
+interface RawLeaveItem {
+  id?: string;
+  status?: string;
+  userId?: string;
+  employeeId?: string;
+  totalDays?: number;
+  durationDays?: number;
+  daysCount?: number;
+  startDate?: string;
+  endDate?: string;
+  startFormat?: string;
+  endFormat?: string;
+  leaveMode?: string;
+  leaveHours?: number;
+  leaveType?: { name?: string };
+  leaveTypeName?: string;
+  type?: string;
+  department?: string;
+  position?: string;
+  reason?: string;
+  requestCode?: string;
+  createdAt?: string;
+  isViewedByHr?: boolean;
+  currentHrReviewerId?: string | null;
+  hrReviewStartedAt?: string | null;
+  approverReason?: string;
+  approvals?: { comment?: string }[];
+  attachments?: unknown[];
+  employee?: {
+    id?: string;
+    title?: string;
+    firstName?: string;
+    lastName?: string;
+    employeeCode?: string;
+    department?: { name?: string };
+    position?: { name?: string };
+    userId?: string;
+    user?: { id?: string; role?: { name?: string }; avatarUrl?: string };
+  };
+  user?: {
+    firstName?: string;
+    lastName?: string;
+    department?: { name?: string };
+    position?: { name?: string };
+    [key: string]: unknown;
+  };
+  [key: string]: unknown;
+}
+
+const mapLeaveData = (leaves: unknown, actualUserId: string | null, isPersonal: boolean = false) => {
+  if (!Array.isArray(leaves)) return [];
+  return (leaves as RawLeaveItem[]).map((l) => ({
+    ...l,
+    userId: isPersonal ? actualUserId : (l.employee?.user?.id || l.employee?.userId || 'unknown'),
+    totalDays: l.totalDays ?? l.durationDays ?? l.daysCount ?? 0,
+    startFormat: l.startFormat || 'full',
+    endFormat: l.endFormat || 'full',
+    leaveType: l.leaveType,
+    approverReason: l.approverReason || l.approvals?.[0]?.comment || null,
+    user: l.employee ? {
+      title: l.employee.title,
+      firstName: l.employee.firstName,
+      lastName: l.employee.lastName,
+      department: l.employee.department,
+      position: l.employee.position,
+      role: l.employee.user?.role?.name || null,
+      avatarUrl: l.employee.user?.avatarUrl || null
+    } : l.user,
+    attachments: l.attachments || []
+  }));
+};
 
 export const useLeavesQuery = (fetchCompanyLeaves: boolean = false) => {
   const [data, setData] = useState<Leave[]>([]);
@@ -16,37 +86,14 @@ export const useLeavesQuery = (fetchCompanyLeaves: boolean = false) => {
       const actualUserId = typeof window !== 'undefined' ? sessionStorage.getItem('userId') : '';
       
       const headers = { 'Authorization': `Bearer ${token}` };
-      
-      let allLeaves: any[] = [];
-      
-      const mapLeaveData = (leaves: any, isPersonal: boolean = false) => {
-        if (!Array.isArray(leaves)) return [];
-        return leaves.map((l: any) => ({
-          ...l,
-          userId: isPersonal ? actualUserId : (l.employee?.user?.id || l.employee?.userId || 'unknown'),
-          totalDays: l.totalDays ?? l.durationDays ?? l.daysCount ?? 0,
-          startFormat: l.startFormat || 'full',
-          endFormat: l.endFormat || 'full',
-          leaveType: l.leaveType,
-          approverReason: l.approverReason || l.approvals?.[0]?.comment || null,
-          user: l.employee ? {
-            title: l.employee.title,
-            firstName: l.employee.firstName,
-            lastName: l.employee.lastName,
-            department: l.employee.department,
-            position: l.employee.position,
-            role: l.employee.user?.role?.name || null,
-            avatarUrl: l.employee.user?.avatarUrl || null
-          } : l.user,
-          attachments: l.attachments || []
-        }));
-      };
+
+      let allLeaves: ReturnType<typeof mapLeaveData> = [];
 
       // 1. Fetch personal leaves
       const resPersonal = await fetch('/api/leave/history', { headers });
       if (resPersonal.ok) {
         const json = await resPersonal.json();
-        allLeaves = [...allLeaves, ...mapLeaveData(json.data ?? json, true)];
+        allLeaves = [...allLeaves, ...mapLeaveData(json.data ?? json, actualUserId, true)];
       }
 
       if (role === 'HR' || role === 'CEO' || fetchCompanyLeaves) {
@@ -55,9 +102,9 @@ export const useLeavesQuery = (fetchCompanyLeaves: boolean = false) => {
         const resAll = await fetch(endpoint, { headers });
         if (resAll.ok) {
           const json = await resAll.json();
-          const mappedAll = mapLeaveData(json.data ?? json, false);
+          const mappedAll = mapLeaveData(json.data ?? json, actualUserId, false);
           // Filter out personal leaves to prevent duplicates
-          const otherLeaves = mappedAll.filter((l: any) => String(l.userId) !== String(actualUserId) && String(l.employeeId) !== String(actualUserId));
+          const otherLeaves = mappedAll.filter((l) => String(l.userId) !== String(actualUserId) && String(l.employeeId) !== String(actualUserId));
           allLeaves = [...allLeaves, ...otherLeaves];
         }
       } else {
@@ -66,16 +113,16 @@ export const useLeavesQuery = (fetchCompanyLeaves: boolean = false) => {
           const resDept = await fetch('/api/leave/department', { headers });
           if (resDept.ok) {
             const json = await resDept.json();
-            const mappedDept = mapLeaveData(json.data ?? json, false);
-            const otherLeaves = mappedDept.filter((l: any) => String(l.userId) !== String(actualUserId) && String(l.employeeId) !== String(actualUserId));
+            const mappedDept = mapLeaveData(json.data ?? json, actualUserId, false);
+            const otherLeaves = mappedDept.filter((l) => String(l.userId) !== String(actualUserId) && String(l.employeeId) !== String(actualUserId));
             allLeaves = [...allLeaves, ...otherLeaves];
           }
         } else if (role === 'MANAGER') {
           const resDept = await fetch('/api/manager/history', { headers });
           if (resDept.ok) {
             const json = await resDept.json();
-            const mappedDept = mapLeaveData(json.data ?? json, false);
-            const otherLeaves = mappedDept.filter((l: any) => String(l.userId) !== String(actualUserId) && String(l.employeeId) !== String(actualUserId));
+            const mappedDept = mapLeaveData(json.data ?? json, actualUserId, false);
+            const otherLeaves = mappedDept.filter((l) => String(l.userId) !== String(actualUserId) && String(l.employeeId) !== String(actualUserId));
             allLeaves = [...allLeaves, ...otherLeaves];
           }
         }
@@ -97,7 +144,7 @@ export const useLeavesQuery = (fetchCompanyLeaves: boolean = false) => {
 };
 
 export const useHolidaysQuery = () => {
-  const [data, setData] = useState<any[]>([]);
+  const [data, setData] = useState<{ id?: string; date: string; title?: string; name?: string }[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   const fetchHolidays = useCallback(async () => {
@@ -126,7 +173,7 @@ export const useHolidaysQuery = () => {
 
 export const useApproveLeaveMutation = () => {
   return {
-    mutateAsync: async ({ id, approverName, approverReason }: { id: string; approverName?: string; approverReason?: string }) => {
+    mutateAsync: async ({ id, approverReason }: { id: string; approverName?: string; approverReason?: string }) => {
       const token = typeof window !== 'undefined' ? sessionStorage.getItem('accessToken') : '';
       const res = await fetch(`/api/manager/approve/${id}`, {
         method: 'PUT',
@@ -147,7 +194,7 @@ export const useApproveLeaveMutation = () => {
 
 export const useRejectLeaveMutation = () => {
   return {
-    mutateAsync: async ({ id, approverName, approverReason }: { id: string; approverName?: string; approverReason?: string }) => {
+    mutateAsync: async ({ id, approverReason }: { id: string; approverName?: string; approverReason?: string }) => {
       const token = typeof window !== 'undefined' ? sessionStorage.getItem('accessToken') : '';
       const res = await fetch(`/api/manager/reject/${id}`, {
         method: 'PUT',
@@ -166,24 +213,26 @@ export const useRejectLeaveMutation = () => {
   };
 };
 
+export interface CreateLeavePayload {
+  leaveTypeId: string;
+  startDate?: string;
+  endDate?: string;
+  startFormat?: string;
+  endFormat?: string;
+  reason: string;
+  totalDays?: number;
+  leaveHours?: number;
+  leaveMode?: string;
+  leaveDate?: string;
+  startTime?: string;
+  endTime?: string;
+  hours?: number;
+  period?: string;
+}
+
 export const useCreateLeaveMutation = () => {
   return {
-    mutateAsync: async (data: { 
-      leaveTypeId: string; 
-      startDate?: string; 
-      endDate?: string; 
-      startFormat?: string; 
-      endFormat?: string; 
-      reason: string; 
-      totalDays?: number; 
-      leaveHours?: number;
-      leaveMode?: string;
-      leaveDate?: string;
-      startTime?: string;
-      endTime?: string;
-      hours?: number;
-      period?: string;
-    }) => {
+    mutateAsync: async (data: CreateLeavePayload) => {
       const token = typeof window !== 'undefined' ? sessionStorage.getItem('accessToken') : '';
       const res = await fetch('/api/leave', {
         method: 'POST',
@@ -254,7 +303,7 @@ export const useVerifyLeaveMutation = () => {
         try {
           const errJson = await res.json();
           errorMsg = errJson.message || errorMsg;
-        } catch (e) {
+        } catch {
           errorMsg = await res.text();
         }
         throw new Error(errorMsg);
@@ -279,7 +328,7 @@ export const useMarkLeaveViewedMutation = () => {
         try {
           const errJson = await res.json();
           errorMsg = errJson.message || errorMsg;
-        } catch (e) {
+        } catch {
           errorMsg = await res.text();
         }
         throw new Error(errorMsg);
@@ -291,7 +340,7 @@ export const useMarkLeaveViewedMutation = () => {
 
 
 export const useHrPendingVerifyQuery = () => {
-  const [data, setData] = useState<any[]>([]);
+  const [data, setData] = useState<ReturnType<typeof mapLeaveData>>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   const fetchLeaves = useCallback(async () => {
@@ -299,34 +348,15 @@ export const useHrPendingVerifyQuery = () => {
     try {
       const token = typeof window !== 'undefined' ? sessionStorage.getItem('accessToken') : '';
       const headers = { 'Authorization': `Bearer ${token}` };
-      const res = await fetch('/api/hr/leaves/pending-verify', { 
+      const res = await fetch('/api/hr/leaves/pending-verify', {
         headers,
-        cache: 'no-store' 
+        cache: 'no-store'
       });
       if (res.ok) {
         const json = await res.json();
-        const all = json.data ?? json;
-        const pendingVerify = all.filter((l: any) => l.status !== 'PENDING_CANCELLATION');
-        const mappedData = pendingVerify.map((l: any) => ({
-          ...l,
-          userId: l.employee?.user?.id || l.employee?.userId || 'unknown',
-          totalDays: l.totalDays ?? l.durationDays ?? l.daysCount ?? 0,
-          startFormat: l.startFormat || 'full',
-          endFormat: l.endFormat || 'full',
-          leaveType: l.leaveType,
-          approverReason: l.approverReason || l.approvals?.[0]?.comment || null,
-          user: l.employee ? {
-            title: l.employee.title,
-            firstName: l.employee.firstName,
-            lastName: l.employee.lastName,
-            department: l.employee.department,
-            position: l.employee.position,
-            role: l.employee.user?.role?.name || null,
-            avatarUrl: l.employee.user?.avatarUrl || null
-          } : l.user,
-          attachments: l.attachments || []
-        }));
-        setData(mappedData);
+        const all = (json.data ?? json) as RawLeaveItem[];
+        const pendingVerify = all.filter((l) => l.status !== 'PENDING_CANCELLATION');
+        setData(mapLeaveData(pendingVerify, null, false));
       }
     } catch (error) {
       console.error(error);
@@ -343,7 +373,7 @@ export const useHrPendingVerifyQuery = () => {
 };
 
 export const usePendingCancellationQuery = () => {
-  const [data, setData] = useState<any[]>([]);
+  const [data, setData] = useState<ReturnType<typeof mapLeaveData>>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   const fetchLeaves = useCallback(async () => {
@@ -354,28 +384,9 @@ export const usePendingCancellationQuery = () => {
       const res = await fetch('/api/hr/leaves/pending-verify', { headers });
       if (res.ok) {
         const json = await res.json();
-        const all = (json.data ?? json);
-        const cancellations = all.filter((l: any) => l.status === 'PENDING_CANCELLATION');
-        const mappedData = cancellations.map((l: any) => ({
-          ...l,
-          userId: l.employee?.user?.id || l.employee?.userId || 'unknown',
-          totalDays: l.totalDays ?? l.durationDays ?? l.daysCount ?? 0,
-          startFormat: l.startFormat || 'full',
-          endFormat: l.endFormat || 'full',
-          leaveType: l.leaveType,
-          approverReason: l.approverReason || l.approvals?.[0]?.comment || null,
-          user: l.employee ? {
-            title: l.employee.title,
-            firstName: l.employee.firstName,
-            lastName: l.employee.lastName,
-            department: l.employee.department,
-            position: l.employee.position,
-            role: l.employee.user?.role?.name || null,
-            avatarUrl: l.employee.user?.avatarUrl || null
-          } : l.user,
-          attachments: l.attachments || []
-        }));
-        setData(mappedData);
+        const all = (json.data ?? json) as RawLeaveItem[];
+        const cancellations = all.filter((l) => l.status === 'PENDING_CANCELLATION');
+        setData(mapLeaveData(cancellations, null, false));
       }
     } catch (error) {
       console.error(error);

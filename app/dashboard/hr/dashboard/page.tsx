@@ -7,7 +7,6 @@ import { Skeleton } from '@/components/ui/skeleton';
 import {
   Clock,
   CheckCircle2,
-  XCircle,
   Plus,
   User,
   Paperclip,
@@ -39,9 +38,9 @@ export default function HRCompanyDashboard() {
 
   if (!user || !isMounted || isLoading)
     return (
-      <div className="p-8 space-y-4">
+      <div className="p-4 sm:p-8 space-y-4">
         <Skeleton className="h-32 w-full rounded-2xl" />
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <Skeleton className="h-24" />
           <Skeleton className="h-24" />
           <Skeleton className="h-24" />
@@ -245,19 +244,19 @@ export default function HRCompanyDashboard() {
           <div className="space-y-4 flex-1 overflow-y-auto pr-2 custom-scrollbar">
             {announcements &&
             announcements.filter(
-              (ann: any) =>
-                new Date(ann.createdAt).getFullYear() === announcementYear,
+              (ann) =>
+                new Date(ann.createdAt || 0).getFullYear() === announcementYear,
             ).length > 0 ? (
               [...announcements]
                 .filter(
-                  (ann: any) =>
-                    new Date(ann.createdAt).getFullYear() === announcementYear,
+                  (ann) =>
+                    new Date(ann.createdAt || 0).getFullYear() === announcementYear,
                 )
-                .sort((a: any, b: any) => {
+                .sort((a, b) => {
                   if (a.isImportant === b.isImportant) return 0;
                   return a.isImportant ? -1 : 1;
                 })
-                .map((ann: any, idx: number) => (
+                .map((ann, idx: number) => (
                   <div
                     key={idx}
                     className={`p-4 rounded-2xl border transition-colors cursor-pointer relative overflow-hidden ${ann.isImportant ? 'bg-blue-500/20 border-blue-400/50 hover:bg-blue-500/30' : 'bg-white/10 border-white/5 hover:bg-white/15'}`}
@@ -281,8 +280,8 @@ export default function HRCompanyDashboard() {
                         onClick={(e) =>
                           previewAttachment(
                             e,
-                            ann.attachmentData,
-                            ann.attachmentName,
+                            ann.attachmentData || '',
+                            ann.attachmentName || '',
                           )
                         }
                       >
@@ -309,7 +308,7 @@ export default function HRCompanyDashboard() {
                           <polyline points="12 6 12 12 16 14" />
                         </svg>
                         {ann.createdAt
-                          ? new Date(ann.createdAt).toLocaleDateString(
+                          ? new Date(ann.createdAt || 0).toLocaleDateString(
                               'th-TH',
                               {
                                 year: 'numeric',
@@ -340,7 +339,7 @@ export default function HRCompanyDashboard() {
           <div className="relative">
             <div className="absolute left-2.5 top-2.5 bottom-2.5 w-px bg-slate-200 dark:bg-slate-700" />
             <div className="space-y-6 relative z-10">
-              {activities.map((act: any, idx: number) => (
+              {activities.map((act, idx: number) => (
                 <div key={idx} className="flex gap-4">
                   <div
                     className={`w-5 h-5 rounded-full ${act.color} ring-4 ring-white dark:ring-slate-900 flex-shrink-0 mt-0.5`}

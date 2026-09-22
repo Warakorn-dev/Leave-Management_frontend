@@ -5,9 +5,7 @@ import {
   Users,
   User,
   UserX,
-  XCircle,
   ChevronDown,
-  CheckCircle2,
   Clock,
   Paperclip,
 } from 'lucide-react';
@@ -25,13 +23,10 @@ import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 
-import { useLeave } from '@/hooks/useLeave';
-import { useEmployee } from '@/hooks/useEmployee';
 import { useDashboardStats } from '@/hooks/useDashboard';
 
 export default function TeamDashboard() {
   const [username, setUsername] = useState('ชื่อ xxxxx xxxx');
-  const [department, setDepartment] = useState('');
 
   const [currentYear] = useState(new Date().getFullYear());
   const [targetYear, setTargetYear] = useState(currentYear);
@@ -42,9 +37,6 @@ export default function TeamDashboard() {
     const storedUsername =
       sessionStorage.getItem('fullName') || sessionStorage.getItem('username');
     if (storedUsername) setUsername(storedUsername);
-
-    const storedDept = sessionStorage.getItem('department') || '';
-    if (storedDept) setDepartment(storedDept);
   }, []);
 
   if (isLoading)
@@ -59,6 +51,7 @@ export default function TeamDashboard() {
     leavesToday: 0,
     remainingEmployees: 0,
     leaveQuotaToday: 1,
+    pendingApprovals: 0,
   };
 
   const chartData = data?.monthlyStats || [];
@@ -298,14 +291,14 @@ export default function TeamDashboard() {
             {announcements &&
               [...announcements]
                 .filter(
-                  (ann: any) =>
-                    new Date(ann.createdAt).getFullYear() === announcementYear,
+                  (ann) =>
+                    new Date(ann.createdAt || 0).getFullYear() === announcementYear,
                 )
-                .sort((a: any, b: any) => {
+                .sort((a, b) => {
                   if (a.isImportant === b.isImportant) return 0;
                   return a.isImportant ? -1 : 1;
                 })
-                .map((ann: any, i: number) => (
+                .map((ann, i: number) => (
                   <div
                     key={i}
                     className={`p-4 rounded-xl ${ann.isImportant ? 'bg-[#3b82f6]/20 border border-[#3b82f6]/50' : 'bg-[#2A3175]'} shadow-sm relative overflow-hidden`}
@@ -329,8 +322,8 @@ export default function TeamDashboard() {
                         onClick={(e) =>
                           previewAttachment(
                             e,
-                            ann.attachmentData,
-                            ann.attachmentName,
+                            ann.attachmentData || '',
+                            ann.attachmentName || '',
                           )
                         }
                       >
@@ -385,7 +378,7 @@ export default function TeamDashboard() {
           <CardContent className="px-6 pb-6 overflow-y-auto custom-scrollbar">
             <div className="relative pl-5 space-y-7 mt-2">
               <div className="absolute left-[7px] top-2 bottom-4 w-px bg-gray-200"></div>
-              {topActivities.map((act: any, i: number) => (
+              {topActivities.map((act, i: number) => (
                 <div key={i} className="relative">
                   <div
                     className={`absolute -left-[26px] top-1 w-3 h-3 rounded-full shadow-sm ${

@@ -4,8 +4,15 @@ import { useState, useEffect } from 'react';
 import { Activity } from 'lucide-react';
 import { useLeave } from '@/hooks/useLeave';
 import { getLeaveStatusBadgeColor, getLeaveStatusText } from '@/lib/api/utils';
+import type { Leave } from '@/lib/api/types';
 
-const getLeaveDetails = (req: any) => {
+interface LeaveWithExtras extends Leave {
+  user?: Leave['user'] & { role?: string; position?: string | { name?: string } };
+  employee?: Leave['employee'] & { role?: string };
+  leaveType?: string | { id?: string; name?: string; isSpecial?: boolean };
+}
+
+const getLeaveDetails = (req: LeaveWithExtras) => {
   if (req.startFormat === 'hourly' || req.leaveMode === 'hourly') {
     let startT = req.startTime;
     if (!startT && req.startDate) {
@@ -75,27 +82,18 @@ const getStageStatus = (
 };
 
 export default function LeaveStatusPage() {
-  const [requests, setRequests] = useState<any[]>([]);
-  const [username, setUsername] = useState('xxxxx xxxxxx');
+  const [requests, setRequests] = useState<LeaveWithExtras[]>([]);
 
   const { useLeavesQuery } = useLeave();
   const { data: allLeaves = [], isLoading } = useLeavesQuery();
 
   useEffect(() => {
-    const storedUsername =
-      sessionStorage.getItem('username') || sessionStorage.getItem('username');
-    if (storedUsername && storedUsername !== 'User') {
-      setUsername(sessionStorage.getItem('fullName') || storedUsername);
-    }
-  }, []);
-
-  useEffect(() => {
     const myId = sessionStorage.getItem('userId');
-    const myLeaves = allLeaves.filter((l: any) => String(l.userId) === myId);
+    const myLeaves = allLeaves.filter((l) => String(l.userId) === myId);
     const sorted = [...myLeaves].sort(
-      (a: any, b: any) =>
-        new Date(b.createdAt || b.startDate).getTime() -
-        new Date(a.createdAt || a.startDate).getTime(),
+      (a, b) =>
+        new Date(b.createdAt || b.startDate || 0).getTime() -
+        new Date(a.createdAt || a.startDate || 0).getTime(),
     );
     setRequests(sorted);
   }, [allLeaves]);
@@ -103,12 +101,12 @@ export default function LeaveStatusPage() {
   return (
     <div className="min-h-[calc(100vh-4rem)] bg-[#F8F9FA] font-sans text-slate-800 flex flex-col">
       {/* Top Banner */}
-      <div className="bg-white flex items-center gap-4 px-8 py-5 shadow-sm z-10 shrink-0">
-        <div className="w-11 h-11 bg-blue-100 text-blue-600 rounded-xl flex items-center justify-center shrink-0">
+      <div className="bg-white flex items-center gap-3 sm:gap-4 px-4 sm:px-8 py-3 sm:py-5 shadow-sm z-10 shrink-0">
+        <div className="w-9 h-9 sm:w-11 sm:h-11 bg-blue-100 text-blue-600 rounded-xl flex items-center justify-center shrink-0">
           <Activity className="w-6 h-6" strokeWidth={2} />
         </div>
         <div>
-          <h1 className="text-xl font-bold text-black tracking-tight">
+          <h1 className="text-base sm:text-xl font-bold text-black tracking-tight">
             ตรวจสอบสถานะการลา
           </h1>
           <p className="text-xs text-gray-500 mt-1 font-medium">
@@ -118,7 +116,7 @@ export default function LeaveStatusPage() {
       </div>
 
       {/* Main Content Container */}
-      <div className="flex-1 p-6 md:p-8">
+      <div className="flex-1 p-4 sm:p-6 md:p-8">
         <div className="max-w-[1000px] mx-auto animate-in fade-in slide-in-from-bottom-4 duration-500">
           {isLoading ? (
             <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center">
@@ -138,7 +136,7 @@ export default function LeaveStatusPage() {
                 const managerStage = getStageStatus(status, 'MANAGER');
                 const ceoStage = getStageStatus(status, 'CEO');
 
-                const typeName = req.leaveType?.name || req.type || '';
+                const typeName = (typeof req.leaveType === 'object' ? req.leaveType?.name : req.leaveType) || req.type || '';
                 const isNormalLeave = typeName === 'ลาป่วย' || typeName.includes('ลากิจ');
                 const requesterRole = req.user?.role || req.employee?.role || '';
                 const requesterPosition = typeof req.user?.position === 'string' ? req.user?.position : req.user?.position?.name || req.employee?.position?.name || '';
@@ -171,7 +169,7 @@ export default function LeaveStatusPage() {
                     <div className="bg-[#F4F5F7] rounded-xl p-5 mb-10 flex justify-between items-start">
                       <div>
                         <h3 className="text-[17px] font-bold text-black">
-                          {req.leaveType?.name || req.type}
+                          {(typeof req.leaveType === 'object' ? req.leaveType?.name : req.leaveType) || req.type}
                         </h3>
                         {req.requestCode && (
                           <p className="text-[13px] text-blue-500 mt-1 font-semibold">
@@ -234,7 +232,7 @@ export default function LeaveStatusPage() {
                           ส่งคำขอสำเร็จ
                         </h4>
                         <p className="text-[11px] font-medium text-gray-500 mt-0.5">
-                          {new Date(req.createdAt).toLocaleString('th-TH', {
+                          {new Date(req.createdAt || req.startDate).toLocaleString('th-TH', {
                             day: 'numeric',
                             month: 'short',
                             year: 'numeric',

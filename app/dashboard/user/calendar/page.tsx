@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useLeave } from "@/hooks/useLeave";
-import { Mail, Bell, Settings, ChevronLeft, ChevronRight, X, User, CalendarDays } from "lucide-react";
+import { X, CalendarDays } from "lucide-react";
 
 
 
@@ -11,32 +11,58 @@ const daysOfWeek = ["อาทิตย์", "จันทร์", "อังค
 
 export default function LeaveCalendarPage() {
   const [currentDate, setCurrentDate] = useState(new Date()); // Default to July 2026
-  const [allLeaves, setAllLeaves] = useState<any[]>([]);
-  const [publicHolidays, setPublicHolidays] = useState<any[]>([]);
-  const [selectedDateEvents, setSelectedDateEvents] = useState<{ date: string, events: any[] } | null>(null);
+  interface CalendarLeaveEvent {
+    startDate: string;
+    endDate: string;
+    type?: string;
+    status?: string;
+    name: string;
+    departmentName?: string;
+    isMine: boolean;
+    position: string;
+    avatarUrl: string | null;
+    startFormat?: string;
+    startTime?: string;
+    endTime?: string;
+    leaveHours?: number;
+    reason?: string;
+  }
+
+  interface CalendarDayEvent {
+    title?: string;
+    type: string;
+    isStart?: boolean;
+    isMine?: boolean;
+    raw?: CalendarLeaveEvent;
+    date?: string;
+  }
+
+  const [allLeaves, setAllLeaves] = useState<CalendarLeaveEvent[]>([]);
+  const [publicHolidays, setPublicHolidays] = useState<{ date: string; title?: string; type: string }[]>([]);
+  const [selectedDateEvents, setSelectedDateEvents] = useState<{ date: string, events: CalendarDayEvent[] } | null>(null);
   const [viewMode, setViewMode] = useState<'company' | 'department'>('company');
   const [department, setDepartment] = useState("");
 
   const { useLeavesQuery, useHolidaysQuery } = useLeave();
-  const { data: leavesData = [], isLoading: isLeavesLoading } = useLeavesQuery(true);
-  const { data: holidaysData = [], isLoading: isHolidaysLoading } = useHolidaysQuery();
+  const { data: leavesData = [] } = useLeavesQuery(true);
+  const { data: holidaysData = [] } = useHolidaysQuery();
 
   useEffect(() => {
     const currentUserId = sessionStorage.getItem("userId");
     setDepartment(sessionStorage.getItem("department") || "");
 
     const apiLeaves = leavesData
-      .filter((leave: any) => {
+      .filter((leave) => {
         const s = (leave.status || '').toUpperCase();
         return s === 'APPROVED' || s.includes('APPROVED');
       })
-      .map((leave: any) => {
+      .map((leave) => {
         const startD = new Date(leave.startDate);
         const endD = new Date(leave.endDate);
         return {
         startDate: `${startD.getFullYear()}-${(startD.getMonth() + 1).toString().padStart(2, '0')}-${startD.getDate().toString().padStart(2, '0')}`,
         endDate: `${endD.getFullYear()}-${(endD.getMonth() + 1).toString().padStart(2, '0')}-${endD.getDate().toString().padStart(2, '0')}`,
-        type: leave.leaveType?.name || leave.type,
+        type: (typeof leave.leaveType === 'object' ? leave.leaveType?.name : leave.leaveType) || leave.type,
         status: leave.status,
         name: leave.user?.firstName ? `${leave.user.title || ''}${leave.user.firstName} ${leave.user.lastName || ''}`.trim() : (leave.employee?.firstName ? `${leave.employee.title || ''}${leave.employee.firstName} ${leave.employee.lastName || ''}`.trim() : (leave.userId || 'User')),
         departmentName: leave.user?.department?.name || leave.employee?.department?.name || leave.departmentName,
@@ -51,7 +77,7 @@ export default function LeaveCalendarPage() {
     });
     setAllLeaves(apiLeaves);
 
-    setPublicHolidays(holidaysData.map((h: any) => ({
+    setPublicHolidays(holidaysData.map((h) => ({
       date: h.date.split('T')[0],
       title: h.name,
       type: 'holiday'
@@ -64,16 +90,13 @@ export default function LeaveCalendarPage() {
   const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
   const firstDayOfMonth = new Date(currentYear, currentMonth, 1).getDay();
 
-  const prevMonth = () => setCurrentDate(new Date(currentYear, currentMonth - 1, 1));
-  const nextMonth = () => setCurrentDate(new Date(currentYear, currentMonth + 1, 1));
-
   // Build calendar cells
   const blanks = Array.from({ length: firstDayOfMonth }, (_, i) => i);
   const days = Array.from({ length: daysInMonth }, (_, i) => i + 1);
 
   const getEventsForDate = (day: number) => {
     const dateStr = `${currentYear}-${(currentMonth + 1).toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`;
-    const events: any[] = [];
+    const events: CalendarDayEvent[] = [];
 
     // Check holidays
     const holiday = publicHolidays.find(h => h.date === dateStr);
@@ -115,17 +138,17 @@ export default function LeaveCalendarPage() {
   return (
     <div className="min-h-[calc(100vh-4rem)] bg-[#F8F9FA] font-sans text-slate-800 flex flex-col relative pb-8">
       {/* Top Banner */}
-      <div className="bg-white flex items-center gap-4 px-8 py-5 shadow-sm z-10 shrink-0">
-        <div className="w-11 h-11 bg-blue-100 text-blue-600 rounded-xl flex items-center justify-center shrink-0">
+      <div className="bg-white flex items-center gap-3 sm:gap-4 px-4 sm:px-8 py-3 sm:py-5 shadow-sm z-10 shrink-0">
+        <div className="w-9 h-9 sm:w-11 sm:h-11 bg-blue-100 text-blue-600 rounded-xl flex items-center justify-center shrink-0">
           <CalendarDays className="w-6 h-6" strokeWidth={2} />
         </div>
         <div>
-          <h1 className="text-xl font-bold text-black tracking-tight">ปฏิทินวันลา (Leave Calendar)</h1>
+          <h1 className="text-base sm:text-xl font-bold text-black tracking-tight">ปฏิทินวันลา (Leave Calendar)</h1>
           <p className="text-xs text-gray-500 mt-1 font-medium">ดูวันลาของคุณและวันหยุดบริษัทในรูปแบบปฏิทิน</p>
         </div>
       </div>
 
-      <div className="flex-1 p-6 md:p-8">
+      <div className="flex-1 p-4 sm:p-6 md:p-8">
         <div className="max-w-[1200px] mx-auto bg-[#D9D9D9] p-4 rounded-xl shadow-md animate-in fade-in zoom-in-95 duration-300">
 
           {/* Calendar Header Control */}
@@ -202,8 +225,8 @@ export default function LeaveCalendarPage() {
           </div>
 
           {/* Calendar Grid */}
-          <div className="bg-white rounded-xl overflow-hidden shadow-sm border border-gray-200">
-            <div className="grid grid-cols-7 w-full border-collapse">
+          <div className="bg-white rounded-xl overflow-hidden shadow-sm border border-gray-200 overflow-x-auto">
+            <div className="grid grid-cols-7 w-full min-w-[700px] border-collapse">
 
               {/* Days Header */}
               {daysOfWeek.map((d) => (
@@ -254,11 +277,11 @@ export default function LeaveCalendarPage() {
                           if (evt.isMine) {
                             return (
                               <div key={idx} className="bg-[#E6F7F8] text-[#12B8B8] font-bold text-[11px] px-2.5 py-1.5 rounded-md truncate border border-[#B2DFDB]">
-                                {evt.title.includes(' - ') ? (
+                                {(evt.title || '').includes(' - ') ? (
                                   <>
-                                    <span className="font-medium">{evt.title.split(' - ')[0]}</span>
+                                    <span className="font-medium">{(evt.title || '').split(' - ')[0]}</span>
                                     <span> - </span>
-                                    <span className="font-extrabold">{evt.title.split(' - ').slice(1).join(' - ')}</span>
+                                    <span className="font-extrabold">{(evt.title || '').split(' - ').slice(1).join(' - ')}</span>
                                   </>
                                 ) : evt.title}
                               </div>
@@ -266,11 +289,11 @@ export default function LeaveCalendarPage() {
                           }
                           return (
                             <div key={idx} className="bg-[#F0F5FF] text-[#3B82F6] font-bold text-[11px] px-2.5 py-1.5 rounded-md truncate">
-                              {evt.title.includes(' - ') ? (
+                              {(evt.title || '').includes(' - ') ? (
                                 <>
-                                  <span className="font-medium">{evt.title.split(' - ')[0]}</span>
+                                  <span className="font-medium">{(evt.title || '').split(' - ')[0]}</span>
                                   <span> - </span>
-                                  <span className="font-extrabold">{evt.title.split(' - ').slice(1).join(' - ')}</span>
+                                  <span className="font-extrabold">{(evt.title || '').split(' - ').slice(1).join(' - ')}</span>
                                 </>
                               ) : evt.title}
                             </div>
@@ -318,7 +341,7 @@ export default function LeaveCalendarPage() {
           return 'bg-slate-100 text-slate-700';
         };
 
-        const getTimeDisplay = (leave: any) => {
+        const getTimeDisplay = (leave: CalendarLeaveEvent) => {
           if (leave.startFormat === 'hourly' && leave.startTime && leave.endTime) {
             return `${leave.startTime} - ${leave.endTime}`;
           }
@@ -355,7 +378,7 @@ export default function LeaveCalendarPage() {
               <div className="px-6 py-4 overflow-y-auto max-h-[600px] flex flex-col gap-3 bg-white">
 
                 {/* Holiday section */}
-                {holidayEvents.map((evt: any, idx: number) => (
+                {holidayEvents.map((evt, idx: number) => (
                   <div key={`holiday-${idx}`} className="flex items-center gap-3 p-3 rounded-xl bg-red-50 border border-red-100">
                     <div className="w-10 h-10 rounded-full bg-red-100 text-red-500 flex items-center justify-center shrink-0">
                       🎉
@@ -377,8 +400,9 @@ export default function LeaveCalendarPage() {
                 )}
 
                 {/* Leave List */}
-                {leaveEvents.map((evt: any, idx: number) => {
+                {leaveEvents.map((evt, idx: number) => {
                   const leave = evt.raw;
+                  if (!leave) return null;
                   return (
                     <div key={`leave-${idx}`} className="flex items-center gap-4 p-3.5 rounded-xl border border-gray-100 hover:border-gray-200 hover:shadow-sm transition-all bg-white group">
 
@@ -386,6 +410,7 @@ export default function LeaveCalendarPage() {
                       <div className="w-[42px] h-[42px] rounded-full bg-indigo-50 border border-indigo-100 text-indigo-600 flex items-center justify-center font-bold text-sm shrink-0 overflow-hidden relative">
                         <span className="absolute inset-0 flex items-center justify-center">{getInitials(leave.name)}</span>
                         {leave.avatarUrl && (
+                          // eslint-disable-next-line @next/next/no-img-element -- dynamic user avatar; next/image needs a configured remote loader
                           <img
                             src={leave.avatarUrl.startsWith('http') ? leave.avatarUrl : `/${leave.avatarUrl.replace(/^\/+/, '')}`}
                             alt={leave.name}
@@ -408,7 +433,7 @@ export default function LeaveCalendarPage() {
                         <div className="flex items-center gap-2">
                           <p className="text-[12px] text-slate-500 truncate max-w-[120px] md:max-w-[150px]">{leave.position}</p>
                           <div className="w-1 h-1 rounded-full bg-gray-300"></div>
-                          <span className={`px-2 py-0.5 rounded-full text-[11px] font-bold whitespace-nowrap ${getBadgeStyle(leave.type)}`}>
+                          <span className={`px-2 py-0.5 rounded-full text-[11px] font-bold whitespace-nowrap ${getBadgeStyle(leave.type || '')}`}>
                             {leave.type}
                           </span>
                         </div>

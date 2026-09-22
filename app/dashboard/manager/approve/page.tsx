@@ -4,12 +4,14 @@ import { useState, useEffect, useCallback } from "react";
 import { Calendar as CalendarIcon } from "lucide-react";
 import Swal from "sweetalert2";
 import { LeaveDetailModal } from "@/components/LeaveDetailModal";
+import type { Leave } from "@/lib/api/types";
+import { getErrorMessage } from "@/lib/api/utils";
 
 const getToken = () =>
   typeof window !== "undefined" ? sessionStorage.getItem("accessToken") : "";
 
 /** Fetch pending leave requests for the manager's department via dedicated endpoint */
-async function fetchManagerPending(): Promise<any[]> {
+async function fetchManagerPending(): Promise<Leave[]> {
   const res = await fetch("/api/manager/pending", {
     headers: { Authorization: `Bearer ${getToken()}` },
   });
@@ -76,7 +78,7 @@ function formatMonthYear(yyyyMM: string) {
   return `${months[parseInt(month) - 1]} ${parseInt(year) + 543}`;
 }
 
-function mapRequest(r: any) {
+function mapRequest(r: Leave) {
   let dateRangeStr = getDayRange(r.startDate, r.endDate);
   let daysStr = `${r.totalDays || 1} วัน`;
 
@@ -98,7 +100,7 @@ function mapRequest(r: any) {
     lastName: emp.lastName || "",
     department: emp.department?.name || "-",
     position: emp.position?.name || "-",
-    type: r.leaveType?.name || r.type || "-",
+    type: (typeof r.leaveType === 'object' ? r.leaveType?.name : r.leaveType) || r.type || "-",
     dateRange: `${dateRangeStr} (${daysStr})`,
     formattedDays: daysStr,
   };
@@ -107,7 +109,7 @@ function mapRequest(r: any) {
 // ──────────────── component ────────────────
 
 export default function ManagerApprovePage() {
-  const [rawRequests, setRawRequests] = useState<any[]>([]);
+  const [rawRequests, setRawRequests] = useState<ReturnType<typeof mapRequest>[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   const [selectedMonthRaw, setSelectedMonthRaw] = useState(() => {
@@ -117,7 +119,7 @@ export default function ManagerApprovePage() {
   const [isPickerOpen, setIsPickerOpen] = useState(false);
   const [tempYear, setTempYear] = useState(new Date().getFullYear());
 
-  const [selectedRequest, setSelectedRequest] = useState<any>(null);
+  const [selectedRequest, setSelectedRequest] = useState<ReturnType<typeof mapRequest> | null>(null);
 
   const refetch = useCallback(async () => {
     setIsLoading(true);
@@ -151,7 +153,7 @@ export default function ManagerApprovePage() {
   };
 
   // ── approve ──
-  const handleApproveClick = async (req: any, comment?: string) => {
+  const handleApproveClick = async (req: ReturnType<typeof mapRequest>, comment?: string) => {
     const result = await Swal.fire({
       title: "ยืนยันการอนุมัติ",
       text: `อนุมัติคำขอลาของ ${req.firstName} ${req.lastName} (${req.formattedDays})?`,
@@ -169,13 +171,13 @@ export default function ManagerApprovePage() {
       setSelectedRequest(null);
       refetch();
       Swal.fire({ icon: "success", title: "อนุมัติสำเร็จ", timer: 1500, showConfirmButton: false });
-    } catch (err: any) {
-      Swal.fire({ icon: "error", title: "เกิดข้อผิดพลาด", text: err.message });
+    } catch (err) {
+      Swal.fire({ icon: "error", title: "เกิดข้อผิดพลาด", text: getErrorMessage(err) });
     }
   };
 
   // ── reject ──
-  const handleRejectClick = async (req: any, prefillReason?: string) => {
+  const handleRejectClick = async (req: ReturnType<typeof mapRequest>, prefillReason?: string) => {
     const { value: reason, isConfirmed } = await Swal.fire({
       title: "ยืนยันการปฏิเสธ",
       html: `<p class="text-sm text-gray-600 mb-3">ปฏิเสธคำขอลาของ <strong>${req.firstName} ${req.lastName}</strong></p>`,
@@ -202,20 +204,20 @@ export default function ManagerApprovePage() {
       setSelectedRequest(null);
       refetch();
       Swal.fire({ icon: "success", title: "ปฏิเสธคำขอสำเร็จ", timer: 1500, showConfirmButton: false });
-    } catch (err: any) {
-      Swal.fire({ icon: "error", title: "เกิดข้อผิดพลาด", text: err.message });
+    } catch (err) {
+      Swal.fire({ icon: "error", title: "เกิดข้อผิดพลาด", text: getErrorMessage(err) });
     }
   };
 
   return (
     <div className="min-h-[calc(100vh-4rem)] bg-[#E2E4E9] font-sans text-slate-800 flex flex-col">
       {/* Top Banner */}
-      <div className="bg-white flex items-center gap-4 px-8 py-5 shadow-sm z-10 shrink-0">
-        <div className="w-11 h-11 bg-blue-100 text-blue-600 rounded-xl flex items-center justify-center shrink-0">
+      <div className="bg-white flex items-center gap-3 sm:gap-4 px-4 sm:px-8 py-3 sm:py-5 shadow-sm z-10 shrink-0">
+        <div className="w-9 h-9 sm:w-11 sm:h-11 bg-blue-100 text-blue-600 rounded-xl flex items-center justify-center shrink-0">
           <CalendarIcon className="w-6 h-6" strokeWidth={2} />
         </div>
         <div>
-          <h1 className="text-xl font-bold text-black tracking-tight">
+          <h1 className="text-base sm:text-xl font-bold text-black tracking-tight">
             รายการคำขอรออนุมัติ (Manager View)
           </h1>
           <p className="text-xs text-gray-500 mt-1 font-medium">
@@ -240,7 +242,7 @@ export default function ManagerApprovePage() {
           {isPickerOpen && (
             <>
               <div className="fixed inset-0 z-40" onClick={() => setIsPickerOpen(false)} />
-              <div className="absolute top-full left-0 mt-3 bg-white rounded-2xl shadow-2xl border border-gray-100 p-5 w-[340px] z-50 animate-in fade-in zoom-in-95 duration-200">
+              <div className="absolute top-full left-0 mt-3 bg-white rounded-2xl shadow-2xl border border-gray-100 p-4 sm:p-5 w-[calc(100vw-2rem)] max-w-[340px] z-50 animate-in fade-in zoom-in-95 duration-200">
                 <div className="flex items-center justify-between mb-5 px-1">
                   <button onClick={() => setTempYear((y) => y - 1)} className="p-2 hover:bg-gray-100 rounded-full transition-colors text-gray-500 hover:text-black">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6" /></svg>
@@ -307,7 +309,7 @@ export default function ManagerApprovePage() {
                       <td className="py-6 px-6 text-[14px] text-gray-500 whitespace-nowrap">{req.type}</td>
                       <td className="py-6 px-6 text-[14px] text-gray-500 whitespace-nowrap">{req.dateRange}</td>
                       <td className="py-6 px-6 text-[14px] text-gray-500 whitespace-nowrap">
-                        {req.attachments?.length > 0 ? (
+                        {(req.attachments?.length ?? 0) > 0 ? (
                           <span className="text-emerald-600 font-bold">มีเอกสารแนบ</span>
                         ) : "-"}
                       </td>

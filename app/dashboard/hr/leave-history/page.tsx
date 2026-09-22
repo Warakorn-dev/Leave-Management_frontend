@@ -20,17 +20,36 @@ import Swal from 'sweetalert2';
 import { DatePicker } from '@/components/DateAndTime';
 import { LeaveTimePicker } from '@/components/LeaveTimePicker';
 import { uploadApi } from '@/lib/api';
-import { getLeaveStatusBadgeColor, getLeaveStatusText } from '@/lib/api/utils';
+import type { Leave } from '@/lib/api/types';
+import { getLeaveStatusBadgeColor, getLeaveStatusText, getErrorMessage } from '@/lib/api/utils';
 import { LeaveDetailModal } from '@/components/LeaveDetailModal';
 
 export default function LeaveHistoryPage() {
-  const [requests, setRequests] = useState<any[]>([]);
+  interface MappedRequest {
+    id?: string;
+    empId?: string;
+    firstName?: string;
+    lastName?: string;
+    department?: string;
+    positionName?: string;
+    name?: string;
+    dateStr?: string;
+    days?: string;
+    reason?: string;
+    requestCode?: string;
+    status?: string;
+    type?: string;
+    raw?: Leave & { attachment?: string; attachmentName?: string };
+    [key: string]: unknown;
+  }
+
+  const [requests, setRequests] = useState<MappedRequest[]>([]);
   const [username, setUsername] = useState('xxxxx xxxxxx');
   const [filterType, setFilterType] = useState<'daily' | 'monthly'>('monthly');
   const [selectedDate, setSelectedDate] = useState<Date | null>(new Date());
   const [fromDate, setFromDate] = useState<Date | null>(new Date());
   const [toDate, setToDate] = useState<Date | null>(new Date());
-  const [selectedRequest, setSelectedRequest] = useState<any>(null);
+  const [selectedRequest, setSelectedRequest] = useState<MappedRequest | null>(null);
 
   const [viewMode, setViewMode] = useState<'department' | 'personal'>(
     'department',
@@ -103,16 +122,16 @@ export default function LeaveHistoryPage() {
 
     // Filter leaves
     const storedUserId = sessionStorage.getItem('userId');
-    let targetRequests = [];
+    let targetRequests: Leave[] = [];
     if (viewMode === 'personal') {
       targetRequests = allLeaves.filter(
-        (r: any) => String(r.userId) === storedUserId,
+        (r) => String(r.userId) === storedUserId,
       );
     } else {
       targetRequests = allLeaves;
     }
 
-    const filtered = targetRequests.filter((r: any) => {
+    const filtered = targetRequests.filter((r) => {
       // 1. Search Query (Overrides other filters if present)
       if (searchId && searchId.trim() !== '') {
         const term = searchId.trim().toLowerCase();
@@ -169,20 +188,20 @@ export default function LeaveHistoryPage() {
 
       // 3. Leave Type Filter
       if (filterLeaveType && filterLeaveType !== '') {
-        const typeName = r.leaveType?.name || r.type || '';
+        const typeName = (typeof r.leaveType === 'object' ? r.leaveType?.name : r.leaveType) || r.type || '';
         if (typeName !== filterLeaveType) return false;
       }
 
       return true;
     });
     const sorted = [...filtered].sort(
-      (a: any, b: any) =>
+      (a, b) =>
         new Date(b.createdAt || b.startDate).getTime() -
         new Date(a.createdAt || a.startDate).getTime(),
     );
 
     setRequests(
-      sorted.map((r: any) => {
+      sorted.map((r) => {
         return {
           id: r.id,
           empId:
@@ -202,7 +221,7 @@ export default function LeaveHistoryPage() {
             r.startDate.split('T')[0] === r.endDate.split('T')[0]
               ? formatDate(r.startDate)
               : `${formatDate(r.startDate)} - ${formatDate(r.endDate)}`,
-          type: r.leaveType?.name || r.type,
+          type: (typeof r.leaveType === 'object' ? r.leaveType?.name : r.leaveType) || r.type,
           days:
             r.startFormat === 'hourly'
               ? `${r.leaveHours || Number(((r.totalDays ?? 0) * 8).toFixed(1))} ชั่วโมง`
@@ -219,7 +238,7 @@ export default function LeaveHistoryPage() {
             ...r,
             startDate: r.startDate,
             endDate: r.endDate,
-            type: r.leaveType?.id || r.type,
+            type: (typeof r.leaveType === 'object' ? r.leaveType?.id : undefined) || r.type,
           },
         };
       }),
@@ -256,7 +275,7 @@ export default function LeaveHistoryPage() {
 
     if (result.isConfirmed) {
       try {
-        await deleteLeave(selectedRequest.id);
+        await deleteLeave(selectedRequest?.id || '');
         setSelectedRequest(null);
         refetchLeaves();
         Swal.fire({
@@ -265,7 +284,7 @@ export default function LeaveHistoryPage() {
           text: 'ยกเลิกคำขอลาเรียบร้อยแล้ว',
           confirmButtonColor: '#3b82f6',
         });
-      } catch (error) {
+      } catch {
         Swal.fire({
           icon: 'error',
           title: 'เกิดข้อผิดพลาด',
@@ -315,12 +334,12 @@ export default function LeaveHistoryPage() {
     setEditForm({
       type:
         selectedRequest?.raw?.type || selectedRequest?.raw?.leaveTypeId || '',
-      startDate: formatDateLocal(selectedRequest?.raw?.startDate),
-      endDate: formatDateLocal(selectedRequest?.raw?.endDate),
+      startDate: formatDateLocal(selectedRequest?.raw?.startDate || ''),
+      endDate: formatDateLocal(selectedRequest?.raw?.endDate || ''),
       reason: selectedRequest?.raw?.reason || '',
       leaveMode: mode,
       period: prd,
-      leaveDate: formatDateLocal(selectedRequest?.raw?.startDate),
+      leaveDate: formatDateLocal(selectedRequest?.raw?.startDate || ''),
       startTime:
         selectedRequest?.raw?.startFormat === 'hourly'
           ? new Date(selectedRequest.raw.startDate).toLocaleTimeString(
@@ -394,7 +413,7 @@ export default function LeaveHistoryPage() {
 
   const confirmAndSave = async () => {
     try {
-      const payload: any = {
+      const payload: Record<string, unknown> = {
         leaveTypeId: editForm.type,
         reason: editForm.reason,
         leaveMode: editForm.leaveMode,
@@ -411,14 +430,14 @@ export default function LeaveHistoryPage() {
       }
 
       await updateLeave({
-        id: selectedRequest.id,
+        id: selectedRequest?.id || '',
         data: payload,
       });
 
       if (editFile) {
         const formData = new FormData();
         formData.append('file', editFile);
-        formData.append('leaveRequestId', selectedRequest.id);
+        formData.append('leaveRequestId', selectedRequest?.id || '');
 
         try {
           await uploadApi.uploadFile(formData);
@@ -439,12 +458,12 @@ export default function LeaveHistoryPage() {
         text: 'แก้ไขคำขอลาเรียบร้อยแล้ว',
         confirmButtonColor: '#3085d6',
       });
-    } catch (err: any) {
+    } catch (err) {
       console.error(err);
       Swal.fire({
         icon: 'error',
         title: 'เกิดข้อผิดพลาด',
-        text: err.message || 'Failed to update leave request',
+        text: getErrorMessage(err, 'Failed to update leave request'),
         confirmButtonColor: '#d33',
       });
     }
@@ -463,12 +482,12 @@ export default function LeaveHistoryPage() {
   return (
     <div className="min-h-[calc(100vh-4rem)] bg-[#E2E4E9] font-sans text-slate-800 flex flex-col relative">
       {/* Top Banner */}
-      <div className="bg-white flex items-center gap-4 px-8 py-5 shadow-sm z-10 shrink-0">
-        <div className="w-11 h-11 bg-blue-100 text-blue-600 rounded-xl flex items-center justify-center shrink-0">
+      <div className="bg-white flex items-center gap-3 sm:gap-4 px-4 sm:px-8 py-3 sm:py-5 shadow-sm z-10 shrink-0">
+        <div className="w-9 h-9 sm:w-11 sm:h-11 bg-blue-100 text-blue-600 rounded-xl flex items-center justify-center shrink-0">
           <BookOpen className="w-6 h-6" strokeWidth={2} />
         </div>
         <div>
-          <h1 className="text-xl font-bold text-black tracking-tight">
+          <h1 className="text-base sm:text-xl font-bold text-black tracking-tight">
             ประวัติการลา (Leave History)
           </h1>
           <p className="text-xs text-gray-500 mt-1 font-medium">
@@ -480,7 +499,7 @@ export default function LeaveHistoryPage() {
       </div>
 
       {/* Main Content Container */}
-      <div className="flex-1 p-6 md:p-8">
+      <div className="flex-1 p-4 sm:p-6 md:p-8">
         <div className="max-w-[1200px] mx-auto animate-in fade-in slide-in-from-bottom-4 duration-500">
 
           {/* Filter Bar */}
@@ -613,7 +632,7 @@ export default function LeaveHistoryPage() {
                       }}
                     >
                       <option value="">ทุกประเภทการลา</option>
-                      {leaveTypes.map((type: any) => (
+                      {leaveTypes.map((type) => (
                         <option key={type.id} value={type.name}>
                           {type.name}
                         </option>
@@ -803,9 +822,9 @@ export default function LeaveHistoryPage() {
                           <td className="px-4 py-5 text-center whitespace-nowrap">
                             <div className="flex flex-col items-center gap-1.5">
                               <span
-                                className={`inline-block px-5 py-1.5 rounded-full text-xs font-bold text-white shadow-sm min-w-[80px] text-center ${getLeaveStatusBadgeColor(req.status)}`}
+                                className={`inline-block px-5 py-1.5 rounded-full text-xs font-bold text-white shadow-sm min-w-[80px] text-center ${getLeaveStatusBadgeColor(req.status || '')}`}
                               >
-                                {getLeaveStatusText(req.status)}
+                                {getLeaveStatusText(req.status || '')}
                               </span>
                               <button
                                 onClick={() => setSelectedRequest(req)}
@@ -832,9 +851,9 @@ export default function LeaveHistoryPage() {
                           <>
                             <td className="px-4 py-5 text-center whitespace-nowrap">
                               <span
-                                className={`inline-block px-5 py-1.5 rounded-full text-xs font-bold text-white shadow-sm min-w-[80px] text-center ${getLeaveStatusBadgeColor(req.status)}`}
+                                className={`inline-block px-5 py-1.5 rounded-full text-xs font-bold text-white shadow-sm min-w-[80px] text-center ${getLeaveStatusBadgeColor(req.status || '')}`}
                               >
-                                {getLeaveStatusText(req.status)}
+                                {getLeaveStatusText(req.status || '')}
                               </span>
                             </td>
                             <td className="px-4 py-5 text-center whitespace-nowrap">
@@ -914,7 +933,7 @@ export default function LeaveHistoryPage() {
           footer={
             viewMode === 'personal' &&
             !['cancelled', 'pending_cancellation'].includes(
-              selectedRequest.status.toLowerCase(),
+              (selectedRequest.status || '').toLowerCase(),
             ) &&
             selectedRequest.raw?.startDate &&
             new Date(selectedRequest.raw.startDate).setHours(0, 0, 0, 0) >
@@ -923,19 +942,19 @@ export default function LeaveHistoryPage() {
                 <button
                   onClick={handleDelete}
                   className={`font-bold text-[14px] flex items-center gap-1.5 transition-colors ${
-                    selectedRequest.status.toLowerCase().includes('approved')
+                    (selectedRequest.status || '').toLowerCase().includes('approved')
                       ? 'text-red-500 hover:text-red-600 bg-red-50 hover:bg-red-100 px-4 py-2 rounded-lg'
                       : 'text-gray-400 hover:text-red-500'
                   }`}
                 >
                   <Trash2 className="w-4 h-4" strokeWidth={2.5} />
-                  {selectedRequest.status.toLowerCase().includes('approved')
+                  {(selectedRequest.status || '').toLowerCase().includes('approved')
                     ? 'ขอยกเลิกวันลา'
                     : 'ยกเลิกการลา'}
                 </button>
-                {!selectedRequest.status.toLowerCase().includes('approved') &&
+                {!(selectedRequest.status || '').toLowerCase().includes('approved') &&
                   ['pending_verify'].includes(
-                    selectedRequest.status.toLowerCase(),
+                    (selectedRequest.status || '').toLowerCase(),
                   ) &&
                   !selectedRequest.raw?.isViewedByHr && (
                     <button
@@ -958,7 +977,7 @@ export default function LeaveHistoryPage() {
           {/* Top Banner (Inside Edit) */}
           <div className="bg-white flex flex-col md:flex-row md:items-center justify-between px-8 py-5 shadow-sm sticky top-0 z-10 gap-4 border-b border-gray-200">
             <div>
-              <h1 className="text-xl font-bold text-black tracking-tight">
+              <h1 className="text-base sm:text-xl font-bold text-black tracking-tight">
                 แบบฟอร์มยื่นลา (Leave Request)
               </h1>
               <p className="text-[13px] text-gray-500 mt-1 font-medium">
@@ -1020,24 +1039,24 @@ export default function LeaveHistoryPage() {
                       <option value="" disabled>
                         -- กรุณาเลือกประเภทการลา --
                       </option>
-                      {balances.map((b: any) => (
+                      {balances.map((b) => (
                         <option
-                          key={b.leaveType.id}
-                          value={b.leaveType.id}
+                          key={b.leaveType?.id}
+                          value={b.leaveType?.id}
                           disabled={
-                            b.remainingDays <= 0 &&
-                            editForm.type !== String(b.leaveType.id)
+                            (b.remainingDays ?? 0) <= 0 &&
+                            editForm.type !== String(b.leaveType?.id)
                           }
                           className={
-                            b.remainingDays <= 0 &&
-                            editForm.type !== String(b.leaveType.id)
+                            (b.remainingDays ?? 0) <= 0 &&
+                            editForm.type !== String(b.leaveType?.id)
                               ? 'text-gray-400 bg-gray-50 font-medium'
                               : 'text-gray-800'
                           }
                         >
-                          {b.leaveType.name}{' '}
-                          {b.remainingDays <= 0 &&
-                          editForm.type !== String(b.leaveType.id)
+                          {b.leaveType?.name}{' '}
+                          {(b.remainingDays ?? 0) <= 0 &&
+                          editForm.type !== String(b.leaveType?.id)
                             ? '(หมดโควต้า)'
                             : `(เหลือ ${b.remainingDays} วัน)`}
                         </option>

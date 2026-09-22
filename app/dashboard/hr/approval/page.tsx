@@ -5,6 +5,7 @@ import { User, Calendar as CalendarIcon, Eye, Check, X } from 'lucide-react';
 import { useLeave } from '@/hooks/useLeave';
 import { useAuth } from '@/context/AuthContext';
 import { LeaveDetailModal } from '@/components/LeaveDetailModal';
+import { getErrorMessage } from '@/lib/api/utils';
 
 export default function HrApprovePage() {
   const [selectedMonthRaw, setSelectedMonthRaw] = useState(() => {
@@ -14,8 +15,32 @@ export default function HrApprovePage() {
   const [isPickerOpen, setIsPickerOpen] = useState(false);
   const [tempYear, setTempYear] = useState(() => new Date().getFullYear());
 
-  const [requests, setRequests] = useState<any[]>([]);
-  const [selectedRequest, setSelectedRequest] = useState<any | null>(null);
+  interface MappedRequest {
+    id?: string;
+    currentHrReviewerId?: string | null;
+    currentReviewer?: {
+      employee?: { firstName?: string; lastName?: string };
+      username?: string;
+      email?: string;
+    };
+    dateRange?: string;
+    department?: string;
+    firstName?: string;
+    lastName?: string;
+    position?: string;
+    requestCode?: string;
+    status?: string;
+    type?: string;
+    isViewedByHr?: boolean;
+    hrReviewStartedAt?: string | null;
+    user?: Record<string, unknown>;
+    userId?: string;
+    raw?: { userId?: string; positionName?: string; [key: string]: unknown };
+    [key: string]: unknown;
+  }
+
+  const [requests, setRequests] = useState<MappedRequest[]>([]);
+  const [selectedRequest, setSelectedRequest] = useState<MappedRequest | null>(null);
 
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [confirmData, setConfirmData] = useState<{
@@ -109,36 +134,36 @@ export default function HrApprovePage() {
   const { mutateAsync: markLeaveViewed } = useMarkLeaveViewedMutation();
 
   useEffect(() => {
-    const filtered = allLeaves.filter((r: any) => {
+    const filtered = allLeaves.filter((r) => {
       if (!r.startDate) return false;
       const d = new Date(r.startDate);
       const yyyyMM = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
       return yyyyMM === selectedMonthRaw;
     });
     const sorted = [...filtered].sort(
-      (a: any, b: any) =>
-        new Date(b.createdAt || b.startDate).getTime() -
-        new Date(a.createdAt || a.startDate).getTime(),
+      (a, b) =>
+        new Date(b.createdAt || b.startDate || 0).getTime() -
+        new Date(a.createdAt || a.startDate || 0).getTime(),
     );
 
     setRequests(
-      sorted.map((r: any) => {
+      sorted.map((r) => {
         let dateRangeStr = getDayRange(
-          r.startDate.split('T')[0],
-          r.endDate.split('T')[0],
+          (r.startDate || '').split('T')[0],
+          (r.endDate || '').split('T')[0],
         );
         let daysStr = `${r.totalDays || 1} วัน`;
 
         if (r.startFormat === 'hourly' || r.leaveMode === 'hourly') {
-          const startT = new Date(r.startDate).toLocaleTimeString('th-TH', {
+          const startT = new Date(r.startDate || 0).toLocaleTimeString('th-TH', {
             hour: '2-digit',
             minute: '2-digit',
           });
-          const endT = new Date(r.endDate).toLocaleTimeString('th-TH', {
+          const endT = new Date(r.endDate || 0).toLocaleTimeString('th-TH', {
             hour: '2-digit',
             minute: '2-digit',
           });
-          dateRangeStr = `${formatShortDate(r.startDate)} ${startT} - ${endT}`;
+          dateRangeStr = `${formatShortDate(r.startDate || '')} ${startT} - ${endT}`;
           const hours = r.leaveHours
             ? r.leaveHours
             : Number(((r.totalDays ?? 0) * 8).toFixed(1));
@@ -170,6 +195,7 @@ export default function HrApprovePage() {
         };
       }),
     );
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- getDayRange is a pure helper redefined each render, not a real dependency
   }, [selectedMonthRaw, allLeaves]);
 
   // Auto-refresh (Polling) ทุกๆ 5 วินาที เพื่อให้หน้าจออัปเดตสถานะการล็อคทันที
@@ -191,28 +217,30 @@ export default function HrApprovePage() {
     setShowConfirmModal(true);
   };
 
-  const handlePullRequest = async (req: any) => {
+  const handlePullRequest = async (req: MappedRequest) => {
     try {
-      await markLeaveViewed({ id: req.id, lock: true });
+      await markLeaveViewed({ id: req.id || '', lock: true });
       refetchLeaves(); // อัปเดตตารางให้แสดงสถานะว่าเราล็อคแล้ว
-    } catch (error: any) {
+    } catch (error) {
       console.error('Failed to pull request', error);
       alert(
-        error.message ||
+        getErrorMessage(
+          error,
           'ไม่สามารถดึงคำขอนี้ได้ เนื่องจากกำลังถูกตรวจสอบโดย HR คนอื่น',
+        ),
       );
       refetchLeaves();
     }
   };
 
-  const handleViewDetails = async (req: any) => {
+  const handleViewDetails = async (req: MappedRequest) => {
     // แค่เปิดดูรายละเอียดเฉยๆ ไม่ได้จะดึงมาตรวจสอบ
     if (!req.isViewedByHr) {
       try {
-        await markLeaveViewed({ id: req.id, lock: false });
+        await markLeaveViewed({ id: req.id || '', lock: false });
         req.isViewedByHr = true;
         // ไม่ต้องล็อคเป็นของเรา (ไม่ต้องเซ็ต currentHrReviewerId)
-      } catch (error: any) {
+      } catch (error) {
         console.error('Failed to mark leave as viewed', error);
       }
     }
@@ -229,8 +257,8 @@ export default function HrApprovePage() {
       });
       if (selectedRequest && selectedRequest.id === confirmData.id)
         setSelectedRequest(null);
-    } catch (error: any) {
-      alert(error.message || 'เกิดข้อผิดพลาดในการอนุมัติคำขอ');
+    } catch (error) {
+      alert(getErrorMessage(error, 'เกิดข้อผิดพลาดในการอนุมัติคำขอ'));
     } finally {
       refetchLeaves();
       setShowConfirmModal(false);
@@ -258,8 +286,8 @@ export default function HrApprovePage() {
       });
       if (selectedRequest && selectedRequest.id === rejectData.id)
         setSelectedRequest(null);
-    } catch (error: any) {
-      alert(error.message || 'เกิดข้อผิดพลาดในการปฏิเสธคำขอ');
+    } catch (error) {
+      alert(getErrorMessage(error, 'เกิดข้อผิดพลาดในการปฏิเสธคำขอ'));
     } finally {
       refetchLeaves();
       setShowRejectModal(false);
@@ -271,22 +299,22 @@ export default function HrApprovePage() {
 
 
   const onModalApprove = () => {
-    handleApproveClick(selectedRequest.id);
+    handleApproveClick(selectedRequest?.id || '');
   };
 
   const onModalReject = () => {
-    handleRejectClick(selectedRequest.id);
+    handleRejectClick(selectedRequest?.id || '');
   };
 
   return (
     <div className="min-h-[calc(100vh-4rem)] bg-[#E2E4E9] font-sans text-slate-800 flex flex-col">
       {/* Top Banner */}
-      <div className="bg-white flex items-center gap-4 px-8 py-5 shadow-sm z-10 shrink-0">
-        <div className="w-11 h-11 bg-blue-100 text-blue-600 rounded-xl flex items-center justify-center shrink-0">
+      <div className="bg-white flex items-center gap-3 sm:gap-4 px-4 sm:px-8 py-3 sm:py-5 shadow-sm z-10 shrink-0">
+        <div className="w-9 h-9 sm:w-11 sm:h-11 bg-blue-100 text-blue-600 rounded-xl flex items-center justify-center shrink-0">
           <CalendarIcon className="w-6 h-6" strokeWidth={2} />
         </div>
         <div>
-          <h1 className="text-xl font-bold text-black tracking-tight">
+          <h1 className="text-base sm:text-xl font-bold text-black tracking-tight">
             รายการคำขอรอตรวจสอบ (HR View)
           </h1>
           <p className="text-xs text-gray-500 mt-1 font-medium">
@@ -314,7 +342,7 @@ export default function HrApprovePage() {
                 className="fixed inset-0 z-40"
                 onClick={() => setIsPickerOpen(false)}
               ></div>
-              <div className="absolute top-full left-0 mt-3 bg-white rounded-2xl shadow-2xl border border-gray-100 p-5 w-[340px] z-50 animate-in fade-in zoom-in-95 duration-200">
+              <div className="absolute top-full left-0 mt-3 bg-white rounded-2xl shadow-2xl border border-gray-100 p-4 sm:p-5 w-[calc(100vw-2rem)] max-w-[340px] z-50 animate-in fade-in zoom-in-95 duration-200">
                 <div className="flex items-center justify-between mb-5 px-1">
                   <button
                     onClick={() => setTempYear((y) => y - 1)}
@@ -430,7 +458,7 @@ export default function HrApprovePage() {
                   </td>
                 </tr>
               ) : (
-                requests.map((req, idx) => {
+                requests.map((req) => {
                   const isLockedByOther =
                     req.currentHrReviewerId &&
                     req.currentHrReviewerId !== user?.id;
@@ -454,7 +482,7 @@ export default function HrApprovePage() {
                               {req.firstName} {req.lastName}
                             </span>
                             <span className="text-[12px] text-gray-400">
-                              {req.user?.role || req.position || 'Employee'}
+                              {(req.user?.role as string) || req.position || 'Employee'}
                             </span>
                           </div>
                         </div>

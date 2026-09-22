@@ -17,7 +17,7 @@ export interface Position {
   departmentId?: string;
   department?: Department;
   roleId?: string;
-  role?: any;
+  role?: unknown;
   status?: 'active' | 'inactive';
 }
 
@@ -52,6 +52,36 @@ export interface Employee {
   address?: string;
   status?: 'active' | 'inactive';
   avatar?: string;
+  hireDate?: string;
+  gender?: string;
+  firstNameEN?: string;
+  lastNameEN?: string;
+  idCardNumber?: string;
+  dateOfBirth?: string;
+  idCardAddress?: string;
+  currentAddress?: string;
+}
+
+export interface CreateEmployeeInput {
+  employeeCode?: string;
+  username?: string;
+  title?: string;
+  firstName: string;
+  lastName: string;
+  firstNameEN?: string;
+  lastNameEN?: string;
+  idCardNumber?: string;
+  dateOfBirth?: string;
+  idCardAddress?: string;
+  currentAddress?: string;
+  email: string;
+  departmentId?: string;
+  positionId?: string;
+  roleName?: string;
+  password?: string;
+  phone?: string;
+  hireDate?: string;
+  gender?: string;
 }
 
 export interface Leave {
@@ -59,12 +89,37 @@ export interface Leave {
   requestCode?: string;
   employeeId?: string;
   employeeCode?: string;
+  empCode?: string;
+  dateRangeStr?: string;
   employeeName: string;
-  employee?: any;
-  user?: any;
+  employee?: {
+    id?: string;
+    firstName?: string;
+    lastName?: string;
+    employeeCode?: string;
+    userId?: string;
+    department?: { name?: string };
+    position?: { name?: string };
+    positionName?: string;
+    title?: string;
+    user?: { id?: string; avatarUrl?: string; email?: string };
+    [key: string]: unknown;
+  };
+  user?: {
+    firstName?: string;
+    lastName?: string;
+    email?: string;
+    title?: string;
+    avatarUrl?: string;
+    department?: { name?: string };
+    position?: { name?: string };
+    [key: string]: unknown;
+  };
   departmentName?: string;
   department?: string;
-  leaveType?: string;
+  positionName?: string;
+  position?: string;
+  leaveType?: string | { id?: string; name?: string };
   leaveTypeId?: string;
   leaveTypeName?: string;
   type?: string;
@@ -73,9 +128,13 @@ export interface Leave {
   startFormat?: 'full' | 'morning' | 'afternoon' | 'hourly';
   endFormat?: 'full' | 'morning' | 'afternoon' | 'hourly';
   leaveHours?: number;
+  leaveMode?: string;
+  startTime?: string;
+  endTime?: string;
   durationDays?: number;
+  daysCount?: number;
   totalDays?: number;
-  status: 'PENDING_VERIFY' | 'PENDING_SUPERVISOR' | 'PENDING_EXECUTIVE' | 'APPROVED' | 'REJECTED' | 'CANCELLED' | 'Pending' | 'Approved' | 'Rejected' | 'pending' | 'approved' | 'rejected' | 'Waiting CEO' | 'waiting ceo';
+  status: string;
   reason: string;
   attachmentUrl?: string;
   attachmentName?: string;
@@ -83,13 +142,17 @@ export interface Leave {
   approverName?: string;
   approver?: string;
   approverReason?: string;
-  attachments?: any[];
+  attachments?: Array<{ filePath?: string; fileType?: string }>;
+  approvals?: Array<{ id?: string; status?: string; comment?: string; createdAt?: string }>;
   createdAt?: string;
   updatedAt?: string;
   userId?: string;
+  isViewedByHr?: boolean;
+  currentHrReviewerId?: string | null;
+  hrReviewStartedAt?: string | null;
 }
 
-export interface ApiResponse<T = any> {
+export interface ApiResponse<T = unknown> {
   success: boolean;
   message?: string;
   data: T;

@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { useLeaveType } from '@/hooks/useLeaveType';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import {
   Dialog,
@@ -17,6 +17,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import Swal from 'sweetalert2';
+import { getErrorMessage } from '@/lib/api/utils';
 import {
   Plus,
   Search,
@@ -121,11 +122,11 @@ export default function HRLeaveTypes() {
         });
       }
       setDialogOpen(false);
-    } catch (err: any) {
+    } catch (err) {
       Swal.fire({
         icon: 'error',
         title: 'เกิดข้อผิดพลาด',
-        text: err.response?.data?.message || 'ไม่สามารถบันทึกข้อมูลได้',
+        text: getErrorMessage(err, 'ไม่สามารถบันทึกข้อมูลได้'),
       });
     }
   };
@@ -156,7 +157,7 @@ export default function HRLeaveTypes() {
             timer: 1500,
             showConfirmButton: false,
           });
-        } catch (err) {
+        } catch {
           Swal.fire({
             icon: 'error',
             title: 'เกิดข้อผิดพลาด',
@@ -181,12 +182,12 @@ export default function HRLeaveTypes() {
   return (
     <div className="min-h-[calc(100vh-4rem)] bg-[#E2E4E9] font-sans text-slate-800 flex flex-col">
       {/* Top Banner */}
-      <div className="bg-white flex items-center gap-4 px-8 py-5 shadow-sm z-10 shrink-0">
-        <div className="w-11 h-11 bg-blue-100 text-blue-600 rounded-xl flex items-center justify-center shrink-0">
+      <div className="bg-white flex items-center gap-3 sm:gap-4 px-4 sm:px-8 py-3 sm:py-5 shadow-sm z-10 shrink-0">
+        <div className="w-9 h-9 sm:w-11 sm:h-11 bg-blue-100 text-blue-600 rounded-xl flex items-center justify-center shrink-0">
           <FileText className="w-6 h-6" strokeWidth={2} />
         </div>
         <div>
-          <h1 className="text-xl font-bold text-black tracking-tight">
+          <h1 className="text-base sm:text-xl font-bold text-black tracking-tight">
             ประเภทการลา (Leave Policies)
           </h1>
           <p className="text-xs text-gray-500 mt-1 font-medium">
@@ -196,7 +197,7 @@ export default function HRLeaveTypes() {
         </div>
       </div>
 
-      <div className="flex-1 p-6 md:p-8">
+      <div className="flex-1 p-4 sm:p-6 md:p-8">
         <div className="max-w-7xl mx-auto space-y-6">
       <div className="flex justify-end">
         <button
@@ -237,7 +238,7 @@ export default function HRLeaveTypes() {
             </h3>
             <p className="text-sm text-slate-500 mb-6 max-w-sm">
               คุณยังไม่ได้เพิ่มประเภทการลาใดๆ ในระบบ กรุณาคลิกที่ปุ่ม
-              "เพิ่มประเภทการลา" ด้านบนเพื่อเริ่มต้น
+              &quot;เพิ่มประเภทการลา&quot; ด้านบนเพื่อเริ่มต้น
             </p>
             <button
               onClick={handleAddOpen}

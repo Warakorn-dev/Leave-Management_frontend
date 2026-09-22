@@ -5,15 +5,27 @@ import { useLeave } from "@/hooks/useLeave";
 import { Calendar as CalendarIcon, X, Check, AlertTriangle } from "lucide-react";
 import { LeaveDetailModal } from "@/components/LeaveDetailModal";
 
+interface MappedCancelRequest {
+  id?: string;
+  requestCode?: string;
+  employeeCode?: string;
+  firstName?: string;
+  lastName?: string;
+  dateRange?: string;
+  type?: string;
+  raw?: unknown;
+  [key: string]: unknown;
+}
+
 export default function HrCancelApprovalPage() {
-  const [requests, setRequests] = useState<any[]>([]);
+  const [requests, setRequests] = useState<MappedCancelRequest[]>([]);
   const [selectedMonthRaw, setSelectedMonthRaw] = useState(() => {
     const d = new Date();
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
   });
   const [isPickerOpen, setIsPickerOpen] = useState(false);
   const [tempYear, setTempYear] = useState(new Date().getFullYear());
-  const [selectedRequest, setSelectedRequest] = useState<any>(null);
+  const [selectedRequest, setSelectedRequest] = useState<MappedCancelRequest | null>(null);
   const [approverReason, setApproverReason] = useState("");
 
   const [showApproveModal, setShowApproveModal] = useState(false);
@@ -55,25 +67,25 @@ export default function HrCancelApprovalPage() {
   const { mutateAsync: verifyLeave } = useVerifyLeaveMutation();
 
   useEffect(() => {
-    const filtered = allCancellations.filter((r: any) => {
+    const filtered = allCancellations.filter((r) => {
       if (!r.startDate) return false;
       const d = new Date(r.startDate);
       const yyyyMM = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
       return yyyyMM === selectedMonthRaw;
     });
     const sorted = [...filtered].sort(
-      (a: any, b: any) => new Date(b.createdAt || b.startDate).getTime() - new Date(a.createdAt || a.startDate).getTime()
+      (a, b) => new Date(b.createdAt || b.startDate || 0).getTime() - new Date(a.createdAt || a.startDate || 0).getTime()
     );
 
     setRequests(
-      sorted.map((r: any) => {
-        let dateRangeStr = getDayRange(r.startDate.split("T")[0], r.endDate.split("T")[0]);
+      sorted.map((r) => {
+        let dateRangeStr = getDayRange((r.startDate || '').split("T")[0], (r.endDate || '').split("T")[0]);
         let daysStr = `${r.totalDays || 1} วัน`;
 
         if (r.startFormat === "hourly" || r.leaveMode === "hourly") {
-          const startT = new Date(r.startDate).toLocaleTimeString("th-TH", { hour: "2-digit", minute: "2-digit" });
-          const endT = new Date(r.endDate).toLocaleTimeString("th-TH", { hour: "2-digit", minute: "2-digit" });
-          dateRangeStr = `${formatShortDate(r.startDate)} ${startT} - ${endT}`;
+          const startT = new Date(r.startDate || 0).toLocaleTimeString("th-TH", { hour: "2-digit", minute: "2-digit" });
+          const endT = new Date(r.endDate || 0).toLocaleTimeString("th-TH", { hour: "2-digit", minute: "2-digit" });
+          dateRangeStr = `${formatShortDate(r.startDate || '')} ${startT} - ${endT}`;
           const hours = r.leaveHours ? r.leaveHours : Number(((r.totalDays ?? 0) * 8).toFixed(1));
           daysStr = `${hours} ชั่วโมง`;
         } else if ((r.totalDays ?? r.daysCount) === 0.5) {
@@ -98,6 +110,7 @@ export default function HrCancelApprovalPage() {
         };
       })
     );
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- getDayRange is a pure helper redefined each render, not a real dependency
   }, [selectedMonthRaw, allCancellations]);
 
   const handleMonthSelect = (monthIndex: number) => {
@@ -145,7 +158,7 @@ export default function HrCancelApprovalPage() {
 
   const onModalApprove = () => {
     if (!selectedRequest) return;
-    handleApproveClick(selectedRequest.id);
+    handleApproveClick(selectedRequest.id || '');
   };
 
   const onModalReject = () => {
@@ -155,19 +168,19 @@ export default function HrCancelApprovalPage() {
       return;
     }
     setRejectReasonInput(approverReason);
-    setConfirmData({ id: selectedRequest.id });
+    setConfirmData({ id: selectedRequest.id || '' });
     setShowRejectModal(true);
   };
 
   return (
     <div className="min-h-[calc(100vh-4rem)] bg-[#E2E4E9] font-sans text-slate-800 flex flex-col">
       {/* Top Banner */}
-      <div className="bg-white flex items-center gap-4 px-8 py-5 shadow-sm z-10 shrink-0">
-        <div className="w-11 h-11 bg-rose-100 text-rose-600 rounded-xl flex items-center justify-center shrink-0">
+      <div className="bg-white flex items-center gap-3 sm:gap-4 px-4 sm:px-8 py-3 sm:py-5 shadow-sm z-10 shrink-0">
+        <div className="w-9 h-9 sm:w-11 sm:h-11 bg-rose-100 text-rose-600 rounded-xl flex items-center justify-center shrink-0">
           <AlertTriangle className="w-6 h-6" strokeWidth={2} />
         </div>
         <div>
-          <h1 className="text-xl font-bold text-black tracking-tight">
+          <h1 className="text-base sm:text-xl font-bold text-black tracking-tight">
             ตรวจสอบคำขอยกเลิกการลา
           </h1>
           <p className="text-xs text-gray-500 mt-1 font-medium">
@@ -186,7 +199,7 @@ export default function HrCancelApprovalPage() {
             <p className="font-bold mb-1">หมายเหตุ:</p>
             <ul className="space-y-0.5 text-rose-600">
               <li>• <span className="font-semibold">อนุมัติการยกเลิก</span> → ใบลาจะถูกยกเลิก และโควตาวันลาจะถูกคืนให้พนักงาน</li>
-              <li>• <span className="font-semibold">ปฏิเสธ (คงสภาพ)</span> → ใบลายังคงมีผล สถานะกลับเป็น "อนุมัติแล้ว"</li>
+              <li>• <span className="font-semibold">ปฏิเสธ (คงสภาพ)</span> → ใบลายังคงมีผล สถานะกลับเป็น &quot;อนุมัติแล้ว&quot;</li>
             </ul>
           </div>
         </div>
@@ -204,7 +217,7 @@ export default function HrCancelApprovalPage() {
           {isPickerOpen && (
             <>
               <div className="fixed inset-0 z-40" onClick={() => setIsPickerOpen(false)}></div>
-              <div className="absolute top-full left-0 mt-3 bg-white rounded-2xl shadow-2xl border border-gray-100 p-5 w-[340px] z-50 animate-in fade-in zoom-in-95 duration-200">
+              <div className="absolute top-full left-0 mt-3 bg-white rounded-2xl shadow-2xl border border-gray-100 p-4 sm:p-5 w-[calc(100vw-2rem)] max-w-[340px] z-50 animate-in fade-in zoom-in-95 duration-200">
                 <div className="flex items-center justify-between mb-5 px-1">
                   <button onClick={() => setTempYear((y) => y - 1)} className="p-2 hover:bg-gray-100 rounded-full transition-colors text-gray-500 hover:text-black">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6" /></svg>
@@ -289,13 +302,13 @@ export default function HrCancelApprovalPage() {
                           รายละเอียด
                         </button>
                         <button
-                          onClick={() => handleApproveClick(req.id)}
+                          onClick={() => handleApproveClick(req.id || '')}
                           className="bg-rose-600 hover:bg-rose-700 text-white text-[11px] font-bold py-1.5 w-[105px] text-center rounded shadow-sm transition-colors"
                         >
                           อนุมัติการยกเลิก
                         </button>
                         <button
-                          onClick={() => handleRejectClick(req.id)}
+                          onClick={() => handleRejectClick(req.id || '')}
                           className="bg-gray-500 hover:bg-gray-600 text-white text-[11px] font-bold py-1.5 w-[105px] text-center rounded shadow-sm transition-colors"
                         >
                           ปฏิเสธ (คงสภาพ)
@@ -404,7 +417,7 @@ export default function HrCancelApprovalPage() {
             </div>
             <div className="p-6">
               <p className="text-gray-700 text-sm font-medium mb-1">คุณต้องการปฏิเสธคำขอยกเลิกนี้ ใช่หรือไม่?</p>
-              <p className="text-[13px] text-gray-500 mb-4">ใบลาจะยังคงมีผลและสถานะกลับเป็น <strong>"อนุมัติแล้ว"</strong></p>
+              <p className="text-[13px] text-gray-500 mb-4">ใบลาจะยังคงมีผลและสถานะกลับเป็น <strong>&quot;อนุมัติแล้ว&quot;</strong></p>
               <div className="mb-5">
                 <label className="block text-xs font-bold text-gray-700 mb-1">
                   เหตุผลที่ปฏิเสธ <span className="text-red-500">*</span>

@@ -6,7 +6,12 @@ import { Key, Users } from "lucide-react";
 import api from "@/lib/api/axios";
 
 export default function AdminRolesPage() {
-  const [roles, setRoles] = useState<any[]>([]);
+  const [roles, setRoles] = useState<{
+    id: string;
+    name: string;
+    userCount?: number;
+    createdAt: string;
+  }[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -27,12 +32,12 @@ export default function AdminRolesPage() {
     <RoleGuard allowedRoles={["admin"]}>
       <div className="min-h-[calc(100vh-4rem)] bg-[#E2E4E9] font-sans text-slate-800 flex flex-col">
         {/* Top Banner */}
-        <div className="bg-white flex items-center gap-4 px-8 py-5 shadow-sm z-10 shrink-0">
-          <div className="w-11 h-11 bg-blue-100 text-blue-600 rounded-xl flex items-center justify-center shrink-0">
+        <div className="bg-white flex items-center gap-3 sm:gap-4 px-4 sm:px-8 py-3 sm:py-5 shadow-sm z-10 shrink-0">
+          <div className="w-9 h-9 sm:w-11 sm:h-11 bg-blue-100 text-blue-600 rounded-xl flex items-center justify-center shrink-0">
             <Key className="w-6 h-6" strokeWidth={2} />
           </div>
           <div>
-            <h1 className="text-xl font-bold text-black tracking-tight">
+            <h1 className="text-base sm:text-xl font-bold text-black tracking-tight">
               จัดการสิทธิ์ผู้ใช้งาน
             </h1>
             <p className="text-xs text-gray-500 mt-1 font-medium">
@@ -41,7 +46,7 @@ export default function AdminRolesPage() {
           </div>
         </div>
 
-        <div className="flex-1 p-6">
+        <div className="flex-1 p-4 sm:p-6">
           <div className="max-w-5xl mx-auto space-y-6">
 
         <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">

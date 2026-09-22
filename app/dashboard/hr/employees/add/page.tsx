@@ -9,7 +9,7 @@ import { usePositionsQuery } from '@/hooks/usePosition';
 import { UserPlus, ArrowLeft, ChevronDown, Eye, EyeOff } from 'lucide-react';
 import Swal from 'sweetalert2';
 import Link from 'next/link';
-import { Employee } from '@/lib/api/types';
+import { getErrorMessage } from '@/lib/api/utils';
 import { DatePicker } from '@/components/DateAndTime';
 
 export default function AddEmployeePage() {
@@ -26,8 +26,6 @@ export default function AddEmployeePage() {
 
   const { data: departments = [] } = useDepartmentsQuery();
   const { data: positions = [] } = usePositionsQuery();
-
-  console.log('RENDER AddEmployeePage', { departments, positions });
 
   const [formData, setFormData] = useState({
     employeeId: '',
@@ -82,7 +80,7 @@ export default function AddEmployeePage() {
         } else {
           setEmployeeIdError('');
         }
-      } catch (error) {
+      } catch {
         setEmployeeIdError(
           'ไม่สามารถตรวจสอบรหัสพนักงานได้ กรุณาลองใหม่อีกครั้ง',
         );
@@ -93,7 +91,7 @@ export default function AddEmployeePage() {
   }, [formData.employeeId, employees]);
 
   const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>,
   ) => {
     const { name, value } = e.target;
 
@@ -232,7 +230,7 @@ export default function AddEmployeePage() {
     };
 
     setIsLoading(true);
-    createEmployee(empData as any, {
+    createEmployee(empData, {
       onSuccess: () => {
         setIsLoading(false);
         Swal.fire({
@@ -245,18 +243,9 @@ export default function AddEmployeePage() {
           router.push('/dashboard/hr/employees');
         });
       },
-      onError: (err: any) => {
+      onError: (err: unknown) => {
         setIsLoading(false);
-        let errorMsg = err.response?.data?.message;
-        if (Array.isArray(errorMsg)) {
-          errorMsg = errorMsg[0]; // take the first validation error
-        } else if (!errorMsg) {
-          errorMsg =
-            err.response?.data?.error ||
-            err.message ||
-            'ไม่สามารถเพิ่มพนักงานได้';
-        }
-        Swal.fire('เกิดข้อผิดพลาด', errorMsg, 'error');
+        Swal.fire('เกิดข้อผิดพลาด', getErrorMessage(err, 'ไม่สามารถเพิ่มพนักงานได้'), 'error');
       },
     });
   };
@@ -266,18 +255,18 @@ export default function AddEmployeePage() {
   return (
     <div className="min-h-[calc(100vh-4rem)] bg-[#E2E4E9] font-sans text-slate-800 flex flex-col">
       {/* Top Banner */}
-      <div className="bg-white flex items-center gap-4 px-8 py-5 shadow-sm z-10 shrink-0">
+      <div className="bg-white flex items-center gap-3 sm:gap-4 px-4 sm:px-8 py-3 sm:py-5 shadow-sm z-10 shrink-0">
         <Link
           href="/dashboard/hr/employees"
           className="text-slate-400 hover:text-blue-500 transition-colors shrink-0"
         >
           <ArrowLeft className="w-6 h-6" strokeWidth={2} />
         </Link>
-        <div className="w-11 h-11 bg-blue-100 text-blue-600 rounded-xl flex items-center justify-center shrink-0">
+        <div className="w-9 h-9 sm:w-11 sm:h-11 bg-blue-100 text-blue-600 rounded-xl flex items-center justify-center shrink-0">
           <UserPlus className="w-6 h-6" strokeWidth={2} />
         </div>
         <div>
-          <h1 className="text-xl font-bold text-black tracking-tight">
+          <h1 className="text-base sm:text-xl font-bold text-black tracking-tight">
             เพิ่มพนักงานใหม่
           </h1>
           <p className="text-xs text-gray-500 mt-1 font-medium">
@@ -286,7 +275,7 @@ export default function AddEmployeePage() {
         </div>
       </div>
 
-      <div className="flex-1 p-6 md:p-8">
+      <div className="flex-1 p-4 sm:p-6 md:p-8">
         <div className="max-w-[1000px] mx-auto">
 
       {/* Main Content Area */}
@@ -540,7 +529,7 @@ export default function AddEmployeePage() {
                       name: 'dateOfBirth',
                       value: date ? date.toLocaleDateString('en-CA') : '',
                     },
-                  } as any);
+                  } as React.ChangeEvent<HTMLInputElement>);
                 }}
                 placeholderText="วว/ดด/ปปปป"
                 minYear={1990}
@@ -563,7 +552,7 @@ export default function AddEmployeePage() {
                   <option value="" disabled>
                     -- กรุณาเลือกแผนก --
                   </option>
-                  {departments.map((dept: any) => (
+                  {departments.map((dept) => (
                     <option key={dept.id} value={dept.id}>
                       {dept.name}
                     </option>
@@ -591,7 +580,7 @@ export default function AddEmployeePage() {
                   <option value="" disabled>
                     -- กรุณาเลือกตำแหน่ง --
                   </option>
-                  {availablePositions.map((pos: any) => (
+                  {availablePositions.map((pos) => (
                     <option key={pos.id} value={pos.id}>
                       {pos.title || pos.name}
                     </option>
@@ -664,7 +653,7 @@ export default function AddEmployeePage() {
                 name="idCardAddress"
                 placeholder="กรอกที่อยู่ตามบัตรประชาชน"
                 value={formData.idCardAddress}
-                onChange={handleChange as any}
+                onChange={handleChange}
                 rows={3}
                 className="w-full bg-[#f8fafc] border border-[#e2e8f0] px-5 py-3.5 rounded-xl text-[15px] text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-100 transition-all placeholder:text-[#94a3b8] resize-none"
               ></textarea>
@@ -678,7 +667,7 @@ export default function AddEmployeePage() {
                 name="currentAddress"
                 placeholder="กรอกที่อยู่ปัจจุบัน"
                 value={formData.currentAddress}
-                onChange={handleChange as any}
+                onChange={handleChange}
                 rows={3}
                 className="w-full bg-[#f8fafc] border border-[#e2e8f0] px-5 py-3.5 rounded-xl text-[15px] text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-100 transition-all placeholder:text-[#94a3b8] resize-none"
               ></textarea>
@@ -698,7 +687,7 @@ export default function AddEmployeePage() {
                       name: 'joinDate',
                       value: date ? date.toLocaleDateString('en-CA') : '',
                     },
-                  } as any);
+                  } as React.ChangeEvent<HTMLInputElement>);
                 }}
                 placeholderText="วว/ดด/ปปปป"
               />

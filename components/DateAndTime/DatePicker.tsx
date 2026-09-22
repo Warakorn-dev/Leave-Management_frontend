@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/ban-ts-comment, @typescript-eslint/no-explicit-any -- MUI X Date Pickers' generics don't unify across the static/mobile/desktop variants and the Buddhist-era adapter; ts-nocheck + any are a deliberate escape hatch here, not an oversight. */
 // @ts-nocheck
 'use client';
 

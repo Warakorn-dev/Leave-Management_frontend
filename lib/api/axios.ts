@@ -1,6 +1,15 @@
-import axios from 'axios';
+import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
 import Swal from 'sweetalert2';
 import idleState from '@/lib/idleState';
+
+interface QueueItem {
+  resolve: (token: string | null) => void;
+  reject: (error: unknown) => void;
+}
+
+interface RetryableRequestConfig extends InternalAxiosRequestConfig {
+  _retry?: boolean;
+}
 
 // Create an Axios instance
 const axiosInstance = axios.create({
@@ -30,9 +39,9 @@ axiosInstance.interceptors.request.use(
 );
 
 let isRefreshing = false;
-let failedQueue: any[] = [];
+let failedQueue: QueueItem[] = [];
 
-const processQueue = (error: any, token: string | null = null) => {
+const processQueue = (error: unknown, token: string | null = null) => {
   failedQueue.forEach(prom => {
     if (error) {
       prom.reject(error);
@@ -46,9 +55,12 @@ const processQueue = (error: any, token: string | null = null) => {
 // Response Interceptor: Global error handling
 axiosInstance.interceptors.response.use(
   (response) => response,
-  async (error) => {
-    const originalRequest = error.config;
-    
+  async (error: AxiosError<{ message?: string }>) => {
+    const originalRequest = error.config as RetryableRequestConfig | undefined;
+    if (!originalRequest) {
+      return Promise.reject(error);
+    }
+
     if (error.response) {
       const status = error.response.status;
       const message = error.response.data?.message || 'Something went wrong';
@@ -118,9 +130,11 @@ axiosInstance.interceptors.response.use(
             isRefreshing = true;
 
             try {
-              const res = await axios.post('/api/auth/refresh', {}, {
-                headers: { Authorization: `Bearer ${refreshToken}` },
-              });
+              const res = await axios.post<{ accessToken?: string; refreshToken?: string }>(
+                '/api/auth/refresh',
+                {},
+                { headers: { Authorization: `Bearer ${refreshToken}` } },
+              );
 
               if (res.data?.accessToken) {
                 const newAccessToken = res.data.accessToken;
@@ -136,8 +150,7 @@ axiosInstance.interceptors.response.use(
             } catch {
               processQueue(null, null);
               // Refresh failed → show session-expired popup
-              const timeoutMinutes = Math.round(idleState.timeoutMs / 60000);
-              idleState.showExpiredPopup(timeoutMinutes);
+              idleState.showExpiredPopup();
               return Promise.reject(error);
             } finally {
               isRefreshing = false;
@@ -145,8 +158,7 @@ axiosInstance.interceptors.response.use(
           }
 
           // No refresh token at all → show session-expired popup
-          const timeoutMinutes = Math.round(idleState.timeoutMs / 60000);
-          idleState.showExpiredPopup(timeoutMinutes);
+          idleState.showExpiredPopup();
           return Promise.reject(error);
 
         } else if (status === 403) {
@@ -156,7 +168,7 @@ axiosInstance.interceptors.response.use(
             text: 'คุณไม่มีสิทธิ์ในการดำเนินการนี้',
           });
         } else if (status === 404) {
-          console.warn('API Not Found:', error.config.url);
+          console.warn('API Not Found:', originalRequest.url);
         } else if (status >= 500) {
           Swal.fire({
             icon: 'error',

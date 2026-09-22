@@ -28,7 +28,7 @@ export function AdminSidebar({ onNavigate }: { onNavigate?: () => void }) {
 
   useEffect(() => {
     setUsername(sessionStorage.getItem("username") || "Super Admin");
-    setFullName(sessionStorage.getItem("fullName") || "ผู้ดูแลระบบ");
+    setFullName(sessionStorage.getItem("fullName") || "Admin");
     const storedPic = sessionStorage.getItem("profilePic");
     if (storedPic) setProfilePic(storedPic);
   }, []);
@@ -54,11 +54,12 @@ export function AdminSidebar({ onNavigate }: { onNavigate?: () => void }) {
     <aside
       className={`${isCollapsed ? 'w-[80px]' : 'w-[280px]'} bg-[#0B0F4E] text-white flex flex-col h-screen font-sans shrink-0 border-r border-white/10 sticky top-0 transition-all duration-300 relative z-50`}
     >
-      <div className={`relative flex items-center border-b border-white/10 ${isCollapsed ? 'justify-center px-0 py-4' : 'justify-between px-6 py-4'}`}>
-        {!isCollapsed && <span className="font-bold text-lg tracking-wider text-blue-200">🛡️ ผู้ดูแลระบบ</span>}
+      <div className={`relative flex items-center border-b border-white/10 ${isCollapsed ? 'justify-center px-0 py-4' : 'justify-center px-4 py-4'}`}>
+        {/* eslint-disable-next-line @next/next/no-img-element -- small static logo, next/image adds no benefit here */}
+        {!isCollapsed && <img src="/logo.png" alt="NID PROGRESS TECHNOLOGY" className="w-[110px] h-auto object-contain" />}
         <button
           onClick={() => setIsCollapsed(!isCollapsed)}
-          className={`w-9 h-9 rounded-lg flex items-center justify-center hover:bg-white/10 transition-colors shrink-0 ${isCollapsed ? '' : ''}`}
+          className={`w-9 h-9 rounded-lg flex items-center justify-center hover:bg-white/10 transition-colors shrink-0 ${isCollapsed ? '' : 'absolute right-4'}`}
           title={isCollapsed ? 'เปิดเมนู' : 'ปิดเมนู'}
         >
           {isCollapsed ? <Menu className="w-5 h-5 text-white" /> : <ChevronLeft className="w-5 h-5 text-white" />}
@@ -69,6 +70,7 @@ export function AdminSidebar({ onNavigate }: { onNavigate?: () => void }) {
         <div className="bg-white/5 rounded-xl p-3 flex items-center gap-3 border border-white/10">
           <div className="bg-blue-900 rounded-full w-11 h-11 flex items-center justify-center shrink-0 overflow-hidden">
             {profilePic ? (
+              // eslint-disable-next-line @next/next/no-img-element -- dynamic user-uploaded avatar; next/image needs a configured remote loader
               <img src={profilePic} alt="Profile" className="w-full h-full object-cover" />
             ) : (
               <User className="w-5 h-5 text-blue-200" />

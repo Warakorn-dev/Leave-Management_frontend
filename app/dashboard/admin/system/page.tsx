@@ -6,7 +6,11 @@ import { HardDrive, Server, Clock, Activity } from "lucide-react";
 import api from "@/lib/api/axios";
 
 export default function AdminSystemHealthPage() {
-  const [health, setHealth] = useState<any>(null);
+  const [health, setHealth] = useState<{
+    status?: string;
+    uptime?: number;
+    memory?: { rss?: string; heapTotal?: string; heapUsed?: string };
+  } | null>(null);
   const [loading, setLoading] = useState(true);
 
   const fetchHealth = async () => {
@@ -45,12 +49,12 @@ export default function AdminSystemHealthPage() {
     <RoleGuard allowedRoles={["admin"]}>
       <div className="min-h-[calc(100vh-4rem)] bg-[#E2E4E9] font-sans text-slate-800 flex flex-col">
         {/* Top Banner */}
-        <div className="bg-white flex items-center gap-4 px-8 py-5 shadow-sm z-10 shrink-0">
-          <div className="w-11 h-11 bg-blue-100 text-blue-600 rounded-xl flex items-center justify-center shrink-0">
+        <div className="bg-white flex items-center gap-3 sm:gap-4 px-4 sm:px-8 py-3 sm:py-5 shadow-sm z-10 shrink-0">
+          <div className="w-9 h-9 sm:w-11 sm:h-11 bg-blue-100 text-blue-600 rounded-xl flex items-center justify-center shrink-0">
             <HardDrive className="w-6 h-6" strokeWidth={2} />
           </div>
           <div>
-            <h1 className="text-xl font-bold text-black tracking-tight">
+            <h1 className="text-base sm:text-xl font-bold text-black tracking-tight">
               สถานะระบบ (System Health)
             </h1>
             <p className="text-xs text-gray-500 mt-1 font-medium">
@@ -59,7 +63,7 @@ export default function AdminSystemHealthPage() {
           </div>
         </div>
 
-        <div className="flex-1 p-6">
+        <div className="flex-1 p-4 sm:p-6">
           <div className="max-w-5xl mx-auto space-y-6">
 
         {loading && !health ? (
@@ -90,7 +94,7 @@ export default function AdminSystemHealthPage() {
                 </div>
                 <div>
                   <p className="text-sm text-slate-500 font-medium">ระยะเวลาที่เซิร์ฟเวอร์เปิดทำงานต่อเนื่อง (Uptime)</p>
-                  <p className="text-xl font-bold text-slate-800">{formatUptime(health?.uptime)}</p>
+                  <p className="text-xl font-bold text-slate-800">{formatUptime(health?.uptime || 0)}</p>
                 </div>
               </div>
 
