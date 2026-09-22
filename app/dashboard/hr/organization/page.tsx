@@ -1,27 +1,7 @@
 'use client';
 
 import React, { useState, useMemo } from 'react';
-import {
-  Building2,
-  Briefcase,
-  Plus,
-  Search,
-  Edit,
-  Trash2,
-  X,
-  Users,
-  User,
-  Calculator,
-  Shield,
-  Megaphone,
-  Headset,
-  Monitor,
-  FolderKanban,
-  Crown,
-  Code,
-  PenTool,
-  Star,
-} from 'lucide-react';
+import { Building2, Briefcase, Plus, Search, Edit } from 'lucide-react';
 import {
   useDepartmentsQuery,
   useCreateDepartmentMutation,
@@ -37,121 +17,13 @@ import {
 import { useEmployeesQuery } from '@/hooks/useEmployee';
 import { useRolesQuery } from '@/hooks/useRoles';
 import { Department } from '@/lib/api/types';
-
-// Helper functions for dynamic icons and colors based on name
-const getDepartmentStyle = (name: string) => {
-  const n = name.toLowerCase();
-  if (n.includes('human') || n.includes('hr') || n.includes('personnel'))
-    return {
-      icon: Users,
-      colorClass: 'text-blue-600 dark:text-blue-400',
-      bgClass: 'bg-blue-100 dark:bg-blue-900/30',
-    };
-  if (n.includes('account') || n.includes('finance'))
-    return {
-      icon: Calculator,
-      colorClass: 'text-rose-600 dark:text-rose-400',
-      bgClass: 'bg-rose-100 dark:bg-rose-900/30',
-    };
-  if (n.includes('admin'))
-    return {
-      icon: Shield,
-      colorClass: 'text-slate-600 dark:text-slate-400',
-      bgClass: 'bg-slate-200 dark:bg-slate-800',
-    };
-  if (n.includes('sale') || n.includes('market'))
-    return {
-      icon: Megaphone,
-      colorClass: 'text-amber-600 dark:text-amber-400',
-      bgClass: 'bg-amber-100 dark:bg-amber-900/30',
-    };
-  if (n.includes('support') || n.includes('service'))
-    return {
-      icon: Headset,
-      colorClass: 'text-cyan-600 dark:text-cyan-400',
-      bgClass: 'bg-cyan-100 dark:bg-cyan-900/30',
-    };
-  if (n.includes('it') || n.includes('information') || n.includes('tech'))
-    return {
-      icon: Monitor,
-      colorClass: 'text-violet-600 dark:text-violet-400',
-      bgClass: 'bg-violet-100 dark:bg-violet-900/30',
-    };
-  if (n.includes('project'))
-    return {
-      icon: FolderKanban,
-      colorClass: 'text-emerald-600 dark:text-emerald-400',
-      bgClass: 'bg-emerald-100 dark:bg-emerald-900/30',
-    };
-  return {
-    icon: Building2,
-    colorClass: 'text-indigo-600 dark:text-indigo-400',
-    bgClass: 'bg-indigo-100 dark:bg-indigo-900/30',
-  };
-};
-
-const getPositionStyle = (name: string) => {
-  const n = name.toLowerCase();
-  if (
-    n.includes('ceo') ||
-    n.includes('director') ||
-    n.includes('chief') ||
-    n.includes('leader') ||
-    n.includes('manager') ||
-    n.includes('head')
-  )
-    return {
-      icon: Crown,
-      colorClass: 'text-amber-500 dark:text-amber-400',
-      bgClass: 'bg-amber-100 dark:bg-amber-900/30',
-    };
-  if (n.includes('senior') || n.includes('sr'))
-    return {
-      icon: Star,
-      colorClass: 'text-yellow-600 dark:text-yellow-400',
-      bgClass: 'bg-yellow-100 dark:bg-yellow-900/30',
-    };
-  if (n.includes('dev') || n.includes('program') || n.includes('engineer'))
-    return {
-      icon: Code,
-      colorClass: 'text-blue-600 dark:text-blue-400',
-      bgClass: 'bg-blue-100 dark:bg-blue-900/30',
-    };
-  if (n.includes('design') || n.includes('graphic'))
-    return {
-      icon: PenTool,
-      colorClass: 'text-fuchsia-600 dark:text-fuchsia-400',
-      bgClass: 'bg-fuchsia-100 dark:bg-fuchsia-900/30',
-    };
-  if (n.includes('account') || n.includes('finance'))
-    return {
-      icon: Calculator,
-      colorClass: 'text-rose-600 dark:text-rose-400',
-      bgClass: 'bg-rose-100 dark:bg-rose-900/30',
-    };
-  if (
-    n.includes('support') ||
-    n.includes('service') ||
-    n.includes('operator') ||
-    n.includes('sso')
-  )
-    return {
-      icon: Headset,
-      colorClass: 'text-cyan-600 dark:text-cyan-400',
-      bgClass: 'bg-cyan-100 dark:bg-cyan-900/30',
-    };
-  if (n.includes('hr') || n.includes('human') || n.includes('personnel'))
-    return {
-      icon: Users,
-      colorClass: 'text-violet-600 dark:text-violet-400',
-      bgClass: 'bg-violet-100 dark:bg-violet-900/30',
-    };
-  return {
-    icon: Briefcase,
-    colorClass: 'text-emerald-600 dark:text-emerald-400',
-    bgClass: 'bg-emerald-100 dark:bg-emerald-900/30',
-  };
-};
+import { getDepartmentStyle, getPositionStyle } from '@/lib/orgStyles';
+import { DepartmentEmployeesModal } from '@/components/hr/organization/DepartmentEmployeesModal';
+import { AddDepartmentModal } from '@/components/hr/organization/AddDepartmentModal';
+import { AddPositionModal } from '@/components/hr/organization/AddPositionModal';
+import { EditDepartmentModal } from '@/components/hr/organization/EditDepartmentModal';
+import { EditPositionModal } from '@/components/hr/organization/EditPositionModal';
+import { DeleteConfirmModal } from '@/components/hr/organization/DeleteConfirmModal';
 
 export default function OrganizationManagementPage() {
   const [activeTab, setActiveTab] = useState<'departments' | 'positions'>(
@@ -771,563 +643,66 @@ export default function OrganizationManagementPage() {
 
       {/* Modal / Popup สำหรับแสดงพนักงานในแผนก */}
       {selectedDept && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6">
-          <div
-            className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm transition-opacity"
-            onClick={() => setSelectedDept(null)}
-          ></div>
-
-          <div className="relative bg-white dark:bg-slate-900 w-full max-w-2xl rounded-3xl shadow-2xl border border-slate-100 dark:border-slate-800 flex flex-col max-h-[85vh] animate-in fade-in zoom-in-95 duration-200">
-            {/* Modal Header */}
-            <div className="flex items-center justify-between p-6 border-b border-slate-100 dark:border-slate-800 shrink-0">
-              <div className="flex items-center gap-3">
-                <div className="p-2.5 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 rounded-xl">
-                  <Users className="w-6 h-6" />
-                </div>
-                <div>
-                  <h2 className="text-xl font-bold text-slate-900 dark:text-white">
-                    พนักงานในแผนก {selectedDept.name}
-                  </h2>
-                  <p className="text-sm text-slate-500">
-                    จำนวนทั้งหมด {selectedDeptEmployees.length} คน
-                  </p>
-                </div>
-              </div>
-              <button
-                onClick={() => setSelectedDept(null)}
-                className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:hover:bg-slate-800 dark:hover:text-slate-300 rounded-full transition-colors"
-              >
-                <X className="w-6 h-6" />
-              </button>
-            </div>
-
-            {/* Modal Body */}
-            <div className="p-6 overflow-y-auto flex-1">
-              {selectedDeptEmployees.length === 0 ? (
-                <div className="text-center py-10 flex flex-col items-center justify-center">
-                  <div className="w-16 h-16 bg-slate-50 dark:bg-slate-800 rounded-full flex items-center justify-center mb-4 text-slate-400">
-                    <User className="w-8 h-8" />
-                  </div>
-                  <p className="text-slate-500 font-medium">
-                    ยังไม่มีพนักงานในแผนกนี้
-                  </p>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {selectedDeptEmployees.map((emp) => (
-                    <div
-                      key={emp.id}
-                      className="flex items-center gap-4 p-4 rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/30 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors"
-                    >
-                      <div className="w-12 h-12 rounded-full bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center text-indigo-600 dark:text-indigo-400 font-bold shrink-0">
-                        {emp.firstName?.charAt(0) || ''}
-                        {emp.lastName?.charAt(0) || ''}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <h4 className="text-base font-semibold text-slate-800 dark:text-slate-100 truncate">
-                          {emp.firstName} {emp.lastName}
-                        </h4>
-                        <div className="flex items-center gap-2 mt-1">
-                          {(() => {
-                            const posStyle = getPositionStyle(
-                              emp.positionName || '',
-                            );
-                            const isLeader =
-                              (emp.positionName || '')
-                                .toLowerCase()
-                                .includes('leader') ||
-                              (emp.positionName || '')
-                                .toLowerCase()
-                                .includes('ceo') ||
-                              (emp.positionName || '')
-                                .toLowerCase()
-                                .includes('manager');
-                            return (
-                              <span
-                                className={`text-xs px-2 py-0.5 rounded-md font-medium border ${isLeader ? 'border-amber-200 dark:border-amber-800' : 'border-transparent'} ${posStyle.colorClass} ${posStyle.bgClass} truncate`}
-                              >
-                                {emp.positionName || 'ไม่ระบุตำแหน่ง'}
-                              </span>
-                            );
-                          })()}
-                          <span className="text-xs text-slate-400 truncate ml-1">
-                            {emp.employeeId}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
+        <DepartmentEmployeesModal
+          department={selectedDept}
+          employees={selectedDeptEmployees}
+          onClose={() => setSelectedDept(null)}
+        />
       )}
 
       {/* Modal / Popup สำหรับเพิ่มแผนกใหม่ */}
       {isAddDeptModalOpen && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6">
-          <div
-            className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm transition-opacity"
-            onClick={() => setIsAddDeptModalOpen(false)}
-          ></div>
-
-          <div className="relative bg-white dark:bg-slate-900 w-full max-w-lg rounded-3xl shadow-2xl border border-slate-100 dark:border-slate-800 flex flex-col animate-in fade-in zoom-in-95 duration-200">
-            <div className="flex items-center justify-between p-6 border-b border-slate-100 dark:border-slate-800">
-              <div className="flex items-center gap-3">
-                <div className="p-2.5 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 rounded-xl">
-                  <Building2 className="w-6 h-6" />
-                </div>
-                <div>
-                  <h2 className="text-xl font-bold text-slate-900 dark:text-white">
-                    เพิ่มแผนกใหม่
-                  </h2>
-                  <p className="text-sm text-slate-500">
-                    สร้างแผนกใหม่เพื่อจัดกลุ่มตำแหน่งงาน
-                  </p>
-                </div>
-              </div>
-              <button
-                onClick={() => setIsAddDeptModalOpen(false)}
-                className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:hover:bg-slate-800 dark:hover:text-slate-300 rounded-full transition-colors"
-              >
-                <X className="w-6 h-6" />
-              </button>
-            </div>
-
-            <div className="p-6 space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                  รหัสแผนก (Code){' '}
-                  <span className="text-emerald-500 text-xs">
-                    (สร้างอัตโนมัติ)
-                  </span>
-                </label>
-                <input
-                  type="text"
-                  maxLength={5}
-                  value={newDept.code}
-                  readOnly
-                  className="w-full px-4 py-2.5 bg-slate-100 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl text-sm outline-none transition-all dark:text-white text-slate-500 cursor-not-allowed font-mono tracking-wider"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                  ชื่อแผนก (Department Name){' '}
-                  <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  value={newDept.name}
-                  onChange={(e) =>
-                    setNewDept({ ...newDept, name: e.target.value })
-                  }
-                  className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all dark:text-white"
-                  placeholder="เช่น Information Technology"
-                />
-              </div>
-            </div>
-
-            <div className="p-6 border-t border-slate-100 dark:border-slate-800 flex justify-end gap-3 bg-slate-50/50 dark:bg-slate-800/30 rounded-b-3xl">
-              <button
-                onClick={() => setIsAddDeptModalOpen(false)}
-                className="px-5 py-2.5 text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-colors"
-              >
-                ยกเลิก
-              </button>
-              <button
-                onClick={handleCreateDepartment}
-                disabled={!newDept.name}
-                className="px-5 py-2.5 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-400 rounded-xl shadow-sm shadow-indigo-500/30 transition-all"
-              >
-                บันทึกแผนกใหม่
-              </button>
-            </div>
-          </div>
-        </div>
+        <AddDepartmentModal
+          form={newDept}
+          setForm={setNewDept}
+          onClose={() => setIsAddDeptModalOpen(false)}
+          onSubmit={handleCreateDepartment}
+        />
       )}
 
       {/* Modal / Popup สำหรับเพิ่มตำแหน่งใหม่ */}
       {isAddPosModalOpen && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6">
-          <div
-            className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm transition-opacity"
-            onClick={() => setIsAddPosModalOpen(false)}
-          ></div>
-
-          <div className="relative bg-white dark:bg-slate-900 w-full max-w-lg rounded-3xl shadow-2xl border border-slate-100 dark:border-slate-800 flex flex-col animate-in fade-in zoom-in-95 duration-200">
-            <div className="flex items-center justify-between p-6 border-b border-slate-100 dark:border-slate-800">
-              <div className="flex items-center gap-3">
-                <div className="p-2.5 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 rounded-xl">
-                  <Briefcase className="w-6 h-6" />
-                </div>
-                <div>
-                  <h2 className="text-xl font-bold text-slate-900 dark:text-white">
-                    เพิ่มตำแหน่งใหม่
-                  </h2>
-                  <p className="text-sm text-slate-500">
-                    สร้างตำแหน่งงานใหม่พร้อมระบุแผนกต้นสังกัด
-                  </p>
-                </div>
-              </div>
-              <button
-                onClick={() => setIsAddPosModalOpen(false)}
-                className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:hover:bg-slate-800 dark:hover:text-slate-300 rounded-full transition-colors"
-              >
-                <X className="w-6 h-6" />
-              </button>
-            </div>
-
-            <div className="p-6 space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                  ชื่อตำแหน่ง (Position Name){' '}
-                  <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  value={newPos.name}
-                  onChange={(e) =>
-                    setNewPos({ ...newPos, name: e.target.value })
-                  }
-                  className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all dark:text-white"
-                  placeholder="เช่น Software Engineer"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                  แผนกต้นสังกัด (Department){' '}
-                  <span className="text-red-500">*</span>
-                </label>
-                <select
-                  value={newPos.departmentId}
-                  onChange={(e) =>
-                    setNewPos({ ...newPos, departmentId: e.target.value })
-                  }
-                  className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all cursor-pointer dark:text-white"
-                >
-                  <option value="" disabled>
-                    -- เลือกแผนกต้นสังกัด --
-                  </option>
-                  {departments.map((d) => (
-                    <option key={d.id} value={d.id}>
-                      {d.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                  สิทธิ์การใช้งาน (Role)
-                </label>
-                {newPos.departmentId && checkHasManager(newPos.departmentId) ? (
-                  <div className="w-full px-4 py-2.5 bg-slate-100 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-500 dark:text-slate-400">
-                    แผนกนี้มี Manager แล้ว (สิทธิ์ User จะถูกใช้เป็นค่าเริ่มต้น)
-                  </div>
-                ) : (
-                  <select
-                    value={newPos.roleId}
-                    onChange={(e) =>
-                      setNewPos({ ...newPos, roleId: e.target.value })
-                    }
-                    className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all cursor-pointer dark:text-white"
-                  >
-                    <option value="">
-                      -- ไม่ระบุ (ใช้ค่าเริ่มต้น: User) --
-                    </option>
-                    {roles
-                      .filter((r) => r.name.toLowerCase() === 'manager')
-                      .map((r) => (
-                        <option key={r.id} value={r.id}>
-                          {r.name}
-                        </option>
-                      ))}
-                  </select>
-                )}
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                  รหัสตำแหน่ง (Code){' '}
-                  <span className="text-emerald-500 text-xs">
-                    (สร้างอัตโนมัติ)
-                  </span>
-                </label>
-                <input
-                  type="text"
-                  maxLength={5}
-                  value={newPos.code}
-                  readOnly
-                  className="w-full px-4 py-2.5 bg-slate-100 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl text-sm outline-none transition-all dark:text-white text-slate-500 cursor-not-allowed font-mono tracking-wider"
-                />
-                <p className="text-xs text-slate-400 mt-1">
-                  รหัสจะถูกสร้างจากรหัสแผนก 2 หลักหน้า + ลำดับตำแหน่ง 3 หลักหลัง
-                </p>
-              </div>
-            </div>
-
-            <div className="p-6 border-t border-slate-100 dark:border-slate-800 flex justify-end gap-3 bg-slate-50/50 dark:bg-slate-800/30 rounded-b-3xl">
-              <button
-                onClick={() => setIsAddPosModalOpen(false)}
-                className="px-5 py-2.5 text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-colors"
-              >
-                ยกเลิก
-              </button>
-              <button
-                onClick={handleCreatePosition}
-                disabled={!newPos.name || !newPos.departmentId}
-                className="px-5 py-2.5 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-400 rounded-xl shadow-sm shadow-indigo-500/30 transition-all"
-              >
-                บันทึกตำแหน่งใหม่
-              </button>
-            </div>
-          </div>
-        </div>
+        <AddPositionModal
+          form={newPos}
+          setForm={setNewPos}
+          departments={departments}
+          roles={roles}
+          hasManager={checkHasManager(newPos.departmentId)}
+          onClose={() => setIsAddPosModalOpen(false)}
+          onSubmit={handleCreatePosition}
+        />
       )}
 
       {/* Modal / Popup สำหรับแก้ไขแผนก */}
       {isEditDeptModalOpen && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6">
-          <div
-            className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm transition-opacity"
-            onClick={() => setIsEditDeptModalOpen(false)}
-          />
-
-          <div className="relative w-full max-w-md bg-white dark:bg-slate-900 rounded-3xl shadow-xl shadow-slate-200/50 dark:shadow-black/50 overflow-hidden transform transition-all animate-in zoom-in-95 duration-200">
-            <div className="flex items-center justify-between p-6 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/30">
-              <h3 className="text-xl font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
-                <Edit className="w-5 h-5 text-indigo-600" />
-                แก้ไขแผนก
-              </h3>
-              <button
-                onClick={() => setIsEditDeptModalOpen(false)}
-                className="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-colors"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <div className="p-6 space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                  รหัสแผนก (Code)
-                </label>
-                <input
-                  type="text"
-                  maxLength={5}
-                  value={editDept.code}
-                  onChange={(e) =>
-                    setEditDept({
-                      ...editDept,
-                      code: e.target.value.replace(/\D/g, ''),
-                    })
-                  }
-                  className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all dark:text-white"
-                  placeholder="เช่น 12345 (เว้นว่างไว้ระบบจะสุ่มให้)"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                  ชื่อแผนก (Department Name){' '}
-                  <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  value={editDept.name}
-                  onChange={(e) =>
-                    setEditDept({ ...editDept, name: e.target.value })
-                  }
-                  className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all dark:text-white"
-                />
-              </div>
-            </div>
-
-            <div className="p-6 border-t border-slate-100 dark:border-slate-800 flex justify-end gap-3 bg-slate-50/50 dark:bg-slate-800/30 rounded-b-3xl">
-              <button
-                onClick={() => setIsEditDeptModalOpen(false)}
-                className="px-5 py-2.5 text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-colors"
-              >
-                ยกเลิก
-              </button>
-              <button
-                onClick={handleUpdateDepartment}
-                disabled={!editDept.name}
-                className="px-5 py-2.5 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-400 rounded-xl shadow-sm shadow-indigo-500/30 transition-all"
-              >
-                บันทึกการแก้ไข
-              </button>
-            </div>
-          </div>
-        </div>
+        <EditDepartmentModal
+          form={editDept}
+          setForm={setEditDept}
+          onClose={() => setIsEditDeptModalOpen(false)}
+          onSubmit={handleUpdateDepartment}
+        />
       )}
 
       {/* Modal / Popup สำหรับแก้ไขตำแหน่ง */}
       {isEditPosModalOpen && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6">
-          <div
-            className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm transition-opacity"
-            onClick={() => setIsEditPosModalOpen(false)}
-          />
-
-          <div className="relative w-full max-w-md bg-white dark:bg-slate-900 rounded-3xl shadow-xl shadow-slate-200/50 dark:shadow-black/50 overflow-hidden transform transition-all animate-in zoom-in-95 duration-200">
-            <div className="flex items-center justify-between p-6 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/30">
-              <h3 className="text-xl font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
-                <Edit className="w-5 h-5 text-indigo-600" />
-                แก้ไขตำแหน่ง
-              </h3>
-              <button
-                onClick={() => setIsEditPosModalOpen(false)}
-                className="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-colors"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <div className="p-6 space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                  รหัสตำแหน่ง (Code)
-                </label>
-                <input
-                  type="text"
-                  maxLength={5}
-                  value={editPos.code}
-                  onChange={(e) =>
-                    setEditPos({
-                      ...editPos,
-                      code: e.target.value.replace(/\D/g, ''),
-                    })
-                  }
-                  className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all dark:text-white"
-                  placeholder="เช่น 12345 (เว้นว่างไว้ระบบจะสุ่มให้)"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                  ชื่อตำแหน่ง (Position Title){' '}
-                  <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  value={editPos.name}
-                  onChange={(e) =>
-                    setEditPos({ ...editPos, name: e.target.value })
-                  }
-                  className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all dark:text-white"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                  แผนกต้นสังกัด <span className="text-red-500">*</span>
-                </label>
-                <select
-                  value={editPos.departmentId}
-                  onChange={(e) =>
-                    setEditPos({ ...editPos, departmentId: e.target.value })
-                  }
-                  className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all cursor-pointer dark:text-white"
-                >
-                  <option value="" disabled>
-                    -- เลือกแผนกต้นสังกัด --
-                  </option>
-                  {departments.map((d) => (
-                    <option key={d.id} value={d.id}>
-                      {d.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                  สิทธิ์การใช้งาน (Role)
-                </label>
-                {editPos.departmentId &&
-                checkHasManager(editPos.departmentId, editPos.id) ? (
-                  <div className="w-full px-4 py-2.5 bg-slate-100 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-500 dark:text-slate-400">
-                    แผนกนี้มี Manager แล้ว (สิทธิ์ User จะถูกใช้เป็นค่าเริ่มต้น)
-                  </div>
-                ) : (
-                  <select
-                    value={editPos.roleId}
-                    onChange={(e) =>
-                      setEditPos({ ...editPos, roleId: e.target.value })
-                    }
-                    className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all cursor-pointer dark:text-white"
-                  >
-                    <option value="">
-                      -- ไม่ระบุ (ใช้ค่าเริ่มต้น: User) --
-                    </option>
-                    {roles
-                      .filter((r) => r.name.toLowerCase() === 'manager')
-                      .map((r) => (
-                        <option key={r.id} value={r.id}>
-                          {r.name}
-                        </option>
-                      ))}
-                  </select>
-                )}
-              </div>
-            </div>
-
-            <div className="p-6 border-t border-slate-100 dark:border-slate-800 flex justify-end gap-3 bg-slate-50/50 dark:bg-slate-800/30 rounded-b-3xl">
-              <button
-                onClick={() => setIsEditPosModalOpen(false)}
-                className="px-5 py-2.5 text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-colors"
-              >
-                ยกเลิก
-              </button>
-              <button
-                onClick={handleUpdatePosition}
-                disabled={!editPos.name || !editPos.departmentId}
-                className="px-5 py-2.5 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-400 rounded-xl shadow-sm shadow-indigo-500/30 transition-all"
-              >
-                บันทึกการแก้ไข
-              </button>
-            </div>
-          </div>
-        </div>
+        <EditPositionModal
+          form={editPos}
+          setForm={setEditPos}
+          departments={departments}
+          roles={roles}
+          hasManager={checkHasManager(editPos.departmentId, editPos.id)}
+          onClose={() => setIsEditPosModalOpen(false)}
+          onSubmit={handleUpdatePosition}
+        />
       )}
 
       {/* Delete Confirmation Modal */}
       {isDeleteConfirmModalOpen && itemToDelete && (
-        <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 sm:p-6">
-          <div
-            className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity"
-            onClick={() => setIsDeleteConfirmModalOpen(false)}
-          />
-          <div className="relative w-full max-w-sm bg-white dark:bg-slate-900 rounded-3xl shadow-xl overflow-hidden transform transition-all animate-in zoom-in-95 duration-200">
-            <div className="p-6 text-center">
-              <div className="w-16 h-16 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Trash2 className="w-8 h-8 text-red-600 dark:text-red-400" />
-              </div>
-              <h3 className="text-xl font-bold text-slate-800 dark:text-slate-100 mb-2">
-                ยืนยันการลบ?
-              </h3>
-              <p className="text-slate-500 dark:text-slate-400 text-sm">
-                คุณแน่ใจหรือไม่ว่าต้องการลบ{' '}
-                <span className="font-semibold text-slate-700 dark:text-slate-300">
-                  {itemToDelete.name}
-                </span>{' '}
-                ?
-                <br />
-                การกระทำนี้ไม่สามารถย้อนกลับได้
-              </p>
-            </div>
-            <div className="p-4 border-t border-slate-100 dark:border-slate-800 flex gap-3 bg-slate-50/50 dark:bg-slate-800/30 rounded-b-3xl">
-              <button
-                onClick={() => setIsDeleteConfirmModalOpen(false)}
-                className="flex-1 px-4 py-2.5 text-sm font-medium text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 rounded-xl transition-colors"
-              >
-                ยกเลิก
-              </button>
-              <button
-                onClick={handleDelete}
-                className="flex-1 px-4 py-2.5 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-xl shadow-sm shadow-red-500/30 transition-all"
-              >
-                ยืนยันการลบ
-              </button>
-            </div>
-          </div>
-        </div>
+        <DeleteConfirmModal
+          itemName={itemToDelete.name}
+          onClose={() => setIsDeleteConfirmModalOpen(false)}
+          onConfirm={handleDelete}
+        />
       )}
         </div>
       </div>

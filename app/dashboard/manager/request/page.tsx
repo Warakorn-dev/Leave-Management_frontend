@@ -578,11 +578,7 @@ export default function ManagerRequestPage() {
             <h2 className="text-2xl font-bold text-black mb-4">
               ยืนยันการส่งแบบฟอร์มยื่นคำขอลา
             </h2>
-            <p className="text-gray-500 text-sm mb-10 leading-relaxed">
-              คำลาของคุณจะถูกส่งให้ CEO พิจารณา
-              <br />
-              สามารถเช็คสถานะได้จากหน้าเช็คสถานะของคุณ
-            </p>
+
             <div className="flex items-center justify-center gap-4">
               <button
                 onClick={() => setShowConfirmModal(false)}

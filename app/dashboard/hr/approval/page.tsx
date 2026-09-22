@@ -683,9 +683,7 @@ export default function HrApprovePage() {
               <h3 className="text-lg font-bold text-center text-black mb-2">
                 ยืนยันการอนุมัติ
               </h3>
-              <p className="text-sm text-gray-500 text-center mb-6">
-                คุณแน่ใจหรือไม่ที่จะอนุมัติคำขอลาขั้นต้นนี้?
-              </p>
+
               <div className="flex gap-3">
                 <button
                   onClick={() => setShowConfirmModal(false)}

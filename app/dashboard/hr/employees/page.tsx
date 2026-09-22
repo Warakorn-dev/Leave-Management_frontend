@@ -12,7 +12,6 @@ import {
   ChevronDown,
   SquarePen,
   Trash2,
-  Edit,
   Wallet,
   Power,
   ChevronLeft,
@@ -20,10 +19,10 @@ import {
 } from 'lucide-react';
 import Swal from 'sweetalert2';
 import { Employee } from '@/lib/api/types';
-import { Dialog, DialogContent } from '@/components/ui/dialog';
 import Link from 'next/link';
-import { DatePicker } from '@/components/DateAndTime';
 import { hrApi } from '@/lib/api';
+import { EditEmployeeModal } from '@/components/hr/employees/EditEmployeeModal';
+import { LeaveBalanceModal } from '@/components/hr/employees/LeaveBalanceModal';
 
 export default function EmployeeManagementPage() {
   const { user } = useAuth();
@@ -164,6 +163,52 @@ export default function EmployeeManagementPage() {
       }
     } catch {
       Swal.fire('ข้อผิดพลาด', 'ไม่สามารถปรับปรุงยอดวันลาได้', 'error');
+    }
+  };
+
+  const handleInitializeBalances = async () => {
+    try {
+      await hrApi.initializeLeaveBalances(selectedEmployeeBalances!.id);
+      Swal.fire({
+        icon: 'success',
+        title: 'สร้างข้อมูลสำเร็จ',
+        text: 'โควตาวันลาถูกสร้าง/ซิงค์เรียบร้อยแล้ว',
+        timer: 1500,
+        showConfirmButton: false,
+      });
+      handleOpenBalanceModal(selectedEmployeeBalances!);
+    } catch {
+      Swal.fire('ข้อผิดพลาด', 'ไม่สามารถสร้างข้อมูลวันลาได้', 'error');
+    }
+  };
+
+  const handleResetBalanceUsage = async () => {
+    const result = await Swal.fire({
+      title: 'ยืนยันการรีเซ็ต?',
+      text: 'คุณต้องการรีเซ็ตประวัติการใช้โควตาทั้งหมดกลับเป็น 0 สำหรับพนักงานคนนี้หรือไม่? (เริ่มต้นใหม่)',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#ef4444',
+      cancelButtonColor: '#94a3b8',
+      confirmButtonText: 'ใช่, รีเซ็ตเลย',
+      cancelButtonText: 'ยกเลิก',
+      reverseButtons: true,
+    });
+
+    if (result.isConfirmed) {
+      try {
+        await hrApi.resetLeaveBalances(selectedEmployeeBalances!.id);
+        Swal.fire({
+          icon: 'success',
+          title: 'สำเร็จ',
+          text: 'รีเซ็ตโควตาเรียบร้อยแล้ว',
+          timer: 1500,
+          showConfirmButton: false,
+        });
+        handleOpenBalanceModal(selectedEmployeeBalances!);
+      } catch {
+        Swal.fire('ข้อผิดพลาด', 'ไม่สามารถทำรายการได้', 'error');
+      }
     }
   };
 
@@ -353,8 +398,6 @@ export default function EmployeeManagementPage() {
       hireDate: editingEmployee.joinDate,
       gender: editingEmployee.gender,
     };
-
-    console.log('Sending empData:', empData);
 
     updateEmployee(
       { id: editingEmployee.id, data: empData },
@@ -650,610 +693,34 @@ export default function EmployeeManagementPage() {
       </div>
 
       {/* Edit Employee Modal */}
-      <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
-        <DialogContent className="sm:max-w-[800px] p-0 overflow-y-auto max-h-[90vh] rounded-[24px]">
-          {/* Header */}
-          <div className="bg-[#091136] px-8 py-6 flex items-center gap-4 text-white">
-            <Edit className="w-8 h-8" strokeWidth={1.5} />
-            <h2 className="text-[26px] font-medium tracking-wide">
-              แก้ไขข้อมูลพนักงาน
-            </h2>
-          </div>
-
-          {/* Form Body */}
-          <div className="p-8 pb-10">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-8">
-              <div className="space-y-3">
-                <label className="block text-[#475569] font-medium text-[17px]">
-                  ชื่อ
-                </label>
-                <input
-                  type="text"
-                  placeholder="ชื่อ"
-                  value={editingEmployee.firstName}
-                  onChange={(e) =>
-                    setEditingEmployee({
-                      ...editingEmployee,
-                      firstName: e.target.value,
-                    })
-                  }
-                  className="w-full bg-[#f8fafc] border border-[#e2e8f0] px-5 py-3.5 rounded-xl text-[15px] focus:outline-hidden focus:ring-2 focus:ring-blue-100 transition-all text-slate-800"
-                />
-              </div>
-
-              <div className="space-y-3">
-                <label className="block text-[#475569] font-medium text-[17px]">
-                  นามสกุล
-                </label>
-                <input
-                  type="text"
-                  placeholder="นามสกุล"
-                  value={editingEmployee.lastName}
-                  onChange={(e) =>
-                    setEditingEmployee({
-                      ...editingEmployee,
-                      lastName: e.target.value,
-                    })
-                  }
-                  className="w-full bg-[#f8fafc] border border-[#e2e8f0] px-5 py-3.5 rounded-xl text-[15px] focus:outline-hidden focus:ring-2 focus:ring-blue-100 transition-all text-slate-800"
-                />
-              </div>
-
-              <div className="space-y-3">
-                <label className="block text-[#475569] font-medium text-[17px]">
-                  ชื่อภาษาอังกฤษ (First Name)
-                </label>
-                <input
-                  type="text"
-                  placeholder="First Name"
-                  value={editingEmployee.firstNameEN}
-                  onChange={(e) =>
-                    setEditingEmployee({
-                      ...editingEmployee,
-                      firstNameEN: e.target.value,
-                    })
-                  }
-                  className="w-full bg-[#f8fafc] border border-[#e2e8f0] px-5 py-3.5 rounded-xl text-[15px] focus:outline-hidden focus:ring-2 focus:ring-blue-100 transition-all text-slate-800"
-                />
-              </div>
-
-              <div className="space-y-3">
-                <label className="block text-[#475569] font-medium text-[17px]">
-                  นามสกุลภาษาอังกฤษ (Last Name)
-                </label>
-                <input
-                  type="text"
-                  placeholder="Last Name"
-                  value={editingEmployee.lastNameEN}
-                  onChange={(e) =>
-                    setEditingEmployee({
-                      ...editingEmployee,
-                      lastNameEN: e.target.value,
-                    })
-                  }
-                  className="w-full bg-[#f8fafc] border border-[#e2e8f0] px-5 py-3.5 rounded-xl text-[15px] focus:outline-hidden focus:ring-2 focus:ring-blue-100 transition-all text-slate-800"
-                />
-              </div>
-
-              <div className="space-y-3">
-                <label className="block text-[#475569] font-medium text-[17px]">
-                  รหัสพนักงาน
-                </label>
-                <input
-                  type="text"
-                  placeholder="เช่น EMP-002"
-                  value={editingEmployee.employeeId}
-                  readOnly
-                  className="w-full bg-slate-100 border border-[#e2e8f0] px-5 py-3.5 rounded-xl text-[15px] text-slate-500 cursor-not-allowed transition-all"
-                />
-              </div>
-
-              <div className="space-y-3">
-                <label className="block text-[#475569] font-medium text-[17px]">
-                  เลขบัตรประชาชน (ID Card Number)
-                </label>
-                <input
-                  type="text"
-                  placeholder="เลข 13 หลัก"
-                  value={editingEmployee.idCardNumber}
-                  onChange={(e) => {
-                    const digitsOnly = e.target.value.replace(/\D/g, '');
-                    if (digitsOnly.length <= 13) {
-                      setEditingEmployee({
-                        ...editingEmployee,
-                        idCardNumber: digitsOnly,
-                      });
-                    }
-                  }}
-                  maxLength={13}
-                  className="w-full bg-[#f8fafc] border border-[#e2e8f0] px-5 py-3.5 rounded-xl text-[15px] focus:outline-hidden focus:ring-2 focus:ring-blue-100 transition-all text-slate-800"
-                />
-              </div>
-
-              <div className="space-y-3">
-                <label className="block text-[#475569] font-medium text-[17px]">
-                  วันเกิด (Date of Birth)
-                </label>
-                <DatePicker
-                  selected={
-                    editingEmployee.dateOfBirth
-                      ? new Date(editingEmployee.dateOfBirth)
-                      : null
-                  }
-                  onChange={(date: Date | null) => {
-                    setEditingEmployee({
-                      ...editingEmployee,
-                      dateOfBirth: date ? date.toLocaleDateString('en-CA') : '',
-                    });
-                  }}
-                  placeholderText="เลือกวันเกิด"
-                />
-              </div>
-
-              <div className="space-y-3">
-                <label className="block text-[#475569] font-medium text-[17px]">
-                  แผนก
-                </label>
-                <div className="relative">
-                  <select
-                    value={editingEmployee.departmentId}
-                    onChange={(e) => {
-                      const selectedDept = departmentsData.find(
-                        (d) => String(d.id) === e.target.value,
-                      );
-                      setEditingEmployee({
-                        ...editingEmployee,
-                        departmentId: e.target.value,
-                        departmentName: selectedDept ? selectedDept.name : '',
-                        positionId: '',
-                        positionName: '',
-                      });
-                    }}
-                    className="w-full bg-[#f8fafc] border border-[#e2e8f0] px-5 py-3.5 rounded-xl text-[15px] appearance-none focus:outline-hidden focus:ring-2 focus:ring-blue-100 transition-all text-slate-800 cursor-pointer"
-                  >
-                    <option value="" disabled>
-                      -- กรุณาเลือกแผนก --
-                    </option>
-                    {departmentsData.map((dept) => (
-                      <option key={dept.id} value={dept.id}>
-                        {dept.name}
-                      </option>
-                    ))}
-                  </select>
-                  <ChevronDown
-                    className="absolute right-5 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-700 pointer-events-none"
-                    strokeWidth={2.5}
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-3">
-                <label className="block text-[#475569] font-medium text-[17px]">
-                  เพศ
-                </label>
-                <div className="relative">
-                  <select
-                    value={editingEmployee.gender}
-                    onChange={(e) =>
-                      setEditingEmployee({
-                        ...editingEmployee,
-                        gender: e.target.value,
-                      })
-                    }
-                    className="w-full bg-[#f8fafc] border border-[#e2e8f0] px-5 py-3.5 rounded-xl text-[15px] appearance-none focus:outline-hidden focus:ring-2 focus:ring-blue-100 transition-all text-slate-800 cursor-pointer"
-                  >
-                    <option value="Unspecified">ไม่ระบุ</option>
-                    <option value="Male">ชาย</option>
-                    <option value="Female">หญิง</option>
-                  </select>
-                  <ChevronDown
-                    className="absolute right-5 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-700 pointer-events-none"
-                    strokeWidth={2.5}
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-3">
-                <label className="block text-[#475569] font-medium text-[17px]">
-                  ตำแหน่ง
-                </label>
-                <div className="relative">
-                  <select
-                    value={editingEmployee.positionId}
-                    onChange={(e) => {
-                      const selectedPos = positionsData.find(
-                        (p) => String(p.id) === e.target.value,
-                      );
-                      const posName = selectedPos
-                        ? selectedPos.title || selectedPos.name || ''
-                        : '';
-                      const isLeaderOrManager =
-                        posName.toLowerCase().includes('leader') ||
-                        posName.toLowerCase().includes('manager');
-
-                      const deptName =
-                        selectedPos?.department?.name ||
-                        editingEmployee.departmentName ||
-                        '';
-                      const isHRDept =
-                        deptName.toLowerCase().includes('hr') ||
-                        deptName.toLowerCase().includes('human resource');
-
-                      let roleName = 'Employee';
-                      if (isHRDept) {
-                        roleName = 'HR';
-                      } else if (editingEmployee.roleName === 'CEO') {
-                        roleName = 'CEO';
-                      } else if (isLeaderOrManager) {
-                        roleName = 'Manager';
-                      }
-
-                      setEditingEmployee({
-                        ...editingEmployee,
-                        positionId: e.target.value,
-                        positionName: posName,
-                        roleName: roleName,
-                        ...(selectedPos?.department &&
-                        !editingEmployee.departmentId
-                          ? {
-                              departmentId: String(selectedPos.department.id),
-                              departmentName: selectedPos.department.name || '',
-                            }
-                          : {}),
-                      });
-                    }}
-                    className="w-full bg-[#f8fafc] border border-[#e2e8f0] px-5 py-3.5 rounded-xl text-[15px] appearance-none focus:outline-hidden focus:ring-2 focus:ring-blue-100 transition-all text-slate-800 cursor-pointer"
-                  >
-                    <option value="" disabled>
-                      -- กรุณาเลือกตำแหน่ง --
-                    </option>
-                    {availableEditPositions.map((pos) => (
-                      <option key={pos.id} value={pos.id}>
-                        {pos.title || pos.name}
-                      </option>
-                    ))}
-                  </select>
-                  <ChevronDown
-                    className="absolute right-5 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-700 pointer-events-none"
-                    strokeWidth={2.5}
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-3">
-                <label className="block text-[#475569] font-medium text-[17px]">
-                  เบอร์โทรศัพท์
-                </label>
-                <input
-                  type="text"
-                  placeholder="098-456-7899"
-                  value={editingEmployee.phone}
-                  onChange={(e) =>
-                    setEditingEmployee({
-                      ...editingEmployee,
-                      phone: e.target.value,
-                    })
-                  }
-                  className="w-full bg-[#f8fafc] border border-[#e2e8f0] px-5 py-3.5 rounded-xl text-[15px] focus:outline-hidden focus:ring-2 focus:ring-blue-100 transition-all text-slate-800"
-                />
-              </div>
-
-              <div className="space-y-3">
-                <label className="block text-[#475569] font-medium text-[17px]">
-                  อีเมล
-                </label>
-                <input
-                  type="email"
-                  placeholder="example@nid.co.th"
-                  value={editingEmployee.email}
-                  onChange={(e) =>
-                    setEditingEmployee({
-                      ...editingEmployee,
-                      email: e.target.value,
-                    })
-                  }
-                  className="w-full bg-[#f8fafc] border border-[#e2e8f0] px-5 py-3.5 rounded-xl text-[15px] focus:outline-hidden focus:ring-2 focus:ring-blue-100 transition-all text-slate-800"
-                />
-              </div>
-
-              <div className="space-y-3">
-                <label className="block text-[#475569] font-medium text-[17px]">
-                  ที่อยู่ตามบัตรประชาชน
-                </label>
-                <textarea
-                  placeholder="กรอกที่อยู่ตามบัตรประชาชน"
-                  value={editingEmployee.idCardAddress}
-                  onChange={(e) =>
-                    setEditingEmployee({
-                      ...editingEmployee,
-                      idCardAddress: e.target.value,
-                    })
-                  }
-                  rows={3}
-                  className="w-full bg-[#f8fafc] border border-[#e2e8f0] px-5 py-3.5 rounded-xl text-[15px] focus:outline-hidden focus:ring-2 focus:ring-blue-100 transition-all text-slate-800 resize-none"
-                ></textarea>
-              </div>
-
-              <div className="space-y-3">
-                <label className="block text-[#475569] font-medium text-[17px]">
-                  ที่อยู่ปัจจุบัน
-                </label>
-                <textarea
-                  placeholder="กรอกที่อยู่ปัจจุบัน"
-                  value={editingEmployee.currentAddress}
-                  onChange={(e) =>
-                    setEditingEmployee({
-                      ...editingEmployee,
-                      currentAddress: e.target.value,
-                    })
-                  }
-                  rows={3}
-                  className="w-full bg-[#f8fafc] border border-[#e2e8f0] px-5 py-3.5 rounded-xl text-[15px] focus:outline-hidden focus:ring-2 focus:ring-blue-100 transition-all text-slate-800 resize-none"
-                ></textarea>
-              </div>
-
-              <div className="space-y-3 md:col-span-2 md:w-[calc(50%-1.5rem)]">
-                <label className="block text-[#475569] font-medium text-[17px]">
-                  วันที่เริ่มทำงาน
-                </label>
-                <DatePicker
-                  selected={
-                    editingEmployee.joinDate
-                      ? new Date(editingEmployee.joinDate)
-                      : null
-                  }
-                  onChange={(date: Date | null) =>
-                    setEditingEmployee({
-                      ...editingEmployee,
-                      joinDate: date ? date.toLocaleDateString('en-CA') : '',
-                    })
-                  }
-                  placeholderText="YYYY-MM-DD"
-                />
-              </div>
-            </div>
-
-            {/* Footer Buttons */}
-            <div className="flex justify-end items-center gap-4 mt-10 pb-2">
-              <button
-                onClick={() => setIsEditModalOpen(false)}
-                className="px-8 py-3.5 bg-[#f8fafc] border border-[#e2e8f0] hover:bg-[#f1f5f9] text-[#0f172a] rounded-xl font-medium text-[17px] transition-colors cursor-pointer"
-              >
-                ยกเลิก
-              </button>
-              <button
-                onClick={handleUpdateEmployee}
-                className="px-8 py-3.5 bg-[#2563eb] hover:bg-[#1d4ed8] text-white rounded-xl font-medium text-[17px] shadow-md shadow-blue-500/20 transition-all cursor-pointer"
-              >
-                บันทึกการแก้ไข
-              </button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
+      <EditEmployeeModal
+        open={isEditModalOpen}
+        onOpenChange={setIsEditModalOpen}
+        editingEmployee={editingEmployee}
+        setEditingEmployee={setEditingEmployee}
+        departmentsData={departmentsData}
+        availableEditPositions={availableEditPositions}
+        onCancel={() => setIsEditModalOpen(false)}
+        onSubmit={handleUpdateEmployee}
+      />
 
       {/* Leave Balance Modal */}
-      <Dialog open={isBalanceModalOpen} onOpenChange={setIsBalanceModalOpen}>
-        <DialogContent
-          className="max-w-[800px] w-[90vw] p-0 overflow-hidden bg-white rounded-3xl"
-          style={{ maxWidth: '800px' }}
-        >
-          <div className="bg-[#1e40af] px-10 py-8 text-white flex justify-between items-center shrink-0">
-            <div>
-              <h2 className="text-2xl font-bold tracking-tight">
-                โควตาวันลาของพนักงาน
-              </h2>
-              <p className="text-blue-100 text-sm mt-1">
-                {selectedEmployeeBalances?.firstName}{' '}
-                {selectedEmployeeBalances?.lastName}
-              </p>
-            </div>
-          </div>
-
-          <div className="p-8 max-h-[70vh] overflow-y-auto">
-            {isFetchingBalances ? (
-              <p className="text-center text-slate-500 py-8">
-                กำลังโหลดข้อมูลวันลา...
-              </p>
-            ) : (
-              <>
-                <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
-                  <h3 className="font-bold text-slate-700">รายการสิทธิการลา</h3>
-                  <div className="flex flex-wrap gap-2 mt-2 md:mt-0">
-                    <button
-                      onClick={async () => {
-                        try {
-                          await hrApi.initializeLeaveBalances(
-                            selectedEmployeeBalances!.id,
-                          );
-                          Swal.fire({
-                            icon: 'success',
-                            title: 'สร้างข้อมูลสำเร็จ',
-                            text: 'โควตาวันลาถูกสร้าง/ซิงค์เรียบร้อยแล้ว',
-                            timer: 1500,
-                            showConfirmButton: false,
-                          });
-                          handleOpenBalanceModal(selectedEmployeeBalances!);
-                        } catch {
-                          Swal.fire(
-                            'ข้อผิดพลาด',
-                            'ไม่สามารถสร้างข้อมูลวันลาได้',
-                            'error',
-                          );
-                        }
-                      }}
-                      className="bg-blue-600 text-white px-3 py-1.5 rounded-lg hover:bg-blue-700 transition-colors text-xs font-medium whitespace-nowrap"
-                    >
-                      สร้างข้อมูล/ซิงค์ (ปีปัจจุบัน)
-                    </button>
-                    <button
-                      onClick={async () => {
-                        const result = await Swal.fire({
-                          title: 'ยืนยันการรีเซ็ต?',
-                          text: 'คุณต้องการรีเซ็ตประวัติการใช้โควตาทั้งหมดกลับเป็น 0 สำหรับพนักงานคนนี้หรือไม่? (เริ่มต้นใหม่)',
-                          icon: 'warning',
-                          showCancelButton: true,
-                          confirmButtonColor: '#ef4444',
-                          cancelButtonColor: '#94a3b8',
-                          confirmButtonText: 'ใช่, รีเซ็ตเลย',
-                          cancelButtonText: 'ยกเลิก',
-                          reverseButtons: true,
-                        });
-
-                        if (result.isConfirmed) {
-                          try {
-                            await hrApi.resetLeaveBalances(
-                              selectedEmployeeBalances!.id,
-                            );
-                            Swal.fire({
-                              icon: 'success',
-                              title: 'สำเร็จ',
-                              text: 'รีเซ็ตโควตาเรียบร้อยแล้ว',
-                              timer: 1500,
-                              showConfirmButton: false,
-                            });
-                            handleOpenBalanceModal(selectedEmployeeBalances!);
-                          } catch {
-                            Swal.fire(
-                              'ข้อผิดพลาด',
-                              'ไม่สามารถทำรายการได้',
-                              'error',
-                            );
-                          }
-                        }
-                      }}
-                      className="bg-red-500 text-white px-3 py-1.5 rounded-lg hover:bg-red-600 transition-colors text-xs font-medium whitespace-nowrap"
-                    >
-                      รีเซ็ตวันลาที่ใช้ไป (เริ่มใหม่)
-                    </button>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {leaveTypes.map((type) => {
-                    const balance = leaveBalances.find(
-                      (b) =>
-                        b.leaveTypeId === type.id &&
-                        b.year === new Date().getFullYear(),
-                    );
-                    return (
-                      <div
-                        key={type.id}
-                        className="flex flex-col justify-between p-5 border border-slate-200 rounded-xl bg-slate-50 gap-4 hover:shadow-sm transition-shadow"
-                      >
-                        <div>
-                          <h4 className="font-bold text-slate-800 text-[17px]">
-                            {type.name}
-                          </h4>
-                          {balance ? (
-                            <p className="text-[14px] text-slate-500 mt-1">
-                              ปี: {balance.year} | ใช้ไป: {balance.usedDays} วัน
-                            </p>
-                          ) : (
-                            <p className="text-[14px] text-amber-500 mt-1">
-                              ยังไม่ได้สร้าง (เริ่มต้น {type.defaultDays} วัน)
-                            </p>
-                          )}
-                        </div>
-                        <div className="flex flex-col gap-3 border-t border-slate-200 pt-3 mt-1">
-                          {balance ? (
-                            <div className="w-full flex flex-col gap-3">
-                              {/* Row 1: Total Days */}
-                              <div className="flex items-center justify-between">
-                                <label className="text-[14px] font-bold text-slate-600">
-                                  สิทธิวันลา (ทั้งหมด):
-                                </label>
-                                <div className="flex items-center gap-2">
-                                  <input
-                                    type="number"
-                                    step="0.5"
-                                    min="0"
-                                    value={
-                                      editedTotalBalances[balance.id] ??
-                                      balance.totalDays
-                                    }
-                                    onChange={(e) => {
-                                      const val = e.target.value;
-                                      const numVal =
-                                        val === ''
-                                          ? (balance.totalDays ?? 0)
-                                          : Number(val);
-                                      setEditedTotalBalances((prev) => ({
-                                        ...prev,
-                                        [balance.id]: numVal,
-                                      }));
-                                    }}
-                                    className="w-24 px-3 py-1.5 bg-white border border-slate-300 rounded-lg text-center focus:ring-2 focus:ring-blue-500 outline-none font-semibold text-slate-700 animate-transition"
-                                  />
-                                  <span className="text-xs text-slate-500 font-bold">
-                                    วัน
-                                  </span>
-                                </div>
-                              </div>
-
-                              {/* Row 2: Remaining Days */}
-                              <div className="flex items-center justify-between border-t border-slate-100 pt-2.5">
-                                <label className="text-[14px] font-bold text-slate-600">
-                                  วันลาคงเหลือ:
-                                </label>
-                                <div className="flex items-center gap-2">
-                                  <input
-                                    type="number"
-                                    step="0.5"
-                                    min="0"
-                                    value={
-                                      editedRemainingBalances[balance.id] ??
-                                      balance.remainingDays
-                                    }
-                                    onChange={(e) => {
-                                      const val = e.target.value;
-                                      const numVal =
-                                        val === ''
-                                          ? (balance.remainingDays ?? 0)
-                                          : Number(val);
-                                      setEditedRemainingBalances((prev) => ({
-                                        ...prev,
-                                        [balance.id]: numVal,
-                                      }));
-                                    }}
-                                    className="w-24 px-3 py-1.5 bg-white border border-slate-300 rounded-lg text-center focus:ring-2 focus:ring-blue-500 outline-none font-semibold text-blue-700 animate-transition"
-                                  />
-                                  <span className="text-xs text-slate-500 font-bold">
-                                    วัน
-                                  </span>
-                                </div>
-                              </div>
-                            </div>
-                          ) : (
-                            <span className="text-sm text-slate-400 italic">
-                              รอสร้างข้อมูล
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </>
-            )}
-
-            <div className="flex justify-end items-center gap-4 mt-8 pb-2">
-              <button
-                onClick={() => setIsBalanceModalOpen(false)}
-                className="px-8 py-3.5 bg-[#f8fafc] border border-[#e2e8f0] hover:bg-[#f1f5f9] text-[#0f172a] rounded-xl font-medium text-[17px] transition-colors cursor-pointer"
-              >
-                ยกเลิก
-              </button>
-              <button
-                onClick={handleSaveAllBalances}
-                className="px-8 py-3.5 bg-[#2563eb] hover:bg-[#1d4ed8] text-white rounded-xl font-medium text-[17px] shadow-md shadow-blue-500/20 transition-all cursor-pointer"
-              >
-                บันทึกการแก้ไข
-              </button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
+      <LeaveBalanceModal
+        open={isBalanceModalOpen}
+        onOpenChange={setIsBalanceModalOpen}
+        employee={selectedEmployeeBalances}
+        isFetching={isFetchingBalances}
+        leaveTypes={leaveTypes}
+        leaveBalances={leaveBalances}
+        editedTotalBalances={editedTotalBalances}
+        setEditedTotalBalances={setEditedTotalBalances}
+        editedRemainingBalances={editedRemainingBalances}
+        setEditedRemainingBalances={setEditedRemainingBalances}
+        onInitialize={handleInitializeBalances}
+        onResetUsage={handleResetBalanceUsage}
+        onCancel={() => setIsBalanceModalOpen(false)}
+        onSave={handleSaveAllBalances}
+      />
         </div>
       </div>
     </div>

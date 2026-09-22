@@ -10,13 +10,12 @@ import {
   ListOrdered,
   Clock4,
   CalendarDays,
+  Check,
   X,
-  User,
-  Calendar as CalendarIcon,
-  Clock,
 } from 'lucide-react';
-import { getLeaveStatusText, resolveAssetUrl, getErrorMessage } from '@/lib/api/utils';
+import { getErrorMessage } from '@/lib/api/utils';
 import type { Leave } from '@/lib/api/types';
+import { LeaveDetailModal } from '@/components/LeaveDetailModal';
 
 const getToken = () =>
   typeof window !== 'undefined' ? sessionStorage.getItem('accessToken') : '';
@@ -134,7 +133,7 @@ function mapLeave(r: Leave) {
     positionName: emp.position?.name || '-',
     leaveTypeName: (typeof r.leaveType === 'object' ? r.leaveType?.name : r.leaveType) || '-',
     dateRangeStr: formatDateRange(r),
-    approverReason: r.approvals?.[0]?.comment || null,
+    approverReason: r.approvals?.[0]?.comment || undefined,
   };
 }
 
@@ -148,7 +147,6 @@ export default function CEOApproval() {
     'thisMonth',
   );
   const [selectedLeave, setSelectedLeave] = useState<ReturnType<typeof mapLeave> | null>(null);
-  const [previewAttachment, setPreviewAttachment] = useState<{ url: string; isImage: boolean } | null>(null);
 
   const refetch = useCallback(async () => {
     setIsLoading(true);
@@ -445,266 +443,32 @@ export default function CEOApproval() {
       </div>
 
       {/* Detail Modal */}
-      {selectedLeave &&
-        (() => {
-          const leave = selectedLeave;
-          const approvals = leave.approvals ?? [];
-          return (
-            <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200">
-              <div className="bg-white rounded-[24px] w-full max-w-[680px] shadow-2xl flex flex-col max-h-[90vh] animate-in zoom-in-95 duration-200 overflow-hidden">
-                {/* Header */}
-                <div className="flex items-center justify-between px-6 py-5 border-b border-gray-100">
-                  <h2 className="text-[20px] font-bold text-black">
-                    รายละเอียดคำขอลา
-                  </h2>
-                  <button
-                    onClick={() => setSelectedLeave(null)}
-                    className="w-8 h-8 flex items-center justify-center text-white bg-red-500 rounded-full hover:bg-red-600 transition-colors"
-                  >
-                    <X className="w-5 h-5" strokeWidth={3} />
-                  </button>
-                </div>
-
-                {/* Body */}
-                <div className="px-6 pb-4 overflow-y-auto flex-1 space-y-4 pt-4">
-                  {/* Employee */}
-                  <div className="border border-gray-200 rounded-xl p-5 flex gap-4">
-                    <div className="w-10 h-10 rounded-full bg-fuchsia-100 border border-fuchsia-200 text-fuchsia-500 flex items-center justify-center shrink-0 overflow-hidden">
-                      {leave.employee?.user?.avatarUrl ? (
-                        // eslint-disable-next-line @next/next/no-img-element -- dynamic user-uploaded avatar; next/image needs a configured remote loader
-                        <img
-                          src={resolveAssetUrl(leave.employee.user.avatarUrl)}
-                          alt="Avatar"
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <User className="w-5 h-5" strokeWidth={2} />
-                      )}
-                    </div>
-                    <div className="flex-1">
-                      <h3 className="font-bold text-[15px] text-black mb-3">
-                        ข้อมูลพนักงาน
-                      </h3>
-                      <div className="text-[14px] text-gray-700 space-y-1.5">
-                        <p>
-                          <span className="font-bold min-w-[90px] inline-block">
-                            ชื่อ-นามสกุล:
-                          </span>
-                          {leave.employeeName}
-                        </p>
-                        <p>
-                          <span className="font-bold min-w-[90px] inline-block">
-                            รหัสพนักงาน:
-                          </span>
-                          {leave.empCode}
-                        </p>
-                        <p>
-                          <span className="font-bold min-w-[90px] inline-block">
-                            แผนก | ตำแหน่ง:
-                          </span>
-                          {leave.departmentName} | {leave.positionName}
-                        </p>
-                        
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Leave Info */}
-                  <div className="border border-gray-200 rounded-xl p-5">
-                    <div className="flex items-center gap-3 mb-4">
-                      <div className="w-8 h-8 rounded-full bg-blue-50 border border-blue-100 flex items-center justify-center text-blue-500">
-                        <CalendarIcon
-                          className="w-[18px] h-[18px]"
-                          strokeWidth={2.5}
-                        />
-                      </div>
-                      <h3 className="font-bold text-[15px] text-black">
-                        รายละเอียดการลา
-                      </h3>
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-[14px] text-gray-700 pl-[44px]">
-                      <div className="space-y-2">
-                        <p>
-                          <span className="font-bold">รหัสการลา:</span>{' '}
-                          <span className="text-blue-500 font-semibold">
-                            {leave.requestCode || '-'}
-                          </span>
-                        </p>
-                        <p>
-                          <span className="font-bold">ประเภทการลา:</span>{' '}
-                          {leave.leaveTypeName}
-                        </p>
-                        <p>
-                          <span className="font-bold">ช่วงเวลา:</span>{' '}
-                          {leave.dateRangeStr}
-                        </p>
-                      </div>
-                      <div className="space-y-2">
-                        <p className="flex items-center gap-2">
-                          <Clock className="w-4 h-4 text-green-500 shrink-0" />
-                          <span className="font-bold">รูปแบบ:</span>
-                          {leave.startFormat === 'hourly'
-                            ? `รายชั่วโมง`
-                            : leave.startFormat === 'morning'
-                              ? 'ครึ่งวันเช้า'
-                              : leave.startFormat === 'afternoon'
-                                ? 'ครึ่งวันบ่าย'
-                                : 'เต็มวัน'}
-                        </p>
-
-                        {(leave.attachments?.length ?? 0) > 0 && (
-                          <div className="flex gap-2">
-                            <span className="font-bold whitespace-nowrap">เอกสารแนบ:</span>
-                            <div className="flex flex-col gap-1">
-                              {(leave.attachments ?? []).map((att, idx: number) => {
-                                const isData = att.filePath?.startsWith('data:');
-                                const fileSrc = isData ? att.filePath : att.filePath?.startsWith('http') ? att.filePath : `/${att.filePath?.replace(/^\/+/, '')}`;
-                                const isImage = att.fileType?.startsWith('image/') || (!isData && att.filePath?.match(/\.(jpeg|jpg|gif|png)$/i));
-                                return (
-                                  <button
-                                    key={idx}
-                                    onClick={() => setPreviewAttachment({ url: fileSrc || '', isImage: !!isImage })}
-                                    className="text-emerald-600 font-bold hover:underline text-left text-[14px]"
-                                  >
-                                    ดูเอกสารแนบ {(leave.attachments?.length ?? 0) > 1 ? `(${idx + 1})` : ''}
-                                  </button>
-                                );
-                              })}
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Reason */}
-                  <div>
-                    <h3 className="font-bold text-black text-[14px] mb-2">
-                      เหตุผลการลา
-                    </h3>
-                    <textarea
-                      readOnly
-                      value={leave.reason || '-'}
-                      rows={2}
-                      className="w-full border border-gray-300 rounded-xl p-3 text-[14px] text-gray-500 bg-white outline-none cursor-default resize-none"
-                    />
-                  </div>
-
-                  {/* Approval Timeline */}
-                  {approvals.length > 0 && (
-                    <div>
-                      <h3 className="font-bold text-black text-[14px] mb-3">
-                        ขั้นตอนการอนุมัติที่ผ่านมา
-                      </h3>
-                      <div className="space-y-3">
-                        {approvals.map((ap, i: number) => (
-                          <div
-                            key={ap.id || i}
-                            className="flex items-start gap-3"
-                          >
-                            <div
-                              className={`w-2 h-2 rounded-full mt-2 shrink-0 ${ap.status === 'REJECTED' ? 'bg-red-500' : 'bg-emerald-500'}`}
-                            />
-                            <div className="flex-1 bg-gray-50 rounded-xl p-3 text-[13px]">
-                              <p className="font-bold text-gray-700">
-                                {getLeaveStatusText(ap.status || '')}
-                              </p>
-                              {ap.comment && (
-                                <p className="text-gray-500 mt-1">
-                                  เหตุผล: {ap.comment}
-                                </p>
-                              )}
-                              <p className="text-gray-400 text-[12px] mt-1">
-                                {ap.createdAt ? new Date(ap.createdAt).toLocaleString('th-TH') : ''}
-                              </p>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                {/* Footer */}
-                <div className="px-6 py-4 border-t border-gray-100 bg-white flex items-center justify-between shrink-0">
-                  <span className="text-gray-400 text-[13px]">
-                    ยื่นเมื่อ:{' '}
-                    {leave.createdAt
-                      ? new Date(leave.createdAt).toLocaleDateString('th-TH', {
-                          day: 'numeric',
-                          month: 'short',
-                          year: 'numeric',
-                        })
-                      : '-'}
-                  </span>
-                  <div className="flex items-center gap-3">
-                    <button
-                      onClick={() => handleApprove(leave)}
-                      className="bg-[#00C853] hover:bg-[#00B04A] text-white text-[13px] font-bold py-2 px-6 rounded-xl shadow-sm transition-colors"
-                    >
-                      อนุมัติ
-                    </button>
-                    <button
-                      onClick={() => handleReject(leave)}
-                      className="bg-red-500 hover:bg-red-600 text-white text-[13px] font-bold py-2 px-6 rounded-xl shadow-sm transition-colors"
-                    >
-                      ปฏิเสธ
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          );
-        })()}
-
-      {/* Preview Attachment Modal */}
-      {previewAttachment && (
-        <div className="fixed inset-0 z-[150] bg-black/60 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl w-full max-w-4xl flex flex-col overflow-hidden max-h-[90vh] shadow-2xl relative">
-            {/* Header */}
-            <div className="flex justify-between items-center px-6 py-4 border-b border-gray-100">
-              <h2 className="text-[16px] font-bold text-gray-800">เอกสารแนบ</h2>
+      {selectedLeave && (
+        <LeaveDetailModal
+          leave={selectedLeave}
+          onClose={() => setSelectedLeave(null)}
+          fallbackName={selectedLeave.employeeName}
+          fallbackDepartment={selectedLeave.departmentName}
+          fallbackPosition={selectedLeave.positionName}
+          footer={
+            <>
               <button
-                onClick={() => setPreviewAttachment(null)}
-                className="w-8 h-8 flex items-center justify-center bg-gray-100 hover:bg-gray-200 text-gray-500 rounded-full transition-colors"
+                onClick={() => handleApprove(selectedLeave)}
+                className="bg-[#00C853] hover:bg-[#00B04A] text-white px-5 py-3 rounded-xl font-bold text-[14px] shadow-sm transition-colors flex items-center justify-center gap-1.5"
               >
-                <X className="w-5 h-5" strokeWidth={2.5} />
+                <Check className="w-[18px] h-[18px]" strokeWidth={3} />
+                อนุมัติ
               </button>
-            </div>
-
-            {/* Content */}
-            <div className="p-6 overflow-auto bg-gray-50/50 flex-1 flex flex-col items-center">
-              {previewAttachment.isImage ? (
-                <div className="relative w-full max-w-3xl flex justify-center">
-                  {/* eslint-disable-next-line @next/next/no-img-element -- dynamic user-uploaded attachment preview; next/image needs a configured remote loader */}
-                  <img
-                    src={previewAttachment.url}
-                    alt="Attachment"
-                    className="max-w-full h-auto max-h-[70vh] object-contain rounded-lg border border-gray-200 shadow-sm"
-                  />
-                </div>
-              ) : (
-                <div className="w-full h-full min-h-[60vh] flex flex-col border border-gray-200 rounded-lg overflow-hidden shadow-sm bg-white">
-                  <iframe
-                    src={previewAttachment.url}
-                    className="w-full h-full flex-1"
-                    title="Attachment Preview"
-                  />
-                  <div className="p-3 bg-gray-50 border-t border-gray-200 flex justify-end">
-                    <a
-                      href={previewAttachment.url}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold rounded-lg transition-colors shadow-sm"
-                    >
-                      เปิดไฟล์ในแท็บใหม่
-                    </a>
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
+              <button
+                onClick={() => handleReject(selectedLeave)}
+                className="bg-[#FF0000] hover:bg-[#E50000] text-white px-5 py-3 rounded-xl font-bold text-[14px] shadow-sm transition-colors flex items-center justify-center gap-1.5"
+              >
+                <X className="w-[18px] h-[18px]" strokeWidth={3} />
+                ปฏิเสธ
+              </button>
+            </>
+          }
+        />
       )}
         </div>
       </div>

@@ -9,32 +9,21 @@ import {
   Users,
   Edit3,
   Trash2,
-  Upload,
-  Check,
   Search,
 } from 'lucide-react';
 import { useLeave } from '@/hooks/useLeave';
 import { useLeaveBalance } from '@/hooks/useLeaveBalance';
 import Swal from 'sweetalert2';
 import { DatePicker } from '@/components/DateAndTime';
-import { LeaveTimePicker } from '@/components/LeaveTimePicker';
-import { getLeaveStatusBadgeColor, getLeaveStatusText } from '@/lib/api/utils';
+import {
+  getLeaveStatusBadgeColor,
+  getLeaveStatusText,
+  getErrorMessage,
+} from '@/lib/api/utils';
 import type { Leave } from '@/lib/api/types';
 import { LeaveDetailModal } from '@/components/LeaveDetailModal';
-
-/** DatePicker onChange can hand back a dayjs-like object or a plain date string. */
-function formatPickerValue(val: unknown): string {
-  if (val && typeof val === 'object') {
-    const dayjsLike = val as { format?: (f: string) => string };
-    if (typeof dayjsLike.format === 'function') {
-      return dayjsLike.format('YYYY-MM-DD');
-    }
-  }
-  if (typeof val === 'string') {
-    return val.substring(0, 10);
-  }
-  return '';
-}
+import { ManagerLeaveEditFormModal } from '@/components/manager/ManagerLeaveEditFormModal';
+import { uploadApi } from '@/lib/api';
 
 const formatDate = (dateString: string) => {
   if (!dateString) return '-';
@@ -94,6 +83,20 @@ export default function LeaveHistoryPage() {
     startTime: '',
     endTime: '',
   });
+  const [attachmentFile, setAttachmentFile] = useState<File | null>(null);
+  const [attachmentName, setAttachmentName] = useState<string | null>(null);
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      if (file.size > 10 * 1024 * 1024) {
+        alert('ขนาดไฟล์ต้องไม่เกิน 10MB');
+        return;
+      }
+      setAttachmentName(file.name);
+      setAttachmentFile(file);
+    }
+  };
 
   const { useLeaveBalancesQuery } = useLeaveBalance();
   const { data: balances = [] } = useLeaveBalancesQuery();
@@ -381,6 +384,8 @@ export default function LeaveHistoryPage() {
           })
           : '',
     });
+    setAttachmentFile(null);
+    setAttachmentName(null);
     setIsEditing(true);
   };
 
@@ -434,6 +439,24 @@ export default function LeaveHistoryPage() {
         id: selectedRequest?.id || '',
         data: payload,
       });
+
+      if (attachmentFile && selectedRequest?.id) {
+        try {
+          const formData = new FormData();
+          formData.append('file', attachmentFile);
+          formData.append('leaveRequestId', selectedRequest.id);
+          await uploadApi.uploadFile(formData);
+        } catch (uploadErr) {
+          console.error('File upload failed:', uploadErr);
+          alert(
+            `บันทึกคำขอลาสำเร็จ แต่อัปโหลดไฟล์แนบไม่สำเร็จ: ${getErrorMessage(
+              uploadErr,
+              'ไม่สามารถอัปโหลดไฟล์แนบได้',
+            )}`,
+          );
+        }
+      }
+
       refetchLeaves();
     } catch {
       alert('Failed to update request');
@@ -758,343 +781,31 @@ export default function LeaveHistoryPage() {
 
       {/* Edit Form Modal (Fullscreen) */}
       {isEditing && (
-        <div className="fixed inset-0 z-[120] bg-[#E2E4E9] overflow-y-auto">
-          {/* Top Banner (Inside Edit) */}
-          <div className="bg-white flex flex-col md:flex-row md:items-center justify-between px-8 py-5 shadow-sm sticky top-0 z-10 gap-4 border-b border-gray-200">
-            <div>
-              <h1 className="text-base sm:text-xl font-bold text-black tracking-tight">
-                แบบฟอร์มยื่นลา (Leave Request)
-              </h1>
-              <p className="text-[13px] text-gray-500 mt-1 font-medium">
-                กรุณากรอกข้อมูลให้ครบถ้วนเพื่อเข้าสู่กระบวนการพิจารณา
-              </p>
-            </div>
-            <div className="flex items-center gap-6 text-black self-end md:self-auto">
-              <button
-                onClick={() => {
-                  setIsEditing(false);
-                  setSelectedRequest(null);
-                }}
-                className="px-3 py-1.5 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg text-sm font-bold transition-colors"
-              >
-                ยกเลิก
-              </button>
-            </div>
-          </div>
-
-          <div className="p-6 md:p-8 max-w-5xl mx-auto animate-in fade-in slide-in-from-bottom-4 duration-300">
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8">
-              <form onSubmit={handleSaveEdit} className="space-y-8 text-black">
-                {/* User Info (Readonly) */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 bg-[#F4F4F4] rounded-xl p-6">
-                  <div>
-                    <label className="block text-sm font-bold text-gray-700 mb-2">
-                      ชื่อ-นามสกุล
-                    </label>
-                    <div className="font-bold text-black">{username}</div>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-bold text-gray-700 mb-2">
-                      แผนก/ ตำแหน่ง
-                    </label>
-                    <div className="font-bold text-black">
-                      {selectedRequest?.department || '-'} |{' '}
-                      {selectedRequest?.positionName || '-'}
-                    </div>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-8">
-                  {/* Leave Type */}
-                  <div>
-                    <label className="block text-sm font-bold text-gray-700 mb-2">
-                      ประเภทการลา
-                    </label>
-                    <select
-                      value={editForm.type}
-                      onChange={(e) =>
-                        setEditForm({ ...editForm, type: e.target.value })
-                      }
-                      className="w-full border border-gray-300 rounded-lg p-3 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none appearance-none bg-white"
-                    >
-                      <option value="" disabled>
-                        -- กรุณาเลือกประเภทการลา --
-                      </option>
-                      {balances.map((b) => (
-                        <option
-                          key={b.leaveType?.id}
-                          value={b.leaveType?.id}
-                          disabled={
-                            (b.remainingDays ?? 0) <= 0 &&
-                            editForm.type !== String(b.leaveType?.id)
-                          }
-                          className={
-                            (b.remainingDays ?? 0) <= 0 &&
-                              editForm.type !== String(b.leaveType?.id)
-                              ? 'text-gray-400 bg-gray-50 font-medium'
-                              : 'text-gray-800'
-                          }
-                        >
-                          {b.leaveType?.name}{' '}
-                          {(b.remainingDays ?? 0) <= 0 &&
-                            editForm.type !== String(b.leaveType?.id)
-                            ? '(หมดโควต้า)'
-                            : `(เหลือ ${b.remainingDays} วัน)`}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  {/* รูปแบบการลา */}
-                  <div className="md:col-span-1">
-                    <label className="block text-[13px] font-bold text-gray-800 mb-2">
-                      รูปแบบการลา
-                    </label>
-                    <div className="flex gap-6 mt-1">
-                      <label className="flex items-center gap-2 cursor-pointer bg-white border border-gray-200 px-4 py-2 rounded-lg hover:border-blue-400 transition-colors">
-                        <input
-                          type="radio"
-                          name="leaveMode"
-                          checked={editForm.leaveMode === 'full_day'}
-                          onChange={() => {
-                            setEditForm({
-                              ...editForm,
-                              leaveMode: 'full_day',
-                              period: 'full',
-                            });
-                          }}
-                          className="w-4 h-4 text-blue-600 focus:ring-blue-500"
-                        />
-                        <span className="text-sm font-medium text-gray-700">
-                          เต็มวัน
-                        </span>
-                      </label>
-                      <label className="flex items-center gap-2 cursor-pointer bg-white border border-gray-200 px-4 py-2 rounded-lg hover:border-blue-400 transition-colors">
-                        <input
-                          type="radio"
-                          name="leaveMode"
-                          checked={editForm.leaveMode === 'half_day'}
-                          onChange={() => {
-                            setEditForm({
-                              ...editForm,
-                              leaveMode: 'half_day',
-                              period: 'morning',
-                            });
-                          }}
-                          className="w-4 h-4 text-blue-600 focus:ring-blue-500"
-                        />
-                        <span className="text-sm font-medium text-gray-700">
-                          ครึ่งวัน
-                        </span>
-                      </label>
-                      <label className="flex items-center gap-2 cursor-pointer bg-white border border-gray-200 px-4 py-2 rounded-lg hover:border-blue-400 transition-colors">
-                        <input
-                          type="radio"
-                          name="leaveMode"
-                          checked={editForm.leaveMode === 'hourly'}
-                          onChange={() =>
-                            setEditForm({ ...editForm, leaveMode: 'hourly' })
-                          }
-                          className="w-4 h-4 text-blue-600 focus:ring-blue-500"
-                        />
-                        <span className="text-sm font-medium text-gray-700">
-                          ลารายชั่วโมง
-                        </span>
-                      </label>
-                    </div>
-                  </div>
-
-                  {editForm.leaveMode === 'hourly' ? (
-                    <>
-                      <div className="md:col-span-2 md:w-[calc(50%-1.5rem)]">
-                        <label className="block text-[13px] font-bold text-gray-800 mb-2">
-                          วันที่ลา
-                        </label>
-                        <DatePicker
-                          value={editForm.leaveDate || null}
-                          onChange={(val: unknown) => {
-                            setEditForm({
-                              ...editForm,
-                              leaveDate: formatPickerValue(val),
-                            });
-                          }}
-                          placeholderText="วว/ดด/ปปปป"
-                        />
-                      </div>
-                      <div className="md:col-span-2">
-                        <LeaveTimePicker
-                          startTime={editForm.startTime}
-                          endTime={editForm.endTime}
-                          onChangeStartTime={(time) =>
-                            setEditForm({ ...editForm, startTime: time })
-                          }
-                          onChangeEndTime={(time) =>
-                            setEditForm({ ...editForm, endTime: time })
-                          }
-                        />
-                      </div>
-                    </>
-                  ) : (
-                    <>
-                      <div className="md:col-span-1">
-                        <label className="block text-[13px] font-bold text-gray-800 mb-2">
-                          วันที่เริ่มต้น
-                        </label>
-                        <DatePicker
-                          value={editForm.startDate || null}
-                          onChange={(val: unknown) => {
-                            setEditForm({
-                              ...editForm,
-                              startDate: formatPickerValue(val),
-                            });
-                          }}
-                          placeholderText="วว/ดด/ปปปป"
-                        />
-                        {editForm.leaveMode === 'half_day' && (
-                          <div className="flex items-center gap-4 mt-3">
-                            <label className="flex items-center gap-1.5 text-xs text-gray-700 cursor-pointer">
-                              <input
-                                type="radio"
-                                name="period"
-                                value="morning"
-                                checked={editForm.period === 'morning'}
-                                onChange={() =>
-                                  setEditForm({
-                                    ...editForm,
-                                    period: 'morning',
-                                  })
-                                }
-                                className="w-3.5 h-3.5 text-blue-600 border-gray-400 focus:ring-blue-500"
-                              />
-                              ครึ่งวันเช้า
-                            </label>
-                            <label className="flex items-center gap-1.5 text-xs text-gray-700 cursor-pointer">
-                              <input
-                                type="radio"
-                                name="period"
-                                value="afternoon"
-                                checked={editForm.period === 'afternoon'}
-                                onChange={() =>
-                                  setEditForm({
-                                    ...editForm,
-                                    period: 'afternoon',
-                                  })
-                                }
-                                className="w-3.5 h-3.5 text-blue-600 border-gray-400 focus:ring-blue-500"
-                              />
-                              ครึ่งวันบ่าย
-                            </label>
-                          </div>
-                        )}
-                      </div>
-                      <div className="md:col-span-1">
-                        <label className="block text-[13px] font-bold text-gray-800 mb-2">
-                          วันที่สิ้นสุด
-                        </label>
-                        <DatePicker
-                          value={editForm.endDate || null}
-                          onChange={(val: unknown) => {
-                            setEditForm({
-                              ...editForm,
-                              endDate: formatPickerValue(val),
-                            });
-                          }}
-                          placeholderText="วว/ดด/ปปปป"
-                          disabled={editForm.leaveMode === 'half_day'}
-                        />
-                      </div>
-                    </>
-                  )}
-                </div>
-
-                {/* Reason */}
-                <div>
-                  <label className="block text-sm font-bold text-gray-700 mb-2">
-                    เหตุผลการลา
-                  </label>
-                  <textarea
-                    value={editForm.reason}
-                    onChange={(e) =>
-                      setEditForm({ ...editForm, reason: e.target.value })
-                    }
-                    rows={4}
-                    placeholder="ระบุเหตุผลที่ชัดเจน..."
-                    className="w-full border border-gray-300 rounded-lg p-4 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none resize-none"
-                  ></textarea>
-                </div>
-
-                {/* Attachment */}
-                <div>
-                  <label className="block text-sm font-bold text-gray-700 mb-2">
-                    เอกสารแนบ (ถ้ามี)
-                  </label>
-                  <div className="border-2 border-dashed border-gray-300 rounded-xl p-8 flex flex-col items-center justify-center text-gray-500 bg-[#FAFAFA] hover:bg-gray-50 transition-colors cursor-pointer">
-                    <Upload
-                      className="w-8 h-8 text-black mb-3"
-                      strokeWidth={2}
-                    />
-                    <p className="text-sm font-bold text-black mb-1">
-                      ลากไฟล์มาวางที่นี่ หรือ{' '}
-                      <span className="text-blue-600">คลิกเพื่ออัปโหลด</span>
-                    </p>
-                    <p className="text-xs text-gray-400">
-                      รองรับ PDF, PNG ขนาดไม่เกิน 10MB
-                    </p>
-                  </div>
-                </div>
-
-                {/* Submit Button */}
-                <div className="flex justify-end pt-4">
-                  <button
-                    type="submit"
-                    className="bg-[#0000FF] hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-lg transition-all text-[15px] shadow-md hover:shadow-lg active:scale-95"
-                  >
-                    ส่งคำขอลา
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
-
-          {/* Confirmation Modal */}
-          {showConfirmEdit && (
-            <div className="fixed inset-0 z-[130] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200">
-              <div className="bg-white rounded-2xl w-full max-w-[500px] shadow-2xl flex flex-col items-center py-12 px-8 border-[3px] border-[#3B82F6] relative animate-in zoom-in-95 duration-200">
-                <div className="w-[100px] h-[100px] bg-[#00C853] rounded-full flex items-center justify-center mb-6 shadow-sm">
-                  <Check className="w-12 h-12 text-white" strokeWidth={4} />
-                </div>
-
-                <h2 className="text-[26px] font-bold text-black mb-4 tracking-tight">
-                  ยืนยันการแก้ไขข้อมูล
-                </h2>
-
-                <p className="text-[#6B7280] text-[15px] text-center mb-10 leading-relaxed">
-                  คำลาของคุณจะถูกส่งให้ CEO พิจารณา
-                  <br />
-                  สามารถเช็คสถานะได้จากหน้าเช็คสถานะของคุณ
-                </p>
-
-                <div className="flex items-center gap-6">
-                  <button
-                    onClick={() => setShowConfirmEdit(false)}
-                    className="bg-[#FF0000] hover:bg-red-600 text-white font-bold py-2.5 px-10 rounded-xl transition-colors shadow-sm text-[16px]"
-                  >
-                    ยกเลิก
-                  </button>
-                  <button
-                    onClick={confirmAndSave}
-                    className="bg-[#00C853] hover:bg-green-600 text-white font-bold py-2.5 px-10 rounded-xl transition-colors shadow-sm text-[16px]"
-                  >
-                    ยืนยัน
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
+        <ManagerLeaveEditFormModal
+          username={username}
+          department={selectedRequest?.department}
+          positionName={selectedRequest?.positionName}
+          editForm={editForm}
+          setEditForm={setEditForm}
+          balances={balances}
+          onSubmit={handleSaveEdit}
+          onClose={() => {
+            setIsEditing(false);
+            setSelectedRequest(null);
+            setAttachmentFile(null);
+            setAttachmentName(null);
+          }}
+          showConfirmEdit={showConfirmEdit}
+          setShowConfirmEdit={setShowConfirmEdit}
+          onConfirmSave={confirmAndSave}
+          attachmentName={attachmentName}
+          onFileChange={handleFileChange}
+          onRemoveFile={() => {
+            setAttachmentFile(null);
+            setAttachmentName(null);
+          }}
+        />
       )}
-
-
     </div>
   );
 }
