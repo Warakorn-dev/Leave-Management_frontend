@@ -9,7 +9,7 @@ export function IdleTimeoutGuard({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const fetchConfig = async () => {
       try {
-        const res = await api.get("/auth/config");
+        const res = await api.get(`/auth/config?t=${Date.now()}`);
         const configData = res.data?.data || res.data;
         if (configData?.idleTimeoutMinutes) {
           const minutes: number = configData.idleTimeoutMinutes;
