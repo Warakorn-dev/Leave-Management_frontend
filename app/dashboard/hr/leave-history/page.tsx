@@ -542,6 +542,7 @@ export default function LeaveHistoryPage() {
                       </label>
                       <div className="bg-white rounded-xl shadow-sm border border-gray-200 focus-within:ring-2 focus-within:ring-blue-100 transition-all [&_.MuiOutlinedInput-notchedOutline]:border-none [&_.MuiInputBase-root]:bg-transparent [&_.MuiInputBase-input]:font-semibold [&_.MuiInputBase-input]:text-[14px] [&_.MuiInputBase-input]:text-gray-800 [&_.MuiInputBase-input]:px-4 [&_.MuiInputBase-input]:py-2.5 [&_.MuiInputBase-input]:cursor-pointer [&_.MuiIconButton-root]:mr-1 [&_.MuiSvgIcon-root]:w-[20px] [&_.MuiSvgIcon-root]:h-[20px] [&_.MuiSvgIcon-root]:text-gray-500 w-full">
                         <DatePicker
+                          borderless
                           selected={fromDate}
                           onChange={(date: Date | null) => {
                             setFromDate(date);
@@ -561,6 +562,7 @@ export default function LeaveHistoryPage() {
                       </label>
                       <div className="bg-white rounded-xl shadow-sm border border-gray-200 focus-within:ring-2 focus-within:ring-blue-100 transition-all [&_.MuiOutlinedInput-notchedOutline]:border-none [&_.MuiInputBase-root]:bg-transparent [&_.MuiInputBase-input]:font-semibold [&_.MuiInputBase-input]:text-[14px] [&_.MuiInputBase-input]:text-gray-800 [&_.MuiInputBase-input]:px-4 [&_.MuiInputBase-input]:py-2.5 [&_.MuiInputBase-input]:cursor-pointer [&_.MuiIconButton-root]:mr-1 [&_.MuiSvgIcon-root]:w-[20px] [&_.MuiSvgIcon-root]:h-[20px] [&_.MuiSvgIcon-root]:text-gray-500 w-full">
                         <DatePicker
+                          borderless
                           selected={toDate}
                           onChange={(date: Date | null) => {
                             setToDate(date);
@@ -580,6 +582,7 @@ export default function LeaveHistoryPage() {
                     </label>
                     <div className="bg-white rounded-xl shadow-sm border border-gray-200 focus-within:ring-2 focus-within:ring-blue-100 transition-all [&_.MuiOutlinedInput-notchedOutline]:border-none [&_.MuiInputBase-root]:bg-transparent [&_.MuiInputBase-input]:font-semibold [&_.MuiInputBase-input]:text-[14px] [&_.MuiInputBase-input]:text-gray-800 [&_.MuiInputBase-input]:px-4 [&_.MuiInputBase-input]:py-2.5 [&_.MuiInputBase-input]:cursor-pointer [&_.MuiIconButton-root]:mr-1 [&_.MuiSvgIcon-root]:w-[20px] [&_.MuiSvgIcon-root]:h-[20px] [&_.MuiSvgIcon-root]:text-gray-500 w-full">
                       <DatePicker
+                        borderless
                         selected={selectedDate}
                         onChange={(date: Date | null) => setSelectedDate(date)}
                         placeholderText="เลือกวันที่"

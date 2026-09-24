@@ -47,7 +47,7 @@ axiosInstance.interceptors.response.use(
   (response) => response,
   async (error) => {
     const originalRequest = error.config;
-    
+
     if (error.response) {
       const status = error.response.status;
       const message = error.response.data?.message || 'Something went wrong';
@@ -72,10 +72,10 @@ axiosInstance.interceptors.response.use(
 
           // Try to refresh token
           const refreshToken = sessionStorage.getItem('refreshToken');
-          
+
           if (refreshToken) {
             if (isRefreshing) {
-              return new Promise(function(resolve, reject) {
+              return new Promise(function (resolve, reject) {
                 failedQueue.push({ resolve, reject });
               }).then(token => {
                 originalRequest.headers.Authorization = 'Bearer ' + token;
@@ -93,17 +93,17 @@ axiosInstance.interceptors.response.use(
               const res = await axios.post('/api/auth/refresh', {}, {
                 headers: { Authorization: `Bearer ${refreshToken}` }
               });
-              
+
               if (res.data?.accessToken) {
                 const newAccessToken = res.data.accessToken;
                 sessionStorage.setItem('accessToken', newAccessToken);
                 if (res.data.refreshToken) {
                   sessionStorage.setItem('refreshToken', res.data.refreshToken);
                 }
-                
+
                 axiosInstance.defaults.headers.common['Authorization'] = 'Bearer ' + newAccessToken;
                 originalRequest.headers.Authorization = 'Bearer ' + newAccessToken;
-                
+
                 processQueue(null, newAccessToken);
                 return axiosInstance(originalRequest);
               }
@@ -139,10 +139,20 @@ axiosInstance.interceptors.response.use(
             title: 'ข้อผิดพลาดจากเซิร์ฟเวอร์',
             text: 'เกิดข้อผิดพลาดภายในระบบ กรุณาลองใหม่อีกครั้ง',
           });
+        } else if (status === 413) {
+          Swal.fire({
+            icon: 'error',
+            title: 'ไฟล์ขนาดใหญ่เกินไป',
+            text: message || 'ขนาดไฟล์เกินขีดจำกัดที่ตั้งไว้',
+          });
         } else if (status === 422 || status === 400) {
           // Bad request or validation error
-          // Usually handled by the component, but we can log it
           console.warn('Validation error:', message);
+          Swal.fire({
+            icon: 'warning',
+            title: 'ข้อมูลไม่ถูกต้อง',
+            text: message || 'โปรดตรวจสอบข้อมูลที่กรอกอีกครั้ง',
+          });
         }
       }
     } else if (error.request) {
@@ -164,4 +174,3 @@ axiosInstance.interceptors.response.use(
 );
 
 export default axiosInstance;
-
