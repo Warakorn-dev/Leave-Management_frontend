@@ -1,9 +1,9 @@
-"use client";
+'use client';
 
-import { useEffect, useState } from "react";
-import RoleGuard from "@/components/RoleGuard";
-import { ClipboardList, Download } from "lucide-react";
-import api from "@/lib/api/axios";
+import { useEffect, useState } from 'react';
+import RoleGuard from '@/components/RoleGuard';
+import { ClipboardList, Download } from 'lucide-react';
+import api from '@/lib/api/axios';
 
 interface AuditLogEntry {
   id: string;
@@ -41,24 +41,29 @@ export default function AdminAuditLogsPage() {
 
   const getUserDisplay = (log: AuditLogEntry) => {
     if (log.user) return log.user.username || log.user.email || 'ระบบ';
-    
+
     if (log.details && log.details.includes('Username: ')) {
-       const parts = log.details.split('Username: ');
-       if (parts.length > 1) {
-          return parts[1].trim();
-       }
+      const parts = log.details.split('Username: ');
+      if (parts.length > 1) {
+        return parts[1].trim();
+      }
     }
-    
+
     return 'ระบบ';
   };
 
   const handleExportCSV = async () => {
     try {
-      const res = await api.get('/admin/audit-logs/export', { responseType: 'blob' });
+      const res = await api.get('/admin/audit-logs/export', {
+        responseType: 'blob',
+      });
       const url = window.URL.createObjectURL(new Blob([res.data]));
       const link = document.createElement('a');
       link.href = url;
-      link.setAttribute('download', `audit-logs-${new Date().toISOString().split('T')[0]}.csv`);
+      link.setAttribute(
+        'download',
+        `audit-logs-${new Date().toISOString().split('T')[0]}.csv`,
+      );
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -68,7 +73,7 @@ export default function AdminAuditLogsPage() {
   };
 
   return (
-    <RoleGuard allowedRoles={["admin"]}>
+    <RoleGuard allowedRoles={['admin']}>
       <div className="min-h-[calc(100vh-4rem)] bg-[#E2E4E9] font-sans text-slate-800 flex flex-col">
         {/* Top Banner */}
         <div className="bg-white flex items-center gap-3 sm:gap-4 px-4 sm:px-8 py-3 sm:py-5 shadow-sm z-10 shrink-0">
@@ -103,25 +108,40 @@ export default function AdminAuditLogsPage() {
                     <tr className="bg-slate-50 text-slate-500 text-sm">
                       <th className="p-3 border-b font-medium">วันและเวลา</th>
                       <th className="p-3 border-b font-medium">ผู้ใช้งาน</th>
-                      <th className="p-3 border-b font-medium">การกระทำ (Action)</th>
-                      <th className="p-3 border-b font-medium">ส่วนที่เกี่ยวข้อง (Entity)</th>
-                      <th className="p-3 border-b font-medium">ไอพีแอดเดรส</th>
+                      <th className="p-3 border-b font-medium">การดำเนินการ</th>
+                      <th className="p-3 border-b font-medium">
+                        ส่วนที่เกี่ยวข้อง
+                      </th>
+                      <th className="p-3 border-b font-medium">IP Address</th>
                     </tr>
                   </thead>
                   <tbody>
                     {loading ? (
                       <tr>
-                        <td colSpan={5} className="p-8 text-center text-slate-500">กำลังโหลดข้อมูล...</td>
+                        <td
+                          colSpan={5}
+                          className="p-8 text-center text-slate-500"
+                        >
+                          กำลังโหลดข้อมูล...
+                        </td>
                       </tr>
                     ) : logs.length === 0 ? (
                       <tr>
-                        <td colSpan={5} className="p-8 text-center text-slate-500">ไม่พบประวัติการใช้งาน</td>
+                        <td
+                          colSpan={5}
+                          className="p-8 text-center text-slate-500"
+                        >
+                          ไม่พบประวัติการใช้งาน
+                        </td>
                       </tr>
                     ) : (
-                      logs.map(log => {
+                      logs.map((log) => {
                         const userName = getUserDisplay(log);
                         return (
-                          <tr key={log.id} className="hover:bg-slate-50 border-b last:border-0 text-sm">
+                          <tr
+                            key={log.id}
+                            className="hover:bg-slate-50 border-b last:border-0 text-sm"
+                          >
                             <td className="p-3 text-slate-600 whitespace-nowrap">
                               {new Date(log.createdAt).toLocaleString('th-TH')}
                             </td>
@@ -129,17 +149,21 @@ export default function AdminAuditLogsPage() {
                               {userName}
                             </td>
                             <td className="p-3">
-                              <span className={`px-2 py-1 rounded text-xs font-medium ${log.action.includes('FAILED') ? 'bg-red-100 text-red-700' :
-                                log.action.includes('LOGIN') ? 'bg-green-100 text-green-700' :
-                                  !log.user ? 'bg-slate-200 text-slate-700' :
-                                    'bg-blue-100 text-blue-700'
-                                }`}>
+                              <span
+                                className={`px-2 py-1 rounded text-xs font-medium ${
+                                  log.action.includes('FAILED')
+                                    ? 'bg-red-100 text-red-700'
+                                    : log.action.includes('LOGIN')
+                                      ? 'bg-green-100 text-green-700'
+                                      : !log.user
+                                        ? 'bg-slate-200 text-slate-700'
+                                        : 'bg-blue-100 text-blue-700'
+                                }`}
+                              >
                                 {log.action}
                               </span>
                             </td>
-                            <td className="p-3 text-slate-600">
-                              {log.entity}
-                            </td>
+                            <td className="p-3 text-slate-600">{log.entity}</td>
                             <td className="p-3 font-mono text-xs text-slate-500">
                               {log.ipAddress || '-'}
                             </td>
@@ -159,14 +183,14 @@ export default function AdminAuditLogsPage() {
                 <div className="flex gap-2">
                   <button
                     disabled={page <= 1}
-                    onClick={() => setPage(p => p - 1)}
+                    onClick={() => setPage((p) => p - 1)}
                     className="px-3 py-1 border rounded disabled:opacity-50"
                   >
                     ก่อนหน้า
                   </button>
                   <button
                     disabled={page >= totalPages}
-                    onClick={() => setPage(p => p + 1)}
+                    onClick={() => setPage((p) => p + 1)}
                     className="px-3 py-1 border rounded disabled:opacity-50"
                   >
                     ถัดไป

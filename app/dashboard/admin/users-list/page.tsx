@@ -77,7 +77,7 @@ export default function AdminUsersListPage() {
         <div className="flex justify-end">
           <input
             type="text"
-            placeholder="ค้นหาด้วยชื่อผู้ใช้ อีเมล หรือชื่อ-สกุล..."
+            placeholder="ค้นหาด้วยชื่อผู้ใช้งาน อีเมล หรือชื่อ-นามสกุล..."
             className="px-4 py-2 border border-slate-300 rounded-lg w-full sm:w-72 bg-white"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
@@ -89,10 +89,10 @@ export default function AdminUsersListPage() {
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="bg-slate-50 text-slate-500 text-sm">
-                  <th className="p-3 border-b font-medium">ชื่อผู้ใช้ (Username)</th>
-                  <th className="p-3 border-b font-medium">ชื่อ-สกุล</th>
+                  <th className="p-3 border-b font-medium">ชื่อผู้ใช้งาน</th>
+                  <th className="p-3 border-b font-medium">ชื่อ-นามสกุล</th>
                   <th className="p-3 border-b font-medium">อีเมล</th>
-                  <th className="p-3 border-b font-medium">สิทธิ์ (Role)</th>
+                  <th className="p-3 border-b font-medium">สิทธิ์การใช้งาน</th>
                   <th className="p-3 border-b font-medium">แผนก</th>
                   <th className="p-3 border-b font-medium">ตำแหน่ง</th>
                   <th className="p-3 border-b font-medium">สถานะ</th>
@@ -140,7 +140,7 @@ export default function AdminUsersListPage() {
                               : "bg-red-100 text-red-700"
                           }`}
                         >
-                          {u.isActive ? "ปกติ" : "ถูกระงับ"}
+                          {u.isActive ? "ปกติ" : "ระงับการใช้งาน"}
                         </span>
                       </td>
                       <td className="p-3 text-xs text-slate-500">

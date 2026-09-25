@@ -5,6 +5,7 @@ import RoleGuard from "@/components/RoleGuard";
 import { Users, Lock, Power } from "lucide-react";
 import api from "@/lib/api/axios";
 import Swal from 'sweetalert2';
+import { getErrorMessage } from "@/lib/api/utils";
 
 interface AdminUser {
   id: string;
@@ -25,6 +26,11 @@ export default function AdminUsersPage() {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [roles, setRoles] = useState<{ id: string; name?: string }[]>([]);
+  // The signed-in admin's own row cannot be demoted or suspended (server rule).
+  const [myUserId, setMyUserId] = useState<string | null>(null);
+  useEffect(() => {
+    setMyUserId(sessionStorage.getItem('userId'));
+  }, []);
 
   const fetchUsers = async () => {
     setLoading(true);
@@ -82,22 +88,35 @@ export default function AdminUsersPage() {
             showConfirmButton: false,
           });
           fetchUsers();
-        } catch {
-          Swal.fire('ข้อผิดพลาด', 'ไม่สามารถเปลี่ยนสถานะได้', 'error');
+        } catch (err) {
+          // e.g. "cannot suspend yourself" / "last active Admin" from the server
+          Swal.fire('ไม่สามารถเปลี่ยนสถานะได้', getErrorMessage(err, 'เกิดข้อผิดพลาด'), 'error');
         }
       }
     });
   };
 
-
-
-  const handleChangeRole = async (id: string, roleId: string) => {
+  const handleChangeRole = async (user: AdminUser, roleId: string) => {
+    const roleName = roles.find((r) => r.id === roleId)?.name || '';
+    // A role change signs the user out everywhere (server rule), so confirm first.
+    const { isConfirmed } = await Swal.fire({
+      title: 'ยืนยันการเปลี่ยนสิทธิ์',
+      text: `เปลี่ยนสิทธิ์ของ ${user.email || user.username} เป็น ${roleName} ใช่หรือไม่? ผู้ใช้จะถูกออกจากระบบ และต้องเข้าสู่ระบบใหม่เพื่อใช้งานด้วยสิทธิ์ใหม่`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#2563eb',
+      cancelButtonColor: '#94a3b8',
+      confirmButtonText: 'ยืนยัน',
+      cancelButtonText: 'ยกเลิก',
+    });
+    if (!isConfirmed) return;
     try {
-      await api.patch(`/admin/users/${id}/role`, { roleId });
-      alert("อัปเดตสิทธิ์สำเร็จ");
+      await api.patch(`/admin/users/${user.id}/role`, { roleId });
+      Swal.fire({ icon: 'success', title: 'อัปเดตสิทธิ์สำเร็จ', timer: 1500, showConfirmButton: false });
       fetchUsers();
-    } catch {
-      alert("ไม่สามารถเปลี่ยนสิทธิ์ได้");
+    } catch (err) {
+      // e.g. "cannot change your own role" / "last active Admin" from the server
+      Swal.fire('ไม่สามารถเปลี่ยนสิทธิ์ได้', getErrorMessage(err, 'เกิดข้อผิดพลาด'), 'error');
     }
   };
 
@@ -140,7 +159,7 @@ export default function AdminUsersPage() {
                   <thead>
                     <tr className="bg-slate-50 text-slate-500 text-sm">
                       <th className="p-3 border-b font-medium">ผู้ใช้งาน</th>
-                      <th className="p-3 border-b font-medium">สิทธิ์ (Role)</th>
+                      <th className="p-3 border-b font-medium">สิทธิ์การใช้งาน</th>
                       <th className="p-3 border-b font-medium">สถานะ</th>
                       <th className="p-3 border-b font-medium">ความปลอดภัย</th>
                       <th className="p-3 border-b font-medium">จัดการ</th>
@@ -166,9 +185,11 @@ export default function AdminUsersPage() {
                           </td>
                           <td className="p-3">
                             <select
-                              className="bg-slate-100 border-none text-xs rounded px-2 py-1"
+                              className="bg-slate-100 border-none text-xs rounded px-2 py-1 disabled:opacity-60 disabled:cursor-not-allowed"
                               value={user.role.id}
-                              onChange={(e) => handleChangeRole(user.id, e.target.value)}
+                              disabled={user.id === myUserId}
+                              title={user.id === myUserId ? 'ไม่สามารถเปลี่ยนสิทธิ์ของบัญชีตัวเองได้' : undefined}
+                              onChange={(e) => handleChangeRole(user, e.target.value)}
                             >
                               {roles.map(r => (
                                 <option key={r.id} value={r.id}>{r.name}</option>
@@ -183,7 +204,7 @@ export default function AdminUsersPage() {
                                 </span>
                               ) : (
                                 <span className="inline-flex items-center px-3 py-1 bg-red-100 text-red-500 text-xs font-bold rounded-full whitespace-nowrap">
-                                  ถูกระงับ
+                                  ระงับการใช้งาน
                                 </span>
                               )}
                             </div>
@@ -191,7 +212,7 @@ export default function AdminUsersPage() {
                           <td className="p-3 text-xs">
                             {user.lockedUntil && new Date(user.lockedUntil) > new Date() ? (
                               <span className="text-red-500 font-medium flex items-center gap-1">
-                                <Lock className="w-3 h-3" /> บัญชีถูกล็อค
+                                <Lock className="w-3 h-3" /> บัญชีถูกล็อก
                               </span>
                             ) : (
                               <span className="text-slate-500">
@@ -208,8 +229,13 @@ export default function AdminUsersPage() {
                             <div className="flex gap-2 items-center">
                               <button
                                 onClick={() => handleToggleStatus(user)}
-                                title={user.isActive ? 'ระงับการใช้งาน' : 'เปิดการใช้งาน'}
-                                className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors ${
+                                disabled={user.id === myUserId}
+                                title={
+                                  user.id === myUserId
+                                    ? 'ไม่สามารถระงับบัญชีของตัวเองได้'
+                                    : user.isActive ? 'ระงับการใช้งาน' : 'เปิดการใช้งาน'
+                                }
+                                className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${
                                   user.isActive
                                     ? 'bg-slate-100 text-slate-500 hover:bg-orange-100 hover:text-orange-600'
                                     : 'bg-red-100 text-red-600 hover:bg-green-100 hover:text-green-600'

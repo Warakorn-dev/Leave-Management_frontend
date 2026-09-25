@@ -56,7 +56,7 @@ export function EditPositionModal({
         <div className="p-6 space-y-4">
           <div>
             <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-              รหัสตำแหน่ง (Code)
+              รหัสตำแหน่ง
             </label>
             <input
               type="text"
@@ -71,7 +71,7 @@ export function EditPositionModal({
           </div>
           <div>
             <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-              ชื่อตำแหน่ง (Position Title) <span className="text-red-500">*</span>
+              ชื่อตำแหน่ง <span className="text-red-500">*</span>
             </label>
             <input
               type="text"
@@ -103,7 +103,7 @@ export function EditPositionModal({
           </div>
           <div>
             <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-              สิทธิ์การใช้งาน (Role)
+              สิทธิ์การใช้งาน
             </label>
             {form.departmentId && hasManager ? (
               <div className="w-full px-4 py-2.5 bg-slate-100 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-500 dark:text-slate-400">

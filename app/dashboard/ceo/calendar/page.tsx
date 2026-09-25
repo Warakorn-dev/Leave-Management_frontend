@@ -108,8 +108,8 @@ export default function LeaveCalendarPage() {
           <CalendarDays className="w-6 h-6" strokeWidth={2} />
         </div>
         <div>
-          <h1 className="text-base sm:text-xl font-bold text-black tracking-tight">ปฏิทินวันลา (Leave Calendar) - CEO</h1>
-          <p className="text-xs text-gray-500 mt-1 font-medium">ภาพรวมวันลาของทั้งองค์กรในรูปแบบปฏิทิน</p>
+          <h1 className="text-base sm:text-xl font-bold text-black tracking-tight">ปฏิทินการทำงาน</h1>
+          <p className="text-xs text-gray-500 mt-1 font-medium">ภาพรวมวันลาของทั้งองค์กร</p>
         </div>
       </div>
 

@@ -53,5 +53,16 @@ export const authApi = {
   resetPassword: async (data: { token: string; newPassword: string }): Promise<ApiResponse<unknown>> => {
     const response = await axiosInstance.post('/auth/reset-password', data);
     return response.data;
-  }
+  },
+
+  /** true once the user has changed their password before (then the current one is required). */
+  getPasswordStatus: async (): Promise<ApiResponse<{ requiresCurrentPassword: boolean }>> => {
+    const response = await axiosInstance.get('/auth/password-status');
+    return response.data;
+  },
+
+  changePassword: async (data: { currentPassword?: string; newPassword: string }): Promise<ApiResponse<{ accessToken?: string; refreshToken?: string }>> => {
+    const response = await axiosInstance.put('/auth/profile', data);
+    return response.data;
+  },
 };

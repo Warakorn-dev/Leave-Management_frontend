@@ -3,9 +3,14 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { LogOut, PieChart, FileEdit, Activity, BookOpen, Calendar, User, UserCog, Building, ListTodo, FileText, Settings, Menu, ChevronLeft, ChevronDown, Boxes, XCircle, FileCheck } from "lucide-react";
+import { LogOut, PieChart, FileEdit, Activity, BookOpen, Calendar, CalendarDays, User, UserCog, Building, ListTodo, FileText, Settings, Menu, ChevronLeft, ChevronDown, Boxes, XCircle, FileCheck, Megaphone, BarChart3 } from "lucide-react";
 
-type MenuLink = { name: string; href: string; icon: React.ComponentType<{ className?: string; strokeWidth?: number }> };
+type MenuIcon = React.ComponentType<{ className?: string; strokeWidth?: number }>;
+type MenuLink = { name: string; href: string; icon: MenuIcon };
+type MenuGroup = { name: string; icon: MenuIcon; children: MenuLink[] };
+type NavItem = MenuLink | MenuGroup;
+
+const isGroup = (item: NavItem): item is MenuGroup => "children" in item;
 
 export function HRSidebar({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = usePathname();
@@ -16,7 +21,7 @@ export function HRSidebar({ onNavigate }: { onNavigate?: () => void }) {
   const [department, setDepartment] = useState("");
   const [profilePic, setProfilePic] = useState<string | null>(null);
   const [isCollapsed, setIsCollapsed] = useState(true);
-  const [manageOpen, setManageOpen] = useState(false);
+  const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({});
 
   // Start collapsed on mobile (<1024px), expanded on desktop
   useEffect(() => {
@@ -80,9 +85,12 @@ export function HRSidebar({ onNavigate }: { onNavigate?: () => void }) {
     router.push("/login");
   };
 
-  const isLeader = position.toLowerCase().includes('leader') || position.toLowerCase().includes('manager');
+  // Only a Leader position is a department head (same rule as the backend).
+  const isLeader = position.toLowerCase().includes('leader');
 
-  const topItems: MenuLink[] = [
+  // Every route below is the original HR route; only the grouping changed.
+  // Per-item visibility (isLeader) is kept on the child itself.
+  const navItems: NavItem[] = [
     { name: "Dashboard", href: "/dashboard/hr/dashboard", icon: PieChart },
     { name: "สร้างคำขอลา", href: "/dashboard/hr/leave-request", icon: FileEdit },
     { name: "สถานะการลา", href: "/dashboard/hr/leave-status", icon: Activity },
@@ -91,53 +99,126 @@ export function HRSidebar({ onNavigate }: { onNavigate?: () => void }) {
     { name: "ตรวจสอบคำขอยกเลิกการลา", href: "/dashboard/hr/cancel-approval", icon: XCircle },
     ...(isLeader ? [{ name: "อนุมัติการลา (หัวหน้าแผนก)", href: "/dashboard/hr/dept-approve", icon: FileCheck }] : []),
     { name: "ปฏิทินวันลา", href: "/dashboard/hr/calendar", icon: Calendar },
-  ];
-
-  const manageGroup: { name: string; icon: typeof Boxes; children: MenuLink[] } = {
-    name: "จัดการข้อมูล",
-    icon: Boxes,
-    children: [
-      { name: "ข้อมูลพนักงาน", href: "/dashboard/hr/employees", icon: UserCog },
-      { name: "ตำแหน่งและแผนก", href: "/dashboard/hr/organization", icon: Building },
-      { name: "ประกาศบริษัท", href: "/dashboard/hr/announcements", icon: FileText },
-      { name: "วันหยุดบริษัท", href: "/dashboard/hr/holidays", icon: Calendar },
-    ],
-  };
-
-  const bottomItems: MenuLink[] = [
-    { name: "ตั้งค่าสิทธิและกฎการลา", href: "/dashboard/hr/leave-types", icon: ListTodo },
-    { name: "รายงานการลางาน", href: "/dashboard/hr/reports", icon: PieChart },
-    { name: "สรุปการลา", href: "/dashboard/hr/leave-summary", icon: Activity },
-    { name: "ตั้งค่าผู้ใช้", href: "/dashboard/hr/settings", icon: Settings },
+    { name: "วันหยุดบริษัท", href: "/dashboard/hr/holidays", icon: CalendarDays },
+    {
+      name: "บุคลากรและองค์กร",
+      icon: Boxes,
+      children: [
+        { name: "ข้อมูลพนักงาน", href: "/dashboard/hr/employees", icon: UserCog },
+        { name: "ตำแหน่งและแผนก", href: "/dashboard/hr/organization", icon: Building },
+        { name: "ประกาศบริษัท", href: "/dashboard/hr/announcements", icon: Megaphone },
+      ],
+    },
+    {
+      name: "รายงาน",
+      icon: BarChart3,
+      children: [
+        { name: "รายงานการลา", href: "/dashboard/hr/reports", icon: PieChart },
+        { name: "สรุปการลา", href: "/dashboard/hr/leave-summary", icon: FileText },
+      ],
+    },
+    {
+      name: "ตั้งค่า",
+      icon: Settings,
+      children: [
+        { name: "ตั้งค่าสิทธิ์และกฎการลา", href: "/dashboard/hr/leave-types", icon: ListTodo },
+        { name: "ตั้งค่าผู้ใช้", href: "/dashboard/hr/settings", icon: UserCog },
+      ],
+    },
   ];
 
   const isActive = (href: string) => pathname === href || pathname?.startsWith(href + '/');
-  const manageActive = manageGroup.children.some((c) => isActive(c.href));
+  const isGroupActive = (group: MenuGroup) => group.children.some((c) => isActive(c.href));
+  const activeGroupName = navItems.find((item) => isGroup(item) && isGroupActive(item))?.name;
 
-  // Auto-open the group when navigating to one of its pages
+  // Auto-open the group owning the current route (also after a refresh). Other
+  // groups keep whatever open/closed state the user gave them.
   useEffect(() => {
-    if (manageActive) setManageOpen(true);
-  }, [manageActive]);
+    if (activeGroupName) {
+      setOpenGroups((prev) => (prev[activeGroupName] ? prev : { ...prev, [activeGroupName]: true }));
+    }
+  }, [activeGroupName]);
+
+  const toggleGroup = (name: string) => {
+    if (isCollapsed) {
+      // Narrow mode has no room for submenus: widen the sidebar and show this group
+      setIsCollapsed(false);
+      setOpenGroups((prev) => ({ ...prev, [name]: true }));
+      return;
+    }
+    setOpenGroups((prev) => ({ ...prev, [name]: !prev[name] }));
+  };
 
   const renderLink = (item: MenuLink, opts: { child?: boolean } = {}) => {
     const active = isActive(item.href);
     return (
       <Link
-        key={item.name}
+        key={item.href}
         href={item.href}
-        className={`flex items-center ${isCollapsed ? 'justify-center px-0' : 'gap-4 px-5'} ${opts.child ? 'py-2.5' : 'py-3.5'} rounded-xl transition-all relative overflow-hidden ${active
+        className={`flex items-center ${isCollapsed ? 'justify-center px-0' : opts.child ? 'gap-3 px-4' : 'gap-4 px-5'} ${opts.child ? 'py-2.5' : 'py-3.5'} rounded-xl transition-all relative overflow-hidden ${active
             ? 'bg-white/10 text-white'
-            : 'text-white/60 hover:text-white hover:bg-white/5'
+            : opts.child
+              ? 'text-white/55 hover:text-white hover:bg-white/5'
+              : 'text-white/60 hover:text-white hover:bg-white/5'
           }`}
         title={isCollapsed ? item.name : undefined}
+        aria-current={active ? 'page' : undefined}
         onClick={onNavigate}
       >
         {active && (
           <div className="absolute left-0 top-0 bottom-0 w-[5px] bg-blue-400 rounded-r-full shadow-[0_0_10px_rgba(96,165,250,0.5)]"></div>
         )}
-        <item.icon className={`${opts.child ? 'w-[18px] h-[18px]' : 'w-[22px] h-[22px]'} shrink-0`} strokeWidth={2.5} />
-        {!isCollapsed && <span className={`font-semibold ${opts.child ? 'text-[13px]' : 'text-sm'} tracking-wide truncate`}>{item.name}</span>}
+        <item.icon className={`${opts.child ? 'w-[18px] h-[18px]' : 'w-[22px] h-[22px]'} shrink-0`} strokeWidth={opts.child ? 2.25 : 2.5} />
+        {/* Submenus are indented, so long child labels wrap instead of being cut off */}
+        {!isCollapsed && <span className={`${opts.child ? 'font-medium text-[13px] leading-snug' : 'font-semibold text-sm truncate'} tracking-wide`}>{item.name}</span>}
       </Link>
+    );
+  };
+
+  const renderGroup = (group: MenuGroup) => {
+    const groupActive = isGroupActive(group);
+    const open = !isCollapsed && !!openGroups[group.name];
+    const panelId = `hr-nav-${group.name}`;
+    return (
+      <div key={group.name}>
+        <button
+          type="button"
+          onClick={() => toggleGroup(group.name)}
+          aria-expanded={open}
+          aria-controls={panelId}
+          className={`w-full flex items-center ${isCollapsed ? 'justify-center px-0' : 'gap-4 px-5'} py-3.5 rounded-xl transition-all relative overflow-hidden ${groupActive
+              ? 'text-white bg-white/[0.06]'
+              : 'text-white/60 hover:text-white hover:bg-white/5'
+            }`}
+          title={isCollapsed ? group.name : undefined}
+        >
+          {/* In narrow mode the children are hidden, so the parent carries the active marker */}
+          {groupActive && isCollapsed && (
+            <div className="absolute left-0 top-0 bottom-0 w-[5px] bg-blue-400 rounded-r-full shadow-[0_0_10px_rgba(96,165,250,0.5)]"></div>
+          )}
+          <group.icon className="w-[22px] h-[22px] shrink-0" strokeWidth={2.5} />
+          {!isCollapsed && (
+            <>
+              <span className="font-semibold text-sm tracking-wide truncate flex-1 text-left">{group.name}</span>
+              <ChevronDown className={`w-4 h-4 shrink-0 transition-transform duration-200 ${open ? 'rotate-180' : ''}`} strokeWidth={2.5} />
+            </>
+          )}
+        </button>
+
+        {!isCollapsed && (
+          <div
+            id={panelId}
+            className={`grid transition-[grid-template-rows,opacity] duration-200 ease-out ${open ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'}`}
+            inert={!open}
+          >
+            <div className="overflow-hidden">
+              <div className="mt-1 ml-5 pl-3 border-l border-white/10 space-y-1">
+                {group.children.map((child) => renderLink(child, { child: true }))}
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
     );
   };
 
@@ -180,46 +261,8 @@ export function HRSidebar({ onNavigate }: { onNavigate?: () => void }) {
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 px-4 space-y-3 overflow-y-auto mt-2">
-        {topItems.map((item) => renderLink(item))}
-
-        {/* Group: จัดการข้อมูล */}
-        <div>
-          <button
-            onClick={() => {
-              if (isCollapsed) {
-                setIsCollapsed(false);
-                setManageOpen(true);
-              } else {
-                setManageOpen((o) => !o);
-              }
-            }}
-            className={`w-full flex items-center ${isCollapsed ? 'justify-center px-0' : 'gap-4 px-5'} py-3.5 rounded-xl transition-all relative overflow-hidden ${manageActive
-                ? 'bg-white/10 text-white'
-                : 'text-white/60 hover:text-white hover:bg-white/5'
-              }`}
-            title={isCollapsed ? manageGroup.name : undefined}
-          >
-            {manageActive && (
-              <div className="absolute left-0 top-0 bottom-0 w-[5px] bg-blue-400 rounded-r-full shadow-[0_0_10px_rgba(96,165,250,0.5)]"></div>
-            )}
-            <manageGroup.icon className="w-[22px] h-[22px] shrink-0" strokeWidth={2.5} />
-            {!isCollapsed && (
-              <>
-                <span className="font-semibold text-sm tracking-wide truncate flex-1 text-left">{manageGroup.name}</span>
-                <ChevronDown className={`w-4 h-4 shrink-0 transition-transform duration-200 ${manageOpen ? 'rotate-180' : ''}`} strokeWidth={2.5} />
-              </>
-            )}
-          </button>
-
-          {!isCollapsed && manageOpen && (
-            <div className="mt-1 ml-5 pl-3 border-l border-white/10 space-y-1">
-              {manageGroup.children.map((child) => renderLink(child, { child: true }))}
-            </div>
-          )}
-        </div>
-
-        {bottomItems.map((item) => renderLink(item))}
+      <nav className="flex-1 px-4 space-y-2 overflow-y-auto mt-2 pb-2" aria-label="เมนู HR">
+        {navItems.map((item) => (isGroup(item) ? renderGroup(item) : renderLink(item)))}
       </nav>
 
       {/* Logout */}

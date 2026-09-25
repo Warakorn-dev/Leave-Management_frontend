@@ -152,7 +152,7 @@ export default function HRReports() {
   // Handle excel export
   const handleExportExcel = () => {
     if (filteredLeaves.length === 0) {
-      alert('ไม่มีข้อมูลสำหรับส่งออก (No data to export)');
+      alert('ไม่มีข้อมูลสำหรับส่งออก');
       return;
     }
 
@@ -172,7 +172,7 @@ export default function HRReports() {
       'วันที่ลา': formatDateDisplay(l.startDate, l.endDate, l),
       'ระยะเวลา': formatDurationText(l),
       'เหตุผลการลา': l.reason || '-',
-      'สถานะ': (l.status || '').toLowerCase().includes('approved') ? 'อนุมัติแล้ว' : (l.status || '').toLowerCase() === 'pending' ? 'รออนุมัติ' : 'ปฏิเสธ',
+      'สถานะ': (l.status || '').toLowerCase().includes('approved') ? 'อนุมัติแล้ว' : (l.status || '').toLowerCase() === 'pending' ? 'รออนุมัติ' : 'ไม่อนุมัติ',
       
     };
     });
@@ -193,7 +193,7 @@ export default function HRReports() {
   // Handle PDF export with full Thai font support
   const handleExportPDF = async () => {
     if (filteredLeaves.length === 0) {
-      alert('ไม่มีข้อมูลสำหรับส่งออก (No data to export)');
+      alert('ไม่มีข้อมูลสำหรับส่งออก');
       return;
     }
 
@@ -230,7 +230,7 @@ export default function HRReports() {
       l.leaveTypeName || l.type || (leaveTypes.find(t => t.id === l.leaveTypeId)?.name) || '-',
       formatDateDisplay(l.startDate, l.endDate, l),
       formatDurationText(l),
-      (l.status || '').toLowerCase().includes('approved') ? 'อนุมัติแล้ว' : (l.status || '').toLowerCase() === 'pending' ? 'รออนุมัติ' : 'ปฏิเสธ'
+      (l.status || '').toLowerCase().includes('approved') ? 'อนุมัติแล้ว' : (l.status || '').toLowerCase() === 'pending' ? 'รออนุมัติ' : 'ไม่อนุมัติ'
     ];
     });
 
@@ -273,7 +273,7 @@ export default function HRReports() {
         </div>
         <div>
           <h1 className="text-base sm:text-xl font-bold text-black tracking-tight">
-            รายงานการลางาน (Leave Reports)
+            รายงานการลา (Leave Reports)
           </h1>
           <p className="text-xs text-gray-500 mt-1 font-medium">
             วิเคราะห์ สรุปผลยอดสถิติการลางานพนักงาน คัดกรองช่วงวัน และส่งออกข้อมูลเป็นไฟล์ Excel หรือ PDF
@@ -298,7 +298,7 @@ export default function HRReports() {
             className="inline-flex items-center space-x-2 px-5 py-2.5 rounded-xl text-sm font-bold text-white bg-[#0056b3] hover:bg-[#004494] cursor-pointer shadow-sm transition-all active:scale-95"
           >
             <FileDown className="w-4 h-4" />
-            <span>ส่งออก PDF Report</span>
+            <span>ส่งออก PDF</span>
           </button>
       </div>
 
@@ -307,7 +307,7 @@ export default function HRReports() {
         <CardHeader className="bg-slate-50/50 border-b border-slate-100 px-6 py-4 flex flex-row items-center justify-between">
           <CardTitle className="text-sm font-bold flex items-center space-x-2 text-slate-800">
             <Filter className="w-4 h-4 text-blue-600" />
-            <span>ตัวกรองรายงานขั้นสูง (Advanced Report Filter)</span>
+            <span>ตัวกรองรายงานขั้นสูง</span>
           </CardTitle>
           <button
             onClick={() => {
@@ -321,7 +321,7 @@ export default function HRReports() {
             className="text-xs font-bold text-blue-600 hover:text-blue-800 transition-colors cursor-pointer flex items-center space-x-1"
           >
             <RefreshCw className="w-3.5 h-3.5" />
-            <span>ล้างค่าทั้งหมด (Reset)</span>
+            <span>ล้างค่าทั้งหมด</span>
           </button>
         </CardHeader>
 
@@ -367,10 +367,10 @@ export default function HRReports() {
                 className="block w-full rounded-xl border border-slate-300 bg-white text-slate-800 py-2.5 px-3 text-xs focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all cursor-pointer"
               >
                 <option value="all">ทุกสถานะใบลา</option>
-                <option value="pending">รออนุมัติ (Pending)</option>
-                <option value="approved">อนุมัติแล้ว (Approved)</option>
-                <option value="rejected">ปฏิเสธ (Rejected)</option>
-                <option value="cancelled">ยกเลิกแล้ว (Cancelled)</option>
+                <option value="pending">รออนุมัติ</option>
+                <option value="approved">อนุมัติแล้ว</option>
+                <option value="rejected">ไม่อนุมัติ</option>
+                <option value="cancelled">ยกเลิกแล้ว</option>
               </select>
             </div>
 
@@ -489,7 +489,7 @@ export default function HRReports() {
                           >
                             {(l.status || '').toLowerCase().includes('approved') ? 'อนุมัติแล้ว' :
                               (l.status || '').toLowerCase() === 'pending' ? 'รออนุมัติ' :
-                                (l.status || '').toLowerCase().includes('rejected') ? 'ปฏิเสธ' : l.status}
+                                (l.status || '').toLowerCase().includes('rejected') ? 'ไม่อนุมัติ' : l.status}
                           </Badge>
                         </div>
                       </td>

@@ -6,6 +6,7 @@ import { Shield, Save, CheckCircle2, AlertCircle, Loader2 } from "lucide-react";
 import api from "@/lib/api/axios";
 import idleState from "@/lib/idleState";
 import Swal from "sweetalert2";
+import { escapeHtml } from "@/lib/escapeHtml";
 
 interface SettingForm {
   MAX_FAILED_LOGINS: string;
@@ -96,7 +97,7 @@ export default function AdminSecuritySettingsPage() {
         html: `
           <p style="color:#555; font-size:14px; margin:0">
             การตั้งค่าความปลอดภัยถูกบันทึกแล้ว<br/>
-            <strong>Idle timeout ใหม่: ${newMinutes} นาที</strong>
+            <strong>Idle timeout ใหม่: ${escapeHtml(newMinutes)} นาที</strong>
           </p>
         `,
         confirmButtonColor: "#3b82f6",
@@ -178,7 +179,7 @@ export default function AdminSecuritySettingsPage() {
                     {field(
                       "MAX_FAILED_LOGINS",
                       "จำนวนครั้งที่ล็อกอินผิดได้สูงสุด",
-                      "จำนวนครั้งที่อนุญาตให้ใส่รหัสผิดก่อนบัญชีจะถูกล็อค",
+                      "จำนวนครั้งที่อนุญาตให้ใส่รหัสผิดก่อนบัญชีจะถูกล็อก",
                       "number",
                       { min: 1, max: 10 }
                     )}

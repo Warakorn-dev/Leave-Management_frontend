@@ -319,7 +319,7 @@ export function LeaveDetailModal({
               </div>
               <div className="flex-1 min-w-0">
                 <h3 className="font-bold text-[15px] text-black mb-3">
-                  ข้อมูลพนักงาน (Employee Info)
+                  ข้อมูลพนักงาน
                 </h3>
                 <div className="text-[14px] text-gray-800 space-y-2">
                   <p className="flex gap-2">
@@ -480,7 +480,7 @@ export function LeaveDetailModal({
                 <h3
                   className={`font-bold text-[15px] mb-3 ${approvalHeadingColor}`}
                 >
-                  การอนุมัติ (Approval)
+                  การอนุมัติ
                 </h3>
                 <div className="border border-gray-300 rounded-xl p-5 bg-white flex flex-col sm:flex-row gap-4">
                   <div className="shrink-0">
@@ -538,7 +538,7 @@ export function LeaveDetailModal({
           >
             <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 bg-[#FAFAFA] shrink-0">
               <h2 className="text-[16px] font-bold text-black">
-                ไฟล์เอกสารแนบ (Attachment)
+                ไฟล์เอกสารแนบ
               </h2>
               <button
                 onClick={() => setPreview(null)}

@@ -187,10 +187,10 @@ export default function LeaveCalendarPage() {
         </div>
         <div>
           <h1 className="text-base sm:text-xl font-bold text-black tracking-tight">
-            ปฏิทินวันลา (Leave Calendar) - Manager
+            ปฏิทินการทำงาน
           </h1>
           <p className="text-xs text-gray-500 mt-1 font-medium">
-            ภาพรวมวันลาของทีมและของคุณในรูปแบบปฏิทิน
+            ภาพรวมวันลาของทีมและของคุณ
           </p>
         </div>
       </div>
@@ -612,15 +612,18 @@ export default function LeaveCalendarPage() {
                           </div>
                         </div>
 
-                        {/* Reason (Manager specific) */}
-                        <div className="mt-2 ml-[58px] bg-slate-50 p-2.5 rounded-lg border border-slate-100 flex items-start gap-2">
-                          <div className="text-[12px] text-slate-600 leading-relaxed line-clamp-2">
-                            <span className="font-semibold text-slate-700">
-                              เหตุผล:{' '}
-                            </span>
-                            {leave.reason || 'ไม่ได้ระบุเหตุผล'}
+                        {/* Reason: only present for the manager's own leaves — the
+                            calendar API no longer sends other people's reasons. */}
+                        {leave.reason && (
+                          <div className="mt-2 ml-[58px] bg-slate-50 p-2.5 rounded-lg border border-slate-100 flex items-start gap-2">
+                            <div className="text-[12px] text-slate-600 leading-relaxed line-clamp-2">
+                              <span className="font-semibold text-slate-700">
+                                เหตุผล:{' '}
+                              </span>
+                              {leave.reason}
+                            </div>
                           </div>
-                        </div>
+                        )}
                       </div>
                     );
                   })}

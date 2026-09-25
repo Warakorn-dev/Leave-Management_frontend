@@ -23,7 +23,7 @@ export default function DashboardRoot() {
 
   return (
     <div className="flex h-full items-center justify-center min-h-[50vh]">
-      <div className="animate-pulse text-zinc-400">กำลังโหลดหน้า dashboard...</div>
+      <div className="animate-pulse text-zinc-400">กำลังโหลด...</div>
     </div>
   );
 }

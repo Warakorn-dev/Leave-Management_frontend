@@ -6,7 +6,7 @@ import { useLeaveBalance } from "@/hooks/useLeaveBalance";
 import type { LeaveBalance } from "@/hooks/useLeaveBalance";
 import { useLeave } from "@/hooks/useLeave";
 import { Upload, Check, X, FilePlus2 } from "lucide-react";
-import { DatePicker } from "@/components/DateAndTime";
+import { DatePicker, compactDateFieldSx } from "@/components/DateAndTime";
 import { LeaveTimePicker } from "@/components/LeaveTimePicker";
 import { userApi, uploadApi } from "@/lib/api";
 import { LeaveDayAvailabilityPreview } from "@/components/LeaveDayAvailabilityPreview";
@@ -41,7 +41,7 @@ export default function RequestLeavePage() {
   const [endTime, setEndTime] = useState("");
   
   const [reason, setReason] = useState("");
-  const [username, setUsername] = useState("xxxxx xxxxxx");
+  const [username, setUsername] = useState("");
   const [hasRangeConflict, setHasRangeConflict] = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [showErrorModal, setShowErrorModal] = useState(false);
@@ -212,8 +212,8 @@ export default function RequestLeavePage() {
           <FilePlus2 className="w-6 h-6" strokeWidth={2} />
         </div>
         <div>
-          <h1 className="text-base sm:text-xl font-bold text-black tracking-tight">แบบฟอร์มยื่นลา (Leave Request)</h1>
-          <p className="text-xs text-gray-500 mt-1 font-medium">กรุณากรอกข้อมูลให้ครบถ้วนเพื่อส่งให้หัวหน้างานอนุมัติ</p>
+          <h1 className="text-base sm:text-xl font-bold text-black tracking-tight">แบบฟอร์มคำขอลา (Leave Request)</h1>
+          <p className="text-xs text-gray-500 mt-1 font-medium">กรุณากรอกข้อมูลให้ครบถ้วนเพื่อส่งให้หัวหน้าแผนกอนุมัติ</p>
         </div>
       </div>
 
@@ -230,7 +230,7 @@ export default function RequestLeavePage() {
               </p>
             </div>
             <div className="md:text-left">
-              <p className="text-[13px] font-semibold text-gray-700 mb-1.5">แผนก/ ตำแหน่ง</p>
+              <p className="text-[13px] font-semibold text-gray-700 mb-1.5">แผนก / ตำแหน่ง</p>
               <p className="text-[17px] font-bold text-black">
                 {userProfile ? `${userProfile.department?.name} | ${userProfile.position?.name}` : 'กำลังโหลด...'}
               </p>
@@ -282,7 +282,7 @@ export default function RequestLeavePage() {
                     if (isTenureNotMet) {
                         label += `(อายุงานไม่ครบ ${requiredTenure >= 365 ? (requiredTenure / 365).toFixed(0) + ' ปี' : requiredTenure + ' วัน'})`;
                     } else if (isOutOfQuota) {
-                        label += `(หมดโควต้า)`;
+                        label += `(หมดโควตา)`;
                     } else {
                         const pendingStr = (b.pendingDays ?? 0) > 0 ? ` + รออนุมัติ ${b.pendingDays} วัน` : '';
                         label += `(เหลือ ${b.effectiveRemainingDays} วัน${pendingStr})`;
@@ -347,18 +347,21 @@ export default function RequestLeavePage() {
                 </>
               ) : (
                 <>
-                  <div>
+                  {/* Mobile: start/end share one row; md+: `contents` lets them flow into the parent 2-col grid */}
+                  <div className="grid grid-cols-2 gap-3 md:contents">
+                  <div className="min-w-0">
                     <label className="text-[13px] font-semibold text-gray-800 block mb-2">วันที่เริ่มต้น</label>
-                    <DatePicker 
+                    <DatePicker
                       value={startDate || null}
                       onChange={(val: unknown) => {
                         setStartDate(formatPickerValue(val));
                       }}
                       shouldDisableDate={isDateDisabled}
                       placeholderText="วว/ดด/ปปปป"
+                      sx={compactDateFieldSx}
                     />
                     {leaveMode === 'half_day' && (
-                      <div className="flex items-center gap-4 mt-3">
+                      <div className="flex flex-wrap items-center gap-x-4 gap-y-2 mt-3">
                         <label className="flex items-center gap-1.5 text-xs text-gray-700 cursor-pointer">
                           <input type="radio" name="period" value="morning" checked={period === 'morning'} onChange={() => setPeriod('morning')} className="w-3.5 h-3.5 text-blue-600 border-gray-400 focus:ring-blue-500" />
                           ครึ่งวันเช้า
@@ -370,9 +373,9 @@ export default function RequestLeavePage() {
                       </div>
                     )}
                   </div>
-                  <div>
+                  <div className="min-w-0">
                     <label className="text-[13px] font-semibold text-gray-800 block mb-2">วันที่สิ้นสุด</label>
-                    <DatePicker 
+                    <DatePicker
                       value={endDate || null}
                       minDate={startDate ? startDate : undefined}
                       onChange={(val: unknown) => {
@@ -380,7 +383,9 @@ export default function RequestLeavePage() {
                       }}
                       shouldDisableDate={isDateDisabled}
                       placeholderText="วว/ดด/ปปปป"
+                      sx={compactDateFieldSx}
                     />
+                  </div>
                   </div>
                   <LeaveDayAvailabilityPreview
                     startDate={startDate}
@@ -420,17 +425,17 @@ export default function RequestLeavePage() {
                     <>ลากไฟล์มาวางที่นี่ หรือ <span className="text-blue-600">คลิกเพื่ออัปโหลด</span></>
                   )}
                 </p>
-                <p className="text-[11px] text-gray-400 mt-1.5">รองรับ PDF, PNG, JPG, DOCX ขนาดไม่เกิน 10MB</p>
+                <p className="text-[11px] text-gray-400 mt-1.5">รองรับไฟล์ PDF, PNG, JPG ขนาดไม่เกิน 2 MB</p>
                 {/* Invisible file input */}
                 <input 
                   type="file" 
                   className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" 
-                  accept=".pdf,.png,.jpg,.jpeg,.doc,.docx"
+                  accept=".pdf,.png,.jpg,.jpeg"
                   onChange={(e) => {
                     if (e.target.files && e.target.files[0]) {
                       const file = e.target.files[0];
-                      if (file.size > 10 * 1024 * 1024) {
-                        setErrorMsg("ขนาดไฟล์ต้องไม่เกิน 10MB");
+                      if (file.size > 2 * 1024 * 1024) {
+                        setErrorMsg("ขนาดไฟล์ต้องไม่เกิน 2 MB");
                         setShowErrorModal(true);
                         return;
                       }
@@ -479,7 +484,7 @@ export default function RequestLeavePage() {
             </div>
             <h2 className="text-2xl font-bold text-black mb-4">ยืนยันการส่งแบบฟอร์มยื่นคำขอลา</h2>
             <p className="text-gray-500 text-sm mb-10 leading-relaxed">
-              คำลาของคุณจะถูกส่งไปยังระบบ<br />
+              คำขอลาของคุณจะถูกส่งไปยังระบบ<br />
               สามารถเช็คสถานะได้จากหน้าเช็คสถานะของคุณ
             </p>
             <div className="flex items-center justify-center gap-4">

@@ -81,7 +81,7 @@ export default function AdminSystemHealthPage() {
               <div>
                 <h2 className="text-2xl font-bold text-slate-800">สถานะ API ของระบบ</h2>
                 <p className={`text-lg font-medium mt-1 ${health?.status === 'OK' ? 'text-green-600' : 'text-red-600'}`}>
-                  {health?.status === 'OK' ? 'ออนไลน์ (OK)' : 'ออฟไลน์ (OFFLINE)'}
+                  {health?.status === 'OK' ? 'ออนไลน์' : 'ออฟไลน์'}
                 </p>
               </div>
             </div>
@@ -116,11 +116,11 @@ export default function AdminSystemHealthPage() {
               
               <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-slate-500 font-medium">หน่วยความจำจำลอง (Heap Total)</p>
+                  <p className="text-sm text-slate-500 font-medium">หน่วยความจำ Heap ทั้งหมด</p>
                   <p className="text-lg font-bold text-slate-800">{health?.memory?.heapTotal || '0 MB'}</p>
                 </div>
                 <div className="text-right">
-                  <p className="text-sm text-slate-500 font-medium">หน่วยความจำที่ใช้งานจริง (Heap Used)</p>
+                  <p className="text-sm text-slate-500 font-medium">หน่วยความจำ Heap ที่ใช้</p>
                   <p className="text-lg font-bold text-slate-800">{health?.memory?.heapUsed || '0 MB'}</p>
                 </div>
               </div>

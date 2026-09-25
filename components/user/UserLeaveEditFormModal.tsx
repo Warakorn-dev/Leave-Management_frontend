@@ -1,7 +1,7 @@
 'use client';
 
 import { Upload, Check } from 'lucide-react';
-import { DatePicker } from '@/components/DateAndTime';
+import { DatePicker, compactDateFieldSx } from '@/components/DateAndTime';
 import { LeaveTimePicker } from '@/components/LeaveTimePicker';
 import { LeaveDayAvailabilityPreview } from '@/components/LeaveDayAvailabilityPreview';
 import type { LeaveMode, DayPortion } from '@/lib/leavePortions';
@@ -220,7 +220,9 @@ export function UserLeaveEditFormModal({
                 </>
               ) : (
                 <>
-                  <div className="md:col-span-1">
+                  {/* Mobile: start/end share one row; md+: `contents` lets them flow into the parent 2-col grid */}
+                  <div className="grid grid-cols-2 gap-3 md:contents">
+                  <div className="min-w-0">
                     <label className="block text-[13px] font-bold text-gray-800 mb-2">
                       วันที่เริ่มต้น
                     </label>
@@ -234,9 +236,10 @@ export function UserLeaveEditFormModal({
                       }}
                       shouldDisableDate={isEditDateDisabled}
                       placeholderText="วว/ดด/ปปปป"
+                      sx={compactDateFieldSx}
                     />
                     {editForm.leaveMode === 'half_day' && (
-                      <div className="flex items-center gap-4 mt-3">
+                      <div className="flex flex-wrap items-center gap-x-4 gap-y-2 mt-3">
                         <label className="flex items-center gap-1.5 text-xs text-gray-700 cursor-pointer">
                           <input
                             type="radio"
@@ -266,7 +269,7 @@ export function UserLeaveEditFormModal({
                       </div>
                     )}
                   </div>
-                  <div className="md:col-span-1">
+                  <div className="min-w-0">
                     <label className="block text-[13px] font-bold text-gray-800 mb-2">
                       วันที่สิ้นสุด
                     </label>
@@ -280,7 +283,9 @@ export function UserLeaveEditFormModal({
                       }}
                       shouldDisableDate={isEditDateDisabled}
                       placeholderText="วว/ดด/ปปปป"
+                      sx={compactDateFieldSx}
                     />
+                  </div>
                   </div>
                   <LeaveDayAvailabilityPreview
                     startDate={editForm.startDate}
@@ -337,7 +342,7 @@ export function UserLeaveEditFormModal({
                   )}
                 </p>
                 <p className="text-xs text-gray-400">
-                  รองรับ PDF, PNG ขนาดไม่เกิน 10MB
+                  รองรับไฟล์ PDF, PNG, JPG ขนาดไม่เกิน 2 MB
                 </p>
                 <input
                   id="edit-file-upload"
@@ -379,7 +384,7 @@ export function UserLeaveEditFormModal({
             </h2>
 
             <p className="text-[#6B7280] text-[15px] text-center mb-10 leading-relaxed">
-              คำลาของคุณจะถูกส่งไปยังระบบ
+              คำขอลาของคุณจะถูกส่งไปยังระบบ
               <br />
               สามารถเช็คสถานะได้จากหน้าเช็คสถานะของคุณ
             </p>

@@ -95,8 +95,8 @@ axiosInstance.interceptors.response.use(
           if (message === 'ACCOUNT_DEACTIVATED' || message === 'ACCOUNT_SUSPENDED') {
             Swal.fire({
               icon: 'error',
-              title: 'แจ้งเตือน!!',
-              text: message === 'ACCOUNT_SUSPENDED' ? 'user ของคุณโดนระงับการใช้งาน!!' : 'บัญชีของคุณถูกระงับการใช้งานในขณะนี้',
+              title: 'แจ้งเตือน',
+              text: message === 'ACCOUNT_SUSPENDED' ? 'บัญชีของคุณถูกระงับการใช้งาน กรุณาติดต่อฝ่ายบุคคล' : 'บัญชีของคุณถูกระงับการใช้งานในขณะนี้',
               confirmButtonColor: '#ef4444'
             }).then(() => {
               sessionStorage.clear();
@@ -130,25 +130,35 @@ axiosInstance.interceptors.response.use(
             isRefreshing = true;
 
             try {
-              const res = await axios.post<{ accessToken?: string; refreshToken?: string }>(
+              type Tokens = { accessToken?: string; refreshToken?: string };
+              const res = await axios.post<{ data?: Tokens } & Tokens>(
                 '/api/auth/refresh',
                 {},
                 { headers: { Authorization: `Bearer ${refreshToken}` } },
               );
 
-              if (res.data?.accessToken) {
-                const newAccessToken = res.data.accessToken;
+              // The backend wraps every response as { success, message, data },
+              // so the tokens are at res.data.data (the top-level form is kept
+              // as a fallback). Reading only res.data.accessToken never worked,
+              // which logged users out every time the access token expired.
+              const tokens: Tokens = res.data?.data ?? res.data ?? {};
+              if (tokens.accessToken) {
+                const newAccessToken = tokens.accessToken;
                 sessionStorage.setItem('accessToken', newAccessToken);
-                if (res.data.refreshToken) {
-                  sessionStorage.setItem('refreshToken', res.data.refreshToken);
+                if (tokens.refreshToken) {
+                  sessionStorage.setItem('refreshToken', tokens.refreshToken);
                 }
                 axiosInstance.defaults.headers.common['Authorization'] = 'Bearer ' + newAccessToken;
                 originalRequest.headers.Authorization = 'Bearer ' + newAccessToken;
                 processQueue(null, newAccessToken);
                 return axiosInstance(originalRequest);
               }
+              // A 2xx without tokens counts as a failed refresh.
+              throw new Error('Refresh response contained no access token');
             } catch {
-              processQueue(null, null);
+              // Reject the requests that were waiting for the refresh, instead of
+              // resolving them with a null token (they would retry as "Bearer null").
+              processQueue(error, null);
               // Refresh failed → show session-expired popup
               idleState.showExpiredPopup();
               return Promise.reject(error);
@@ -181,8 +191,8 @@ axiosInstance.interceptors.response.use(
             title: 'ไฟล์ขนาดใหญ่เกินไป',
             text: message || 'ขนาดไฟล์เกินขีดจำกัดที่ตั้งไว้',
           });
-        } else if (status === 422 || status === 400) {
-          // Bad request or validation error
+        } else if (status === 422 || status === 400 || status === 409) {
+          // Bad request, validation error, or duplicate data (409 Conflict)
           console.warn('Validation error:', message);
           if (!isAuthRequest && !isAuthPage) {
             Swal.fire({

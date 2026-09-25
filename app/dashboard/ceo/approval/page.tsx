@@ -16,6 +16,7 @@ import {
 import { getErrorMessage } from '@/lib/api/utils';
 import type { Leave } from '@/lib/api/types';
 import { LeaveDetailModal } from '@/components/LeaveDetailModal';
+import { escapeHtml } from '@/lib/escapeHtml';
 
 const getToken = () =>
   typeof window !== 'undefined' ? sessionStorage.getItem('accessToken') : '';
@@ -225,19 +226,19 @@ export default function CEOApproval() {
   // ── reject ──
   const handleReject = async (leave: ReturnType<typeof mapLeave>) => {
     const { value: reason, isConfirmed } = await Swal.fire({
-      title: 'ยืนยันการปฏิเสธ',
-      html: `<p class="text-sm text-gray-600 mb-3">ปฏิเสธคำขอ <strong>${leave.leaveTypeName}</strong> ของ <strong>${leave.employeeName}</strong></p>`,
+      title: 'ยืนยันไม่อนุมัติ',
+      html: `<p class="text-sm text-gray-600 mb-3">ไม่อนุมัติคำขอ <strong>${escapeHtml(leave.leaveTypeName)}</strong> ของ <strong>${escapeHtml(leave.employeeName)}</strong></p>`,
       input: 'textarea',
-      inputPlaceholder: 'ระบุเหตุผลที่ปฏิเสธ (บังคับ)...',
+      inputPlaceholder: 'ระบุเหตุผลที่ไม่อนุมัติ (บังคับ)...',
       icon: 'warning',
       showCancelButton: true,
       confirmButtonColor: '#dc2626',
       cancelButtonColor: '#94a3b8',
-      confirmButtonText: 'ปฏิเสธคำขอ',
+      confirmButtonText: 'ไม่อนุมัติคำขอ',
       cancelButtonText: 'ยกเลิก',
       preConfirm: (text) => {
         if (!text?.trim()) {
-          Swal.showValidationMessage('กรุณาระบุเหตุผลในการปฏิเสธ');
+          Swal.showValidationMessage('กรุณาระบุเหตุผลที่ไม่อนุมัติ');
         }
         return text;
       },
@@ -249,7 +250,7 @@ export default function CEOApproval() {
       refetch();
       Swal.fire({
         icon: 'success',
-        title: 'ปฏิเสธสำเร็จ',
+        title: 'ไม่อนุมัติคำขอสำเร็จ',
         timer: 1500,
         showConfirmButton: false,
       });
@@ -270,7 +271,7 @@ export default function CEOApproval() {
             รายการคำขออนุมัติการลา (CEO)
           </h1>
           <p className="text-xs text-gray-500 mt-1 font-medium">
-            อนุมัติหรือปฏิเสธคำขอลาที่ต้องผ่านการพิจารณาจากผู้บริหาร
+            อนุมัติหรือไม่อนุมัติคำขอลาที่ต้องผ่านการพิจารณาจากผู้บริหาร
           </p>
         </div>
       </div>
@@ -330,7 +331,7 @@ export default function CEOApproval() {
       <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-sm border border-slate-100 dark:border-slate-800 overflow-hidden">
         <div className="p-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-slate-100 dark:border-slate-800">
           <h2 className="text-lg font-bold text-slate-900 dark:text-white">
-            คำขอลาที่ค้างอยู่ (PENDING_EXECUTIVE)
+            คำขอลาที่รอผู้บริหารอนุมัติ
           </h2>
           <div className="relative">
             <select
@@ -423,7 +424,7 @@ export default function CEOApproval() {
                             onClick={() => handleReject(leave)}
                             className="bg-red-100 hover:bg-red-200 text-red-600 text-xs font-semibold px-3.5 py-1.5 rounded-xl transition-all"
                           >
-                            ปฏิเสธ
+                            ไม่อนุมัติ
                           </button>
                           <button
                             onClick={() => setSelectedLeave(leave)}
@@ -464,7 +465,7 @@ export default function CEOApproval() {
                 className="bg-[#FF0000] hover:bg-[#E50000] text-white px-5 py-3 rounded-xl font-bold text-[14px] shadow-sm transition-colors flex items-center justify-center gap-1.5"
               >
                 <X className="w-[18px] h-[18px]" strokeWidth={3} />
-                ปฏิเสธ
+                ไม่อนุมัติ
               </button>
             </>
           }

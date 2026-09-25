@@ -23,6 +23,7 @@ import { getLeaveStatusBadgeColor, getLeaveStatusText } from '@/lib/api/utils';
 import { formatLeaveDateRange, formatLeaveDuration } from '@/lib/leaveDuration';
 import { CeoLeaveDetailModal } from '@/components/ceo/CeoLeaveDetailModal';
 import type { Leave, Employee } from '@/lib/api/types';
+import { escapeHtml, safeDataUrlKind } from '@/lib/escapeHtml';
 
 export default function CEOReport() {
   const { useDepartmentsQuery } = useDepartment();
@@ -94,15 +95,20 @@ export default function CEOReport() {
     };
     win.handleViewCEOAttachment = (urlOrBase64: string) => {
       if (urlOrBase64.startsWith('data:')) {
+        // Only a well-formed image/PDF data URL is shown, and escaped: the
+        // stored value comes from the uploader.
+        const kind = safeDataUrlKind(urlOrBase64);
+        if (!kind) return;
+        const src = escapeHtml(urlOrBase64);
         const win = window.open();
         if (win) {
-          if (urlOrBase64.startsWith('data:application/pdf')) {
+          if (kind === 'pdf') {
             win.document.write(
-              `<iframe src="${urlOrBase64}" frameborder="0" style="border:0; top:0px; left:0px; bottom:0px; right:0px; width:100%; height:100%;" allowfullscreen></iframe>`,
+              `<iframe src="${src}" frameborder="0" style="border:0; top:0px; left:0px; bottom:0px; right:0px; width:100%; height:100%;" allowfullscreen></iframe>`,
             );
           } else {
             win.document.write(
-              `<img src="${urlOrBase64}" style="max-width:100%; max-height:100%; display:block; margin:auto;" />`,
+              `<img src="${src}" style="max-width:100%; max-height:100%; display:block; margin:auto;" />`,
             );
           }
         }
@@ -110,7 +116,9 @@ export default function CEOReport() {
         const fileUrl = urlOrBase64.startsWith('/')
           ? urlOrBase64
           : '/' + urlOrBase64.replace(/\\/g, '/');
-        window.open(fileUrl, '_blank');
+        // Same-site uploaded files only (no "//other-site" or other schemes).
+        if (!fileUrl.startsWith('/uploads/')) return;
+        window.open(fileUrl, '_blank', 'noopener');
       }
     };
     return () => {
@@ -273,7 +281,7 @@ export default function CEOReport() {
       Swal.fire({
         icon: 'warning',
         title: 'ไม่มีข้อมูล',
-        text: 'ไม่พบข้อมูลสำหรับ Export',
+        text: 'ไม่พบข้อมูลสำหรับส่งออก',
       });
       return;
     }
@@ -304,7 +312,7 @@ export default function CEOReport() {
           ? 'อนุมัติ'
           : (l.status || '').toLowerCase() === 'pending'
             ? 'รออนุมัติ'
-            : 'ปฏิเสธ';
+            : 'ไม่อนุมัติ';
       const durationText = formatLeaveDuration(l, holidaysData);
 
       csvContent += `${empId},${empName},${deptName},${shortTypeName},${dates},${durationText},${statusText}\n`;
@@ -521,7 +529,7 @@ export default function CEOReport() {
                 }}
                 className="px-4 py-2 border-2 border-slate-300 rounded-lg bg-white cursor-pointer hover:bg-slate-50 transition-colors text-sm font-medium text-slate-700 outline-none focus:border-[#581c87]"
               >
-                <option value="">ทุกแผนก (All Departments)</option>
+                <option value="">ทุกแผนก</option>
                 {departments.map((d) => (
                   <option key={d.id} value={d.name}>
                     {d.name}

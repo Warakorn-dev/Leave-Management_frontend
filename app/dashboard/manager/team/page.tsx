@@ -26,7 +26,7 @@ import { Button } from '@/components/ui/button';
 import { useDashboardStats } from '@/hooks/useDashboard';
 
 export default function TeamDashboard() {
-  const [username, setUsername] = useState('ชื่อ xxxxx xxxx');
+  const [username, setUsername] = useState('');
 
   const [currentYear] = useState(new Date().getFullYear());
   const [targetYear, setTargetYear] = useState(currentYear);

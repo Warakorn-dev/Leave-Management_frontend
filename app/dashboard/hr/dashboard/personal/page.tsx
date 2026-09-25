@@ -122,7 +122,7 @@ export default function HRPersonalDashboard() {
                 className="bg-[#2D3A7A] hover:bg-[#3D4B92] text-white border border-[#4452A3] font-semibold py-2.5 px-5 rounded-xl transition-colors shadow-sm text-sm flex items-center justify-center space-x-2"
               >
                 <Plus className="w-4 h-4" />
-                <span>ยื่นคำลา</span>
+                <span>ยื่นคำขอลา</span>
               </Link>
             </div>
           </div>
@@ -151,7 +151,7 @@ export default function HRPersonalDashboard() {
             <Clock className="w-5 h-5" />
           </div>
           <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 mt-2">
-            กำลังรออนุมัติ
+            รออนุมัติ
           </p>
           <div className="flex items-baseline space-x-1">
             <span className="text-3xl font-extrabold text-slate-900 dark:text-white">
@@ -181,7 +181,7 @@ export default function HRPersonalDashboard() {
             <XCircle className="w-5 h-5" />
           </div>
           <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 mt-2">
-            ถูกปฏิเสธ
+            ไม่อนุมัติ
           </p>
           <div className="flex items-baseline space-x-1">
             <span className="text-3xl font-extrabold text-slate-900 dark:text-white">

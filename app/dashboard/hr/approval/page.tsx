@@ -275,7 +275,7 @@ export default function HrApprovePage() {
   const executeReject = async () => {
     if (!rejectData) return;
     if (rejectReasonInput.trim() === '') {
-      alert('การปฏิเสธคำขอลาจำเป็นต้องระบุเหตุผล');
+      alert('กรณีไม่อนุมัติคำขอลา ต้องระบุเหตุผล');
       return;
     }
     try {
@@ -287,7 +287,7 @@ export default function HrApprovePage() {
       if (selectedRequest && selectedRequest.id === rejectData.id)
         setSelectedRequest(null);
     } catch (error) {
-      alert(getErrorMessage(error, 'เกิดข้อผิดพลาดในการปฏิเสธคำขอ'));
+      alert(getErrorMessage(error, 'เกิดข้อผิดพลาดในการไม่อนุมัติคำขอ'));
     } finally {
       refetchLeaves();
       setShowRejectModal(false);
@@ -315,10 +315,10 @@ export default function HrApprovePage() {
         </div>
         <div>
           <h1 className="text-base sm:text-xl font-bold text-black tracking-tight">
-            รายการคำขอรอตรวจสอบ (HR View)
+            รายการคำขอรอตรวจสอบ
           </h1>
           <p className="text-xs text-gray-500 mt-1 font-medium">
-            พิจารณาตรวจสอบเบื้องต้น หรือปฏิเสธคำขอลาของพนักงาน
+            พิจารณาตรวจสอบเบื้องต้น หรือไม่อนุมัติคำขอลาของพนักงาน
           </p>
         </div>
       </div>
@@ -592,7 +592,7 @@ export default function HrApprovePage() {
                                 ></rect>
                                 <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
                               </svg>
-                              ดึงมาตรวจสอบ
+                              รับเรื่องตรวจสอบ
                             </button>
                             <button
                               onClick={() => handleViewDetails(req)}
@@ -664,7 +664,7 @@ export default function HrApprovePage() {
                   className="bg-[#FF0000] hover:bg-[#E50000] text-white px-5 py-3 rounded-xl font-bold text-[14px] shadow-sm transition-colors flex items-center justify-center gap-1.5"
                 >
                   <X className="w-[18px] h-[18px]" strokeWidth={3} />
-                  ปฏิเสธ
+                  ไม่อนุมัติ
                 </button>
               </>
             ) : null
@@ -712,10 +712,10 @@ export default function HrApprovePage() {
                 <X className="w-6 h-6" strokeWidth={3} />
               </div>
               <h3 className="text-lg font-bold text-center text-[#FF0000] mb-2">
-                ปฏิเสธคำขอลา
+                ไม่อนุมัติคำขอลา
               </h3>
               <p className="text-[13px] text-gray-500 text-center mb-4">
-                กรุณาระบุเหตุผลในการปฏิเสธคำขอนี้ให้พนักงานทราบ
+                กรุณาระบุเหตุผลที่ไม่อนุมัติคำขอนี้ให้พนักงานทราบ
               </p>
               <textarea
                 value={rejectReasonInput}
@@ -734,7 +734,7 @@ export default function HrApprovePage() {
                   onClick={executeReject}
                   className="px-4 py-2 bg-[#FF0000] hover:bg-[#E50000] text-white rounded-lg text-sm font-bold transition-colors"
                 >
-                  ยืนยันปฏิเสธ
+                  ยืนยันไม่อนุมัติ
                 </button>
               </div>
             </div>

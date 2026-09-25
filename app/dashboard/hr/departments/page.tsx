@@ -181,7 +181,7 @@ export default function HRDepartments() {
         </div>
         <div>
           <h1 className="text-base sm:text-xl font-bold text-black tracking-tight">
-            แผนกงาน (Departments)
+            แผนกงาน
           </h1>
           <p className="text-xs text-gray-500 mt-1 font-medium">
             บริหารจัดการแผนกโครงสร้างองค์กร
@@ -198,7 +198,7 @@ export default function HRDepartments() {
           className="inline-flex items-center space-x-2 px-4 py-2.5 rounded-xl text-sm font-semibold text-white bg-indigo-650 bg-indigo-600 hover:bg-indigo-500 cursor-pointer shadow-sm"
         >
           <Plus className="w-4.5 h-4.5" />
-          <span>เพิ่มแผนก (Add Department)</span>
+          <span>เพิ่มแผนก</span>
         </button>
       </div>
 
@@ -260,7 +260,7 @@ export default function HRDepartments() {
                       <Badge
                         variant={d.status === 'active' ? 'success' : 'neutral'}
                       >
-                        {d.status === 'active' ? 'ใช้งานปกติ' : 'งดใช้งาน'}
+                        {d.status === 'active' ? 'ใช้งานอยู่' : 'ปิดการใช้งาน'}
                       </Badge>
                     </td>
                     <td className="py-4 px-5 text-right space-x-1">
@@ -330,7 +330,7 @@ export default function HRDepartments() {
             <div className="space-y-4 mt-2">
               <div>
                 <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">
-                  รหัสย่อแผนก (Code) *
+                  รหัสย่อแผนก *
                 </label>
                 <input
                   {...register('code')}
@@ -347,7 +347,7 @@ export default function HRDepartments() {
 
               <div>
                 <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">
-                  ชื่อแผนก (Name) *
+                  ชื่อแผนก *
                 </label>
                 <input
                   {...register('name')}
@@ -364,7 +364,7 @@ export default function HRDepartments() {
 
               <div>
                 <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">
-                  คำอธิบายแผนก (Description)
+                  คำอธิบายแผนก
                 </label>
                 <textarea
                   {...register('description')}
@@ -376,14 +376,14 @@ export default function HRDepartments() {
 
               <div>
                 <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">
-                  สถานะ (Status) *
+                  สถานะ *
                 </label>
                 <select
                   {...register('status')}
                   className="block w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 px-3 py-2 text-sm focus:outline-hidden focus:ring-2 focus:ring-indigo-500"
                 >
-                  <option value="active">ใช้งานปกติ (Active)</option>
-                  <option value="inactive">งดใช้งาน (Inactive)</option>
+                  <option value="active">ใช้งานอยู่</option>
+                  <option value="inactive">ปิดการใช้งาน</option>
                 </select>
               </div>
             </div>
@@ -394,13 +394,13 @@ export default function HRDepartments() {
                 onClick={() => setDialogOpen(false)}
                 className="px-4 py-2 text-sm font-semibold rounded-xl border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-850 text-slate-650 dark:text-slate-350 cursor-pointer"
               >
-                ยกเลิก (Cancel)
+                ยกเลิก
               </button>
               <button
                 type="submit"
                 className="px-4 py-2 text-sm font-semibold rounded-xl text-white bg-indigo-600 hover:bg-indigo-500 cursor-pointer"
               >
-                บันทึกข้อมูล (Save)
+                บันทึกข้อมูล
               </button>
             </DialogFooter>
           </form>

@@ -14,6 +14,7 @@ import {
   Trash2,
 } from 'lucide-react';
 import { userApi } from '@/lib/api';
+import ChangePasswordCard from '@/components/ChangePasswordCard';
 
 export default function UserSettingsPage() {
   const [username, setUsername] = useState('');
@@ -238,7 +239,7 @@ export default function UserSettingsPage() {
                 <Upload className="w-3.5 h-3.5" />
                 <input
                   type="file"
-                  accept="image/*"
+                  accept="image/png,image/jpeg,image/webp,image/gif"
                   className="hidden"
                   onChange={handleProfilePicChange}
                   disabled={isUploading}
@@ -487,10 +488,10 @@ export default function UserSettingsPage() {
                   type="text"
                   value={
                     gender === 'Male'
-                      ? 'ชาย (Male)'
+                      ? 'ชาย'
                       : gender === 'Female'
-                        ? 'หญิง (Female)'
-                        : 'ไม่ระบุ (Unspecified)'
+                        ? 'หญิง'
+                        : 'ไม่ระบุ'
                   }
                   readOnly
                   className="w-full border-0 bg-slate-50/50 rounded-xl px-4 py-3.5 text-sm font-medium text-slate-700 outline-none ring-1 ring-slate-200/60 focus:ring-2 focus:ring-blue-500/20 shadow-inner cursor-default transition-all"
@@ -499,6 +500,8 @@ export default function UserSettingsPage() {
             </div>
           </div>
         </div>
+
+        <ChangePasswordCard />
       </div>
     </div>
   );

@@ -55,7 +55,7 @@ export default function LeaveHistoryPage() {
   }
 
   const [requests, setRequests] = useState<MappedRequest[]>([]);
-  const [username, setUsername] = useState('xxxxx xxxxxx');
+  const [username, setUsername] = useState('');
   const [filterType, setFilterType] = useState<'daily' | 'monthly'>('monthly');
   const [selectedMonthRaw, setSelectedMonthRaw] = useState(() => {
     const d = new Date();
@@ -89,8 +89,8 @@ export default function LeaveHistoryPage() {
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
-      if (file.size > 10 * 1024 * 1024) {
-        alert('ขนาดไฟล์ต้องไม่เกิน 10MB');
+      if (file.size > 2 * 1024 * 1024) {
+        alert('ขนาดไฟล์ต้องไม่เกิน 2 MB');
         return;
       }
       setAttachmentName(file.name);
@@ -265,7 +265,7 @@ export default function LeaveHistoryPage() {
             Swal.fire({
               icon: 'info',
               title: 'สถานะคำขอมีการเปลี่ยนแปลง',
-              text: `คำขอลานี้ได้ถูก ${updatedReq.status === 'APPROVED' ? 'อนุมัติ' : 'ปฏิเสธ'} แล้ว`,
+              text: `คำขอลานี้${updatedReq.status === 'APPROVED' ? 'ได้รับการอนุมัติ' : 'ไม่ได้รับการอนุมัติ'}แล้ว`,
               confirmButtonColor: '#3085d6',
             });
             setIsEditing(false);
@@ -479,7 +479,7 @@ export default function LeaveHistoryPage() {
         </div>
         <div>
           <h1 className="text-base sm:text-xl font-bold text-black tracking-tight">
-            ประวัติการลา (Leave History) - Manager
+            ประวัติการลา (Leave History)
           </h1>
           <p className="text-xs text-gray-500 mt-1 font-medium">
             {viewMode === 'department'

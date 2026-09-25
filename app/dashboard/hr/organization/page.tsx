@@ -388,7 +388,7 @@ export default function OrganizationManagementPage() {
           }`}
         >
           <Building2 className="w-4 h-4" />
-          แผนก (Departments)
+          แผนก
         </button>
         <button
           onClick={() => setActiveTab('positions')}
@@ -399,7 +399,7 @@ export default function OrganizationManagementPage() {
           }`}
         >
           <Briefcase className="w-4 h-4" />
-          ตำแหน่ง (Positions)
+          ตำแหน่ง
         </button>
       </div>
 
@@ -539,10 +539,10 @@ export default function OrganizationManagementPage() {
               <table className="w-full text-left text-sm whitespace-nowrap">
                 <thead className="bg-slate-50/50 dark:bg-slate-800/50 border-b border-slate-100 dark:border-slate-800 text-slate-500 dark:text-slate-400 font-medium">
                   <tr>
-                    <th className="px-6 py-4">รหัส (Code)</th>
-                    <th className="px-6 py-4">ชื่อตำแหน่ง (Position)</th>
-                    <th className="px-6 py-4">แผนกต้นสังกัด (Department)</th>
-                    <th className="px-6 py-4">สิทธิ์การใช้งาน (Role)</th>
+                    <th className="px-6 py-4">รหัส</th>
+                    <th className="px-6 py-4">ชื่อตำแหน่ง</th>
+                    <th className="px-6 py-4">แผนกต้นสังกัด</th>
+                    <th className="px-6 py-4">สิทธิ์การใช้งาน</th>
                     <th className="px-6 py-4 text-right">จัดการ</th>
                   </tr>
                 </thead>

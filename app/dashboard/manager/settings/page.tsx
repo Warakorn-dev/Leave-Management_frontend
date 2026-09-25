@@ -15,6 +15,7 @@ import {
   Venus,
 } from 'lucide-react';
 import { userApi } from '@/lib/api';
+import ChangePasswordCard from '@/components/ChangePasswordCard';
 
 export default function ManagerSettingsPage() {
   const [username, setUsername] = useState('');
@@ -242,7 +243,7 @@ export default function ManagerSettingsPage() {
                 <Upload className="w-4 h-4" />
                 <input
                   type="file"
-                  accept="image/*"
+                  accept="image/png,image/jpeg,image/webp,image/gif"
                   className="hidden"
                   onChange={handleProfilePicChange}
                   disabled={isUploading}
@@ -497,6 +498,8 @@ export default function ManagerSettingsPage() {
             </div>
           </div>
         </div>
+
+        <ChangePasswordCard />
       </div>
     </div>
   );

@@ -1,12 +1,26 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { useEmployee } from "@/hooks/useEmployee";
 import { Eye, EyeOff, Moon, Sun } from "lucide-react";
+import LoginLockoutModal from "@/components/LoginLockoutModal";
+import {
+  clearFailedLogins,
+  getLockState,
+  isCredentialFailure,
+  parseLockoutPolicy,
+  recordFailedLogin,
+  type LockState,
+} from "@/lib/loginLockout";
+
+const formatClock = (ms: number) => {
+  const total = Math.max(0, Math.ceil(ms / 1000));
+  return `${String(Math.floor(total / 60)).padStart(2, "0")}:${String(total % 60).padStart(2, "0")}`;
+};
 
 export default function LoginPage() {
   const router = useRouter();
@@ -41,6 +55,33 @@ export default function LoginPage() {
   const [captchaId, setCaptchaId] = useState("");
   const [userCaptcha, setUserCaptcha] = useState("");
 
+  // Lockout countdown for the typed username (see lib/loginLockout.ts).
+  const [lock, setLock] = useState<LockState | null>(null);
+  const [showLockModal, setShowLockModal] = useState(false);
+  const [nowTick, setNowTick] = useState(() => Date.now());
+  const lockActive = lock !== null && lock.until > nowTick;
+
+  // A countdown saved earlier (e.g. before a page refresh) for this username.
+  useEffect(() => {
+    setLock(getLockState(username));
+  }, [username]);
+
+  // Tick while a countdown runs; when it ends, unlock the button.
+  useEffect(() => {
+    if (!lock) return;
+    const id = setInterval(() => {
+      const now = Date.now();
+      setNowTick(now);
+      if (now >= lock.until) {
+        setLock(getLockState(username)); // clears the stored entry
+        setShowLockModal(false);
+      }
+    }, 1000);
+    return () => clearInterval(id);
+  }, [lock, username]);
+
+  const closeLockModal = useCallback(() => setShowLockModal(false), []);
+
   const generateCaptcha = async () => {
     try {
       const res = await fetch(`/api/auth/captcha?theme=${theme}&t=${Date.now()}`);
@@ -68,6 +109,11 @@ export default function LoginPage() {
     e.preventDefault();
     setError("");
 
+    if (lockActive) {
+      setShowLockModal(true);
+      return;
+    }
+
     if (!userCaptcha || !captchaId) {
       setError("กรุณากรอกรหัส CAPTCHA ให้ครบถ้วน");
       return;
@@ -83,6 +129,7 @@ export default function LoginPage() {
         captchaId: captchaId
       });
       const user = response.user || response;
+      clearFailedLogins(username);
       if (response.accessToken) {
         sessionStorage.setItem("accessToken", response.accessToken);
       }
@@ -118,7 +165,17 @@ export default function LoginPage() {
       }
     } catch (err) {
       const message = err instanceof Error ? err.message : '';
-      if (message === 'Invalid credentials') {
+      if (isCredentialFailure(message)) {
+        // Count this failure; on reaching the stated limit show the countdown.
+        const newLock = recordFailedLogin(username, parseLockoutPolicy(message));
+        if (newLock) {
+          setNowTick(Date.now());
+          setLock(newLock);
+          setShowLockModal(true);
+        } else {
+          setError(message);
+        }
+      } else if (message === 'Invalid credentials') {
         setError("ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง");
       } else if (
         message.includes('Too Many Requests') ||
@@ -302,12 +359,24 @@ export default function LoginPage() {
 
           <div className="pt-2 pb-2">
             <div className={`h-[1px] w-full mb-6 mt-4 ${isDark ? 'bg-white/10' : 'bg-gray-200'}`}></div>
-            <Button type="submit" disabled={isLoading} className="w-full h-10 px-10 bg-[#0056b3] hover:bg-[#004494] text-white font-bold text-[15px] rounded-lg transition-colors">
-              {isLoading ? "Logging in..." : "Login"}
+            <Button type="submit" disabled={isLoading || lockActive} className="w-full h-10 px-10 bg-[#0056b3] hover:bg-[#004494] text-white font-bold text-[15px] rounded-lg transition-colors">
+              {lockActive
+                ? `ลองใหม่ได้ในอีก ${formatClock(lock.until - nowTick)}`
+                : isLoading ? "Logging in..." : "Login"}
             </Button>
           </div>
         </form>
       </div>
+
+      {showLockModal && lock && lockActive && (
+        <LoginLockoutModal
+          until={lock.until}
+          totalMs={lock.totalMs}
+          maxAttempts={lock.maxAttempts}
+          isDark={isDark}
+          onClose={closeLockModal}
+        />
+      )}
     </div>
   );
 }

@@ -95,7 +95,7 @@ export default function AdminDashboardPage() {
                   <AlertTriangle className="w-6 h-6" />
                 </div>
                 <div>
-                  <p className="text-sm text-slate-500 font-medium">ล็อกอินผิดพลาด (24ชม.)</p>
+                  <p className="text-sm text-slate-500 font-medium">เข้าสู่ระบบไม่สำเร็จ (24 ชม.)</p>
                   <p className="text-2xl font-bold text-slate-800">{stats?.failedLogins24h || 0}</p>
                 </div>
               </div>
@@ -105,7 +105,7 @@ export default function AdminDashboardPage() {
                   <Activity className="w-6 h-6" />
                 </div>
                 <div>
-                  <p className="text-sm text-slate-500 font-medium">จำนวนสิทธิ์ (Roles)</p>
+                  <p className="text-sm text-slate-500 font-medium">จำนวนสิทธิ์</p>
                   <p className="text-2xl font-bold text-slate-800">{stats?.usersByRole?.length || 0}</p>
                 </div>
               </div>
@@ -120,8 +120,8 @@ export default function AdminDashboardPage() {
                     <tr className="bg-slate-50 text-slate-500 text-sm">
                       <th className="p-3 border-b font-medium">เวลา</th>
                       <th className="p-3 border-b font-medium">ผู้ใช้งาน</th>
-                      <th className="p-3 border-b font-medium">การกระทำ</th>
-                      <th className="p-3 border-b font-medium">ไอพีแอดเดรส</th>
+                      <th className="p-3 border-b font-medium">การดำเนินการ</th>
+                      <th className="p-3 border-b font-medium">IP Address</th>
                     </tr>
                   </thead>
                   <tbody>

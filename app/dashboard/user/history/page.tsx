@@ -36,7 +36,7 @@ export default function LeaveHistoryPage() {
 
   const [requests, setRequests] = useState<MappedRequest[]>([]);
   const [balances, setBalances] = useState<LeaveBalance[]>([]);
-  const [username, setUsername] = useState('xxxxx xxxxxx');
+  const [username, setUsername] = useState('');
   const [filterType, setFilterType] = useState<'daily' | 'monthly'>('monthly');
   const [selectedMonthRaw, setSelectedMonthRaw] = useState(() => {
     const d = new Date();
@@ -259,7 +259,7 @@ export default function LeaveHistoryPage() {
             Swal.fire({
               icon: 'info',
               title: 'สถานะคำขอมีการเปลี่ยนแปลง',
-              text: `คำขอลานี้ได้ถูก ${updatedReq.status === 'APPROVED' ? 'อนุมัติ' : 'ปฏิเสธ'} แล้ว`,
+              text: `คำขอลานี้${updatedReq.status === 'APPROVED' ? 'ได้รับการอนุมัติ' : 'ไม่ได้รับการอนุมัติ'}แล้ว`,
               confirmButtonColor: '#3085d6',
             });
             setIsEditing(false);
@@ -310,7 +310,7 @@ export default function LeaveHistoryPage() {
             ? 'ส่งคำขอยกเลิกวันลาแล้ว'
             : 'ยกเลิกคำขอสำเร็จ',
           text: isApprovedCancel
-            ? 'คำขอถูกส่งให้ HR พิจารณา เมื่ออนุมัติแล้วระบบจะคืนสิทธิวันลาให้'
+            ? 'คำขอถูกส่งให้ HR พิจารณา เมื่ออนุมัติแล้วระบบจะคืนสิทธิ์วันลาให้'
             : undefined,
           showConfirmButton: false,
           timer: 1500,

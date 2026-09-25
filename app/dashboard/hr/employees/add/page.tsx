@@ -132,9 +132,8 @@ export default function AddEmployeePage() {
         ? selectedPos.title || selectedPos.name || ''
         : '';
 
-      const isLeaderOrManager =
-        posName.toLowerCase().includes('leader') ||
-        posName.toLowerCase().includes('manager');
+      // Only a Leader position is a department head (business rule).
+      const isLeaderOrManager = posName.toLowerCase().includes('leader');
 
       const deptName =
         selectedPos?.department?.name || formData.departmentName || '';
@@ -283,14 +282,14 @@ export default function AddEmployeePage() {
         <form onSubmit={handleSubmit}>
           <div className="mb-6 md:mb-8 border-b border-slate-100 pb-3 md:pb-4">
             <h2 className="text-base md:text-lg font-semibold text-slate-700">
-              ข้อมูลผู้ใช้งาน (Account Information)
+              ข้อมูลผู้ใช้งาน
             </h2>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 md:gap-x-8 gap-y-5 md:gap-y-6 mb-8 md:mb-10">
             <div className="space-y-3">
               <label className="block text-[#475569] font-medium text-[17px]">
-                ชื่อผู้ใช้งาน (Username) <span className="text-red-500">*</span>
+                ชื่อผู้ใช้งาน <span className="text-red-500">*</span>
               </label>
               <input
                 type="text"
@@ -325,7 +324,7 @@ export default function AddEmployeePage() {
 
             <div className="space-y-3">
               <label className="block text-[#475569] font-medium text-[17px]">
-                รหัสผ่าน (Password) <span className="text-red-500">*</span>
+                รหัสผ่าน <span className="text-red-500">*</span>
               </label>
               <div className="relative">
                 <input
@@ -389,14 +388,14 @@ export default function AddEmployeePage() {
 
           <div className="mb-6 md:mb-8 border-b border-slate-100 pb-3 md:pb-4">
             <h2 className="text-base md:text-lg font-semibold text-slate-700">
-              ข้อมูลส่วนตัว (Personal Information)
+              ข้อมูลส่วนตัว
             </h2>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 md:gap-x-8 gap-y-5 md:gap-y-6">
             <div className="space-y-3">
               <label className="block text-[#475569] font-medium text-[17px]">
-                คำนำหน้าชื่อ (Title) <span className="text-red-500">*</span>
+                คำนำหน้าชื่อ <span className="text-red-500">*</span>
               </label>
               <div className="relative">
                 <select
@@ -422,7 +421,7 @@ export default function AddEmployeePage() {
 
             <div className="space-y-3">
               <label className="block text-[#475569] font-medium text-[17px]">
-                เพศ (Gender)
+                เพศ
               </label>
               <div className="relative">
                 <select
@@ -431,9 +430,9 @@ export default function AddEmployeePage() {
                   onChange={handleChange}
                   className="w-full bg-[#f8fafc] border border-[#e2e8f0] px-5 py-3.5 rounded-xl text-[15px] text-slate-800 appearance-none focus:outline-none focus:ring-2 focus:ring-blue-100 transition-all cursor-pointer"
                 >
-                  <option value="Unspecified">ไม่ระบุ (Unspecified)</option>
-                  <option value="Male">ชาย (Male)</option>
-                  <option value="Female">หญิง (Female)</option>
+                  <option value="Unspecified">ไม่ระบุ</option>
+                  <option value="Male">ชาย</option>
+                  <option value="Female">หญิง</option>
                 </select>
                 <ChevronDown
                   className="absolute right-5 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-700 pointer-events-none"
@@ -474,7 +473,7 @@ export default function AddEmployeePage() {
 
             <div className="space-y-3">
               <label className="block text-[#475569] font-medium text-[17px]">
-                ชื่อภาษาอังกฤษ (First Name)
+                ชื่อ (ภาษาอังกฤษ)
               </label>
               <input
                 type="text"
@@ -488,7 +487,7 @@ export default function AddEmployeePage() {
 
             <div className="space-y-3">
               <label className="block text-[#475569] font-medium text-[17px]">
-                นามสกุลภาษาอังกฤษ (Last Name)
+                นามสกุล (ภาษาอังกฤษ)
               </label>
               <input
                 type="text"
@@ -502,7 +501,7 @@ export default function AddEmployeePage() {
 
             <div className="space-y-3">
               <label className="block text-[#475569] font-medium text-[17px]">
-                เลขบัตรประชาชน (ID Card Number)
+                เลขบัตรประชาชน
               </label>
               <input
                 type="text"
@@ -517,7 +516,7 @@ export default function AddEmployeePage() {
 
             <div className="space-y-3">
               <label className="block text-[#475569] font-medium text-[17px]">
-                วันเกิด (Date of Birth)
+                วันเกิด
               </label>
               <DatePicker
                 selected={
@@ -539,7 +538,7 @@ export default function AddEmployeePage() {
 
             <div className="space-y-3">
               <label className="block text-[#475569] font-medium text-[17px]">
-                แผนก (Department)
+                แผนก
               </label>
               <div className="relative">
                 <select
@@ -567,7 +566,7 @@ export default function AddEmployeePage() {
 
             <div className="space-y-3">
               <label className="block text-[#475569] font-medium text-[17px]">
-                ตำแหน่ง (Position)
+                ตำแหน่ง
               </label>
               <div className="relative">
                 <select
@@ -595,7 +594,7 @@ export default function AddEmployeePage() {
 
             <div className="space-y-3">
               <label className="block text-[#475569] font-medium text-[17px]">
-                เบอร์โทรศัพท์ (Phone Number)
+                เบอร์โทรศัพท์
               </label>
               <div className="relative">
                 <input
@@ -631,7 +630,7 @@ export default function AddEmployeePage() {
 
             <div className="space-y-3">
               <label className="block text-[#475569] font-medium text-[17px]">
-                อีเมล (Email) <span className="text-red-500">*</span>
+                อีเมล <span className="text-red-500">*</span>
               </label>
               <input
                 type="email"
@@ -647,7 +646,7 @@ export default function AddEmployeePage() {
 
             <div className="space-y-3">
               <label className="block text-[#475569] font-medium text-[17px]">
-                ที่อยู่ตามบัตรประชาชน (ID Card Address)
+                ที่อยู่ตามบัตรประชาชน
               </label>
               <textarea
                 name="idCardAddress"
@@ -661,7 +660,7 @@ export default function AddEmployeePage() {
 
             <div className="space-y-3">
               <label className="block text-[#475569] font-medium text-[17px]">
-                ที่อยู่ปัจจุบัน (Current Address)
+                ที่อยู่ปัจจุบัน
               </label>
               <textarea
                 name="currentAddress"
@@ -675,7 +674,7 @@ export default function AddEmployeePage() {
 
             <div className="space-y-3 md:col-span-2 md:w-[calc(50%-1rem)]">
               <label className="block text-[#475569] font-medium text-[17px]">
-                วันที่เริ่มทำงาน (Start Date)
+                วันที่เริ่มทำงาน
               </label>
               <DatePicker
                 selected={

@@ -1,7 +1,7 @@
 'use client';
 
 import { Upload, Check } from 'lucide-react';
-import { DatePicker } from '@/components/DateAndTime';
+import { DatePicker, compactDateFieldSx } from '@/components/DateAndTime';
 import { LeaveTimePicker } from '@/components/LeaveTimePicker';
 
 export interface LeaveEditForm {
@@ -64,7 +64,7 @@ export function LeaveEditFormModal({
       <div className="bg-white flex flex-col md:flex-row md:items-center justify-between px-8 py-5 shadow-sm sticky top-0 z-10 gap-4 border-b border-gray-200">
         <div>
           <h1 className="text-base sm:text-xl font-bold text-black tracking-tight">
-            แบบฟอร์มยื่นลา (Leave Request)
+            แบบฟอร์มคำขอลา (Leave Request)
           </h1>
           <p className="text-[13px] text-gray-500 mt-1 font-medium">
             กรุณากรอกข้อมูลให้ครบถ้วนเพื่อเข้าสู่กระบวนการพิจารณา
@@ -97,7 +97,7 @@ export function LeaveEditFormModal({
               </div>
               <div>
                 <label className="block text-sm font-bold text-gray-700 mb-2">
-                  แผนก/ ตำแหน่ง
+                  แผนก / ตำแหน่ง
                 </label>
                 <div className="font-bold text-black">
                   {selectedRequest?.department || '-'} |{' '}
@@ -140,7 +140,7 @@ export function LeaveEditFormModal({
                       {b.leaveType?.name}{' '}
                       {(b.remainingDays ?? 0) <= 0 &&
                       editForm.type !== String(b.leaveType?.id)
-                        ? '(หมดโควต้า)'
+                        ? '(หมดโควตา)'
                         : `(เหลือ ${b.remainingDays} วัน)`}
                     </option>
                   ))}
@@ -248,7 +248,9 @@ export function LeaveEditFormModal({
                 </>
               ) : (
                 <>
-                  <div className="md:col-span-1">
+                  {/* Mobile: start/end share one row; md+: `contents` lets them flow into the parent 2-col grid */}
+                  <div className="grid grid-cols-2 gap-3 md:contents">
+                  <div className="min-w-0">
                     <label className="block text-[13px] font-bold text-gray-800 mb-2">
                       วันที่เริ่มต้น
                     </label>
@@ -270,10 +272,11 @@ export function LeaveEditFormModal({
                         }
                       }}
                       placeholderText="วว/ดด/ปปปป"
+                      sx={compactDateFieldSx}
                       className="w-full bg-transparent border-none text-black text-[15px] font-bold py-3 px-4 focus:outline-none cursor-pointer rounded-lg"
                     />
                     {editForm.leaveMode === 'half_day' && (
-                      <div className="flex items-center gap-4 mt-3">
+                      <div className="flex flex-wrap items-center gap-x-4 gap-y-2 mt-3">
                         <label className="flex items-center gap-1.5 text-xs text-gray-700 cursor-pointer">
                           <input
                             type="radio"
@@ -303,7 +306,7 @@ export function LeaveEditFormModal({
                       </div>
                     )}
                   </div>
-                  <div className="md:col-span-1">
+                  <div className="min-w-0">
                     <label className="block text-[13px] font-bold text-gray-800 mb-2">
                       วันที่สิ้นสุด
                     </label>
@@ -326,8 +329,10 @@ export function LeaveEditFormModal({
                         }
                       }}
                       placeholderText="วว/ดด/ปปปป"
+                      sx={compactDateFieldSx}
                       className="w-full bg-transparent border-none text-black text-[15px] font-bold py-3 px-4 focus:outline-none cursor-pointer rounded-lg"
                     />
+                  </div>
                   </div>
                 </>
               )}
@@ -386,14 +391,14 @@ export function LeaveEditFormModal({
                       <span className="text-blue-600">คลิกเพื่ออัปโหลด</span>
                     </p>
                     <p className="text-[11px] text-gray-400 mt-1.5">
-                      รองรับ PDF,PNG ขนาดไม่เกิน 10MB
+                      รองรับไฟล์ PDF, PNG, JPG ขนาดไม่เกิน 2 MB
                     </p>
                   </>
                 )}
                 {/* Invisible file input */}
                 <input
                   type="file"
-                  accept="image/png, application/pdf"
+                  accept=".pdf,.png,.jpg,.jpeg"
                   onChange={onFileChange}
                   className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                 />
@@ -426,7 +431,7 @@ export function LeaveEditFormModal({
             </h2>
 
             <p className="text-[#6B7280] text-[15px] text-center mb-10 leading-relaxed">
-              คำลาของคุณจะเข้าสู่กระบวนการพิจารณาตามลำดับขั้นตอน
+              คำขอลาของคุณจะเข้าสู่กระบวนการพิจารณาตามลำดับขั้นตอน
               <br />
               สามารถเช็คสถานะได้จากหน้าเช็คสถานะของคุณ
             </p>

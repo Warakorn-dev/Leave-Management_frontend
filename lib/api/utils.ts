@@ -8,13 +8,13 @@ export function cn(...inputs: ClassValue[]) {
 export function getLeaveStatusText(status: string): string {
   if (!status) return '-';
   switch (status.toUpperCase()) {
-    case 'PENDING_VERIFY': return 'รอตรวจสอบ (HR)';
-    case 'REVIEWING_HR': return 'กำลังตรวจสอบ (HR)';
-    case 'PENDING_SUPERVISOR': return 'รอหัวหน้างานอนุมัติ';
+    case 'PENDING_VERIFY': return 'รอฝ่ายบุคคลตรวจสอบ';
+    case 'REVIEWING_HR': return 'ฝ่ายบุคคลกำลังตรวจสอบ';
+    case 'PENDING_SUPERVISOR': return 'รอหัวหน้าแผนกอนุมัติ';
     case 'PENDING_EXECUTIVE': return 'รอผู้บริหารอนุมัติ';
     case 'PENDING_CANCELLATION': return 'รอตรวจสอบการยกเลิก';
     case 'APPROVED': return 'อนุมัติแล้ว';
-    case 'REJECTED': return 'ไม่อนุมัติ (ตีกลับ)';
+    case 'REJECTED': return 'ไม่อนุมัติ';
     case 'CANCELLED': return 'ยกเลิกแล้ว';
     default: return status;
   }

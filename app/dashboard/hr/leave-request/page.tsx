@@ -10,7 +10,7 @@ import {
   Upload,
   FilePlus2,
 } from 'lucide-react';
-import { DatePicker } from '@/components/DateAndTime';
+import { DatePicker, compactDateFieldSx } from '@/components/DateAndTime';
 import { calculateLeaveDays } from '@/lib/api/store';
 import { LeaveTimePicker } from '@/components/LeaveTimePicker';
 import { userApi, uploadApi } from '@/lib/api';
@@ -140,8 +140,8 @@ export default function RequestLeavePage() {
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
-      if (file.size > 10 * 1024 * 1024) {
-        alert('ขนาดไฟล์ต้องไม่เกิน 10MB');
+      if (file.size > 2 * 1024 * 1024) {
+        alert('ขนาดไฟล์ต้องไม่เกิน 2 MB');
         return;
       }
       setAttachmentFile(file);
@@ -307,7 +307,7 @@ export default function RequestLeavePage() {
         </div>
         <div>
           <h1 className="text-base sm:text-xl font-bold text-black tracking-tight">
-            แบบฟอร์มยื่นลา (Leave Request)
+            แบบฟอร์มคำขอลา (Leave Request)
           </h1>
           <p className="text-xs text-gray-500 mt-1 font-medium">
             กรุณากรอกข้อมูลให้ครบถ้วน
@@ -328,7 +328,7 @@ export default function RequestLeavePage() {
             </div>
             <div className="md:text-left">
               <p className="text-[13px] font-semibold text-gray-700 mb-1.5">
-                แผนก/ ตำแหน่ง
+                แผนก / ตำแหน่ง
               </p>
               <p className="text-[17px] font-bold text-black">
                 {department} | {position}
@@ -386,9 +386,9 @@ export default function RequestLeavePage() {
                         >
                           {b.leaveType?.name}{' '}
                           {isOutOfQuota
-                            ? '(หมดโควต้า)'
+                            ? '(หมดโควตา)'
                             : (b.remainingDays ?? 0) <= 0
-                              ? '(ใช้เกินโควต้า)'
+                              ? '(ใช้เกินโควตา)'
                               : `(เหลือ ${b.remainingDays} วัน)`}
                         </option>
                       );
@@ -465,7 +465,9 @@ export default function RequestLeavePage() {
                 </>
               ) : (
                 <>
-                  <div>
+                  {/* Mobile: start/end share one row; md+: `contents` lets them flow into the parent 2-col grid */}
+                  <div className="grid grid-cols-2 gap-3 md:contents">
+                  <div className="min-w-0">
                     <label className="text-[13px] font-semibold text-gray-800 block mb-2">
                       วันที่เริ่มต้น
                     </label>
@@ -476,9 +478,10 @@ export default function RequestLeavePage() {
                       }}
                       shouldDisableDate={isDateDisabled}
                       placeholderText="วว/ดด/ปปปป"
+                      sx={compactDateFieldSx}
                     />
                     {leaveMode === 'half_day' && (
-                      <div className="flex items-center gap-4 mt-3">
+                      <div className="flex flex-wrap items-center gap-x-4 gap-y-2 mt-3">
                         <label className="flex items-center gap-1.5 text-xs text-gray-700 cursor-pointer">
                           <input
                             type="radio"
@@ -504,7 +507,7 @@ export default function RequestLeavePage() {
                       </div>
                     )}
                   </div>
-                  <div>
+                  <div className="min-w-0">
                     <label className="text-[13px] font-semibold text-gray-800 block mb-2">
                       วันที่สิ้นสุด
                     </label>
@@ -516,7 +519,9 @@ export default function RequestLeavePage() {
                       }}
                       shouldDisableDate={isDateDisabled}
                       placeholderText="วว/ดด/ปปปป"
+                      sx={compactDateFieldSx}
                     />
+                  </div>
                   </div>
                   <LeaveDayAvailabilityPreview
                     startDate={startDate}
@@ -579,14 +584,14 @@ export default function RequestLeavePage() {
                       <span className="text-blue-600">คลิกเพื่ออัปโหลด</span>
                     </p>
                     <p className="text-[11px] text-gray-400 mt-1.5">
-                      รองรับ PDF,PNG ขนาดไม่เกิน 10MB
+                      รองรับไฟล์ PDF, PNG, JPG ขนาดไม่เกิน 2 MB
                     </p>
                   </>
                 )}
                 {/* Invisible file input */}
                 <input
                   type="file"
-                  accept="image/png, application/pdf"
+                  accept=".pdf,.png,.jpg,.jpeg"
                   onChange={handleFileChange}
                   className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                 />
@@ -618,7 +623,7 @@ export default function RequestLeavePage() {
               ยืนยันการส่งแบบฟอร์มยื่นคำขอลา
             </h2>
             <p className="text-gray-500 text-sm mb-10 leading-relaxed">
-              คำลาของคุณจะถูกส่งไปยังระบบ
+              คำขอลาของคุณจะถูกส่งไปยังระบบ
               <br />
               สามารถเช็คสถานะได้จากหน้าเช็คสถานะของคุณ
             </p>

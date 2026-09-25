@@ -6,6 +6,7 @@ import Swal from "sweetalert2";
 import { LeaveDetailModal } from "@/components/LeaveDetailModal";
 import type { Leave } from "@/lib/api/types";
 import { getErrorMessage } from "@/lib/api/utils";
+import { escapeHtml } from "@/lib/escapeHtml";
 
 const getToken = () =>
   typeof window !== "undefined" ? sessionStorage.getItem("accessToken") : "";
@@ -179,20 +180,20 @@ export default function ManagerApprovePage() {
   // ── reject ──
   const handleRejectClick = async (req: ReturnType<typeof mapRequest>, prefillReason?: string) => {
     const { value: reason, isConfirmed } = await Swal.fire({
-      title: "ยืนยันการปฏิเสธ",
-      html: `<p class="text-sm text-gray-600 mb-3">ปฏิเสธคำขอลาของ <strong>${req.firstName} ${req.lastName}</strong></p>`,
+      title: "ยืนยันไม่อนุมัติ",
+      html: `<p class="text-sm text-gray-600 mb-3">ไม่อนุมัติคำขอลาของ <strong>${escapeHtml(req.firstName)} ${escapeHtml(req.lastName)}</strong></p>`,
       input: "textarea",
       inputValue: prefillReason || "",
-      inputPlaceholder: "กรอกเหตุผลที่ปฏิเสธ (บังคับ)...",
+      inputPlaceholder: "กรอกเหตุผลที่ไม่อนุมัติ (บังคับ)...",
       icon: "warning",
       showCancelButton: true,
       confirmButtonColor: "#dc2626",
       cancelButtonColor: "#94a3b8",
-      confirmButtonText: "ปฏิเสธคำขอ",
+      confirmButtonText: "ไม่อนุมัติคำขอ",
       cancelButtonText: "ยกเลิก",
       preConfirm: (text) => {
         if (!text?.trim()) {
-          Swal.showValidationMessage("กรุณาระบุเหตุผลในการปฏิเสธ");
+          Swal.showValidationMessage("กรุณาระบุเหตุผลที่ไม่อนุมัติ");
         }
         return text;
       },
@@ -203,7 +204,7 @@ export default function ManagerApprovePage() {
       await rejectLeave(req.id, reason.trim());
       setSelectedRequest(null);
       refetch();
-      Swal.fire({ icon: "success", title: "ปฏิเสธคำขอสำเร็จ", timer: 1500, showConfirmButton: false });
+      Swal.fire({ icon: "success", title: "ไม่อนุมัติคำขอสำเร็จ", timer: 1500, showConfirmButton: false });
     } catch (err) {
       Swal.fire({ icon: "error", title: "เกิดข้อผิดพลาด", text: getErrorMessage(err) });
     }
@@ -218,10 +219,10 @@ export default function ManagerApprovePage() {
         </div>
         <div>
           <h1 className="text-base sm:text-xl font-bold text-black tracking-tight">
-            รายการคำขอรออนุมัติ (Manager View)
+            รายการคำขอรออนุมัติ
           </h1>
           <p className="text-xs text-gray-500 mt-1 font-medium">
-            พิจารณาอนุมัติหรือปฏิเสธคำขอลาของพนักงานในแผนกของคุณ
+            พิจารณาอนุมัติหรือไม่อนุมัติคำขอลาของพนักงานในแผนกของคุณ
           </p>
         </div>
       </div>
@@ -331,7 +332,7 @@ export default function ManagerApprovePage() {
                             onClick={() => handleRejectClick(req)}
                             className="bg-[#FF0000] hover:bg-[#E50000] text-white text-[11px] font-bold py-1.5 px-3 rounded shadow-sm transition-colors"
                           >
-                            ปฏิเสธ
+                            ไม่อนุมัติ
                           </button>
                         </div>
                       </td>
@@ -361,7 +362,7 @@ export default function ManagerApprovePage() {
                 onClick={() => handleRejectClick(selectedRequest)}
                 className="bg-[#FF0000] hover:bg-[#E50000] text-white text-[13px] font-bold py-2 px-6 rounded-lg shadow-sm transition-colors"
               >
-                ปฏิเสธ
+                ไม่อนุมัติ
               </button>
             </>
           }

@@ -15,9 +15,18 @@ import {
   Search,
 } from 'lucide-react';
 import Swal from 'sweetalert2';
-import { DatePicker } from '@/components/DateAndTime';
+import { DatePicker, compactDateFieldSx } from '@/components/DateAndTime';
 import { uploadApi } from '@/lib/api';
 import type { Leave } from '@/lib/api/types';
+
+const startOfMonth = () => {
+  const d = new Date();
+  return new Date(d.getFullYear(), d.getMonth(), 1);
+};
+const endOfMonth = () => {
+  const d = new Date();
+  return new Date(d.getFullYear(), d.getMonth() + 1, 0);
+};
 import { getLeaveStatusBadgeColor, getLeaveStatusText, getErrorMessage } from '@/lib/api/utils';
 import { LeaveDetailModal } from '@/components/LeaveDetailModal';
 import { LeaveEditFormModal } from '@/components/hr/LeaveEditFormModal';
@@ -42,11 +51,11 @@ export default function LeaveHistoryPage() {
   }
 
   const [requests, setRequests] = useState<MappedRequest[]>([]);
-  const [username, setUsername] = useState('xxxxx xxxxxx');
+  const [username, setUsername] = useState('');
   const [filterType, setFilterType] = useState<'daily' | 'monthly'>('monthly');
   const [selectedDate, setSelectedDate] = useState<Date | null>(new Date());
-  const [fromDate, setFromDate] = useState<Date | null>(new Date());
-  const [toDate, setToDate] = useState<Date | null>(new Date());
+  const [fromDate, setFromDate] = useState<Date | null>(startOfMonth());
+  const [toDate, setToDate] = useState<Date | null>(endOfMonth());
   const [selectedRequest, setSelectedRequest] = useState<MappedRequest | null>(null);
 
   const [viewMode, setViewMode] = useState<'department' | 'personal'>(
@@ -362,8 +371,8 @@ export default function LeaveHistoryPage() {
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      if (file.size > 10 * 1024 * 1024) {
-        alert('ไฟล์มีขนาดเกิน 10MB');
+      if (file.size > 2 * 1024 * 1024) {
+        alert('ขนาดไฟล์ต้องไม่เกิน 2 MB');
         return;
       }
       setEditFile(file);
@@ -517,7 +526,7 @@ export default function LeaveHistoryPage() {
                 <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
               </svg>
               <h3 className="font-bold text-gray-800 text-[16px]">
-                ตัวกรอง (Filters)
+                ตัวกรอง
               </h3>
             </div>
 
@@ -552,8 +561,8 @@ export default function LeaveHistoryPage() {
 
                 {/* วันที่ */}
                 {filterType === 'monthly' ? (
-                  <>
-                    <div className="w-full md:w-[220px]">
+                  <div className="flex w-full gap-3 md:contents">
+                    <div className="flex-1 min-w-0 md:flex-none md:w-[220px]">
                       <label className="block text-[13px] font-bold text-gray-700 mb-2">
                         วันที่เริ่มต้น
                       </label>
@@ -567,13 +576,14 @@ export default function LeaveHistoryPage() {
                               setToDate(date);
                           }}
                           placeholderText="ตั้งแต่วันที่"
+                          sx={compactDateFieldSx}
                         />
                       </div>
                     </div>
                     <div className="hidden md:flex items-center justify-center mt-7 px-2">
                       <span className="text-gray-400 font-bold">-</span>
                     </div>
-                    <div className="w-full md:w-[220px]">
+                    <div className="flex-1 min-w-0 md:flex-none md:w-[220px]">
                       <label className="block text-[13px] font-bold text-gray-700 mb-2">
                         วันที่สิ้นสุด
                       </label>
@@ -588,10 +598,11 @@ export default function LeaveHistoryPage() {
                           }}
                           minDate={fromDate || undefined}
                           placeholderText="ถึงวันที่"
+                          sx={compactDateFieldSx}
                         />
                       </div>
                     </div>
-                  </>
+                  </div>
                 ) : (
                   <div className="w-full md:w-[220px]">
                     <label className="block text-[13px] font-bold text-gray-700 mb-2">
@@ -666,8 +677,8 @@ export default function LeaveHistoryPage() {
                   <button
                     onClick={() => {
                       setFilterType('monthly');
-                      setFromDate(new Date());
-                      setToDate(new Date());
+                      setFromDate(startOfMonth());
+                      setToDate(endOfMonth());
                       setSelectedDate(new Date());
                       setFilterLeaveType('');
                       setSearchId('');

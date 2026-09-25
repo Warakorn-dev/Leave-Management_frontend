@@ -82,7 +82,7 @@ export function LeaveBalanceModal({
           ) : (
             <>
               <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
-                <h3 className="font-bold text-slate-700">รายการสิทธิการลา</h3>
+                <h3 className="font-bold text-slate-700">รายการสิทธิ์การลา</h3>
                 <div className="flex flex-wrap gap-2 mt-2 md:mt-0">
                   <button
                     onClick={onInitialize}
@@ -131,7 +131,7 @@ export function LeaveBalanceModal({
                             {/* Row 1: Total Days */}
                             <div className="flex items-center justify-between">
                               <label className="text-[14px] font-bold text-slate-600">
-                                สิทธิวันลา (ทั้งหมด):
+                                สิทธิ์วันลา (ทั้งหมด):
                               </label>
                               <div className="flex items-center gap-2">
                                 <input

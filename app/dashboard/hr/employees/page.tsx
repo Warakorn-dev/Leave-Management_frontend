@@ -23,6 +23,8 @@ import Link from 'next/link';
 import { hrApi } from '@/lib/api';
 import { EditEmployeeModal } from '@/components/hr/employees/EditEmployeeModal';
 import { LeaveBalanceModal } from '@/components/hr/employees/LeaveBalanceModal';
+import { escapeHtml } from '@/lib/escapeHtml';
+import { roleForPosition } from '@/lib/roleForPosition';
 
 export default function EmployeeManagementPage() {
   const { user } = useAuth();
@@ -48,6 +50,10 @@ export default function EmployeeManagementPage() {
 
   // Edit Employee Modal State
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  // Position and role when the modal opened (the modal updates roleName as soon
+  // as another position is picked, so compare against these).
+  const [originalPositionId, setOriginalPositionId] = useState('');
+  const [originalRoleName, setOriginalRoleName] = useState('');
   const [editingEmployee, setEditingEmployee] = useState({
     id: '',
     employeeId: '',
@@ -263,8 +269,8 @@ export default function EmployeeManagementPage() {
           </div>
           <h2 class="text-[24px] font-bold text-[#1e293b] mb-6">ยืนยันการลบข้อมูล</h2>
           <p class="text-[#64748b] text-[17px] mb-5">คุณต้องการลบข้อมูลของ</p>
-          <p class="text-[22px] font-bold text-[#1e293b] mb-5">${name}</p>
-          <p class="text-[#64748b] text-[17px]">แผนก ${department} ออกจากระบบใช่หรือไม่?</p>
+          <p class="text-[22px] font-bold text-[#1e293b] mb-5">${escapeHtml(name)}</p>
+          <p class="text-[#64748b] text-[17px]">แผนก ${escapeHtml(department)} ออกจากระบบใช่หรือไม่?</p>
         </div>
       `,
       showCancelButton: true,
@@ -364,10 +370,20 @@ export default function EmployeeManagementPage() {
       idCardAddress: emp.idCardAddress || '',
       currentAddress: emp.currentAddress || '',
     });
+    setOriginalPositionId(emp.positionId || '');
+    setOriginalRoleName(
+      emp.role && typeof emp.role === 'string'
+        ? emp.role.toLowerCase() === 'hr'
+          ? 'HR'
+          : emp.role.toLowerCase() === 'ceo'
+            ? 'CEO'
+            : emp.role.charAt(0).toUpperCase() + emp.role.slice(1)
+        : 'User',
+    );
     setIsEditModalOpen(true);
   };
 
-  const handleUpdateEmployee = () => {
+  const handleUpdateEmployee = async () => {
     if (
       !editingEmployee.employeeId ||
       !editingEmployee.firstName ||
@@ -376,6 +392,38 @@ export default function EmployeeManagementPage() {
     ) {
       Swal.fire('ข้อมูลไม่ครบถ้วน', 'กรุณากรอกข้อมูลที่จำเป็นให้ครบ', 'error');
       return;
+    }
+
+    // Moving to another position changes the role (server rule), which signs
+    // the employee out. Warn HR before saving.
+    if (
+      editingEmployee.positionId &&
+      editingEmployee.positionId !== originalPositionId
+    ) {
+      const pos = positionsData.find(
+        (p) => String(p.id) === String(editingEmployee.positionId),
+      );
+      const currentRole = originalRoleName;
+      const nextRole =
+        (pos?.role as { name?: string } | undefined)?.name ||
+        roleForPosition(
+          pos?.name || pos?.title,
+          pos?.department?.name || pos?.departmentName || editingEmployee.departmentName,
+          currentRole,
+        );
+      if (pos && nextRole !== currentRole) {
+        const { isConfirmed } = await Swal.fire({
+          icon: 'warning',
+          title: 'ยืนยันการเปลี่ยนตำแหน่ง',
+          text: `ตำแหน่งใหม่ "${pos.name || pos.title}" จะเปลี่ยนสิทธิ์ของ ${editingEmployee.firstName} ${editingEmployee.lastName} จาก ${currentRole} เป็น ${nextRole} พนักงานจะถูกออกจากระบบ และต้องเข้าสู่ระบบใหม่เพื่อใช้งานด้วยสิทธิ์ใหม่`,
+          showCancelButton: true,
+          confirmButtonColor: '#2563eb',
+          cancelButtonColor: '#94a3b8',
+          confirmButtonText: 'ยืนยันและบันทึก',
+          cancelButtonText: 'ยกเลิก',
+        });
+        if (!isConfirmed) return;
+      }
     }
 
     const empData: Partial<Employee> & {
@@ -480,7 +528,7 @@ export default function EmployeeManagementPage() {
             </div>
             <input
               type="text"
-              placeholder="ค้นหาชื่อ,รหัสพนักงาน,อีเมล...."
+              placeholder="ค้นหาชื่อ, รหัสพนักงาน, อีเมล..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full pl-10 pr-4 py-2 bg-slate-50 border-none rounded-xl text-sm focus:outline-hidden focus:ring-1 focus:ring-slate-300 transition-all placeholder:text-slate-400"
@@ -522,7 +570,7 @@ export default function EmployeeManagementPage() {
                   นามสกุล
                 </th>
                 <th className="py-4 px-6 font-medium whitespace-nowrap">
-                  แผนก/ตำแหน่ง
+                  แผนก / ตำแหน่ง
                 </th>
                 <th className="py-4 px-6 font-medium whitespace-nowrap">
                   อีเมล
@@ -599,7 +647,7 @@ export default function EmployeeManagementPage() {
                         </span>
                       ) : (
                         <span className="inline-flex items-center px-3 py-1 bg-red-100 text-red-500 text-xs font-bold rounded-full whitespace-nowrap">
-                          ปิดใช้งาน
+                          ปิดการใช้งาน
                         </span>
                       )}
                     </td>

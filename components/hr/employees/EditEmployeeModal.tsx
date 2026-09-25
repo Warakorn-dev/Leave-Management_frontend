@@ -103,7 +103,7 @@ export function EditEmployeeModal({
 
             <div className="space-y-3">
               <label className="block text-[#475569] font-medium text-[17px]">
-                ชื่อภาษาอังกฤษ (First Name)
+                ชื่อ (ภาษาอังกฤษ)
               </label>
               <input
                 type="text"
@@ -121,7 +121,7 @@ export function EditEmployeeModal({
 
             <div className="space-y-3">
               <label className="block text-[#475569] font-medium text-[17px]">
-                นามสกุลภาษาอังกฤษ (Last Name)
+                นามสกุล (ภาษาอังกฤษ)
               </label>
               <input
                 type="text"
@@ -152,7 +152,7 @@ export function EditEmployeeModal({
 
             <div className="space-y-3">
               <label className="block text-[#475569] font-medium text-[17px]">
-                เลขบัตรประชาชน (ID Card Number)
+                เลขบัตรประชาชน
               </label>
               <input
                 type="text"
@@ -174,7 +174,7 @@ export function EditEmployeeModal({
 
             <div className="space-y-3">
               <label className="block text-[#475569] font-medium text-[17px]">
-                วันเกิด (Date of Birth)
+                วันเกิด
               </label>
               <DatePicker
                 selected={
@@ -269,9 +269,10 @@ export function EditEmployeeModal({
                     const posName = selectedPos
                       ? selectedPos.title || selectedPos.name || ''
                       : '';
-                    const isLeaderOrManager =
-                      posName.toLowerCase().includes('leader') ||
-                      posName.toLowerCase().includes('manager');
+                    // Only a Leader position is a department head (business rule).
+                    const isLeaderOrManager = posName
+                      .toLowerCase()
+                      .includes('leader');
 
                     const deptName =
                       selectedPos?.department?.name ||

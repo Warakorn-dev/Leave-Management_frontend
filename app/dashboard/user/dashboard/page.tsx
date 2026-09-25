@@ -15,7 +15,7 @@ import { previewAttachment } from '@/lib/api/attachmentPreview';
 import type { Announcement } from '@/lib/api/hr.api';
 
 export default function UserDashboard() {
-  const [username, setUsername] = useState('ชื่อ xxxxx xxxx');
+  const [username, setUsername] = useState('');
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [announcementYear, setAnnouncementYear] = useState(
     new Date().getFullYear(),
@@ -162,7 +162,7 @@ export default function UserDashboard() {
             <XCircle className="w-5 h-5" />
           </div>
           <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 mt-2">
-            ถูกปฏิเสธ
+            ไม่อนุมัติ
           </p>
           <div className="flex items-baseline space-x-1">
             <span className="text-3xl font-extrabold text-slate-900 dark:text-white">

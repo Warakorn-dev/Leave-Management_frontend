@@ -127,7 +127,7 @@ export default function HrCancelApprovalPage() {
 
   const executeApprove = async () => {
     if (!confirmData) return;
-    await verifyLeave({ id: confirmData.id, action: "Approve", comment: approverReason.trim() || "อนุมัติการยกเลิกโดย HR" });
+    await verifyLeave({ id: confirmData.id, action: "Approve", comment: approverReason.trim() || "ฝ่ายบุคคลอนุมัติการยกเลิก" });
     refetchCancellations();
     if (selectedRequest?.id === confirmData.id) setSelectedRequest(null);
     setShowApproveModal(false);
@@ -145,7 +145,7 @@ export default function HrCancelApprovalPage() {
   const executeReject = async () => {
     if (!confirmData) return;
     if (!rejectReasonInput.trim()) {
-      alert("การปฏิเสธคำขอยกเลิกจำเป็นต้องระบุเหตุผล");
+      alert("กรณีไม่อนุมัติคำขอยกเลิก ต้องระบุเหตุผล");
       return;
     }
     await verifyLeave({ id: confirmData.id, action: "Reject", comment: rejectReasonInput.trim() });
@@ -164,7 +164,7 @@ export default function HrCancelApprovalPage() {
   const onModalReject = () => {
     if (!selectedRequest) return;
     if (!approverReason.trim()) {
-      alert("กรุณาระบุเหตุผลในการปฏิเสธคำขอยกเลิก");
+      alert("กรุณาระบุเหตุผลที่ไม่อนุมัติคำขอยกเลิก");
       return;
     }
     setRejectReasonInput(approverReason);
@@ -184,7 +184,7 @@ export default function HrCancelApprovalPage() {
             ตรวจสอบคำขอยกเลิกการลา
           </h1>
           <p className="text-xs text-gray-500 mt-1 font-medium">
-            พิจารณาอนุมัติหรือปฏิเสธคำขอยกเลิกใบลาที่ได้รับการอนุมัติแล้ว
+            พิจารณาอนุมัติหรือไม่อนุมัติคำขอยกเลิกใบลาที่ได้รับการอนุมัติแล้ว
           </p>
         </div>
       </div>
@@ -199,7 +199,7 @@ export default function HrCancelApprovalPage() {
             <p className="font-bold mb-1">หมายเหตุ:</p>
             <ul className="space-y-0.5 text-rose-600">
               <li>• <span className="font-semibold">อนุมัติการยกเลิก</span> → ใบลาจะถูกยกเลิก และโควตาวันลาจะถูกคืนให้พนักงาน</li>
-              <li>• <span className="font-semibold">ปฏิเสธ (คงสภาพ)</span> → ใบลายังคงมีผล สถานะกลับเป็น &quot;อนุมัติแล้ว&quot;</li>
+              <li>• <span className="font-semibold">ไม่อนุมัติ (ใบลายังมีผล)</span> → ใบลายังคงมีผล สถานะกลับเป็น &quot;อนุมัติแล้ว&quot;</li>
             </ul>
           </div>
         </div>
@@ -311,7 +311,7 @@ export default function HrCancelApprovalPage() {
                           onClick={() => handleRejectClick(req.id || '')}
                           className="bg-gray-500 hover:bg-gray-600 text-white text-[11px] font-bold py-1.5 w-[105px] text-center rounded shadow-sm transition-colors"
                         >
-                          ปฏิเสธ (คงสภาพ)
+                          ไม่อนุมัติ (ใบลายังมีผล)
                         </button>
                       </div>
                     </td>
@@ -355,7 +355,7 @@ export default function HrCancelApprovalPage() {
                     className="flex-1 sm:flex-none bg-gray-500 hover:bg-gray-600 text-white px-5 py-3 rounded-xl font-bold text-[14px] shadow-sm transition-colors flex items-center justify-center gap-1.5"
                   >
                     <X className="w-[18px] h-[18px]" strokeWidth={3} />
-                    ปฏิเสธ (คงสภาพ)
+                    ไม่อนุมัติ (ใบลายังมีผล)
                   </button>
                 </div>
               </div>
@@ -383,7 +383,7 @@ export default function HrCancelApprovalPage() {
                 <ul className="text-rose-600 text-xs space-y-1 mt-2">
                   <li>• ใบลารหัส <strong>{requests.find((r) => r.id === confirmData.id)?.requestCode}</strong> จะถูกยกเลิก</li>
                   <li>• โควตาวันลาจะถูกคืนให้พนักงานอัตโนมัติ</li>
-                  <li>• พนักงานจะได้รับ notification แจ้งผล</li>
+                  <li>• พนักงานจะได้รับการแจ้งเตือนผลการพิจารณา</li>
                 </ul>
               </div>
               <div className="flex justify-end gap-3">
@@ -397,7 +397,7 @@ export default function HrCancelApprovalPage() {
                   onClick={executeApprove}
                   className="px-5 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-sm font-bold transition-colors"
                 >
-                  ยืนยัน — อนุมัติการยกเลิก
+                  ยืนยันอนุมัติการยกเลิก
                 </button>
               </div>
             </div>
@@ -410,17 +410,17 @@ export default function HrCancelApprovalPage() {
         <div className="fixed inset-0 z-[130] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200">
           <div className="bg-white rounded-2xl w-full max-w-[420px] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
             <div className="bg-gray-600 px-6 py-4 flex items-center justify-between">
-              <h3 className="text-white font-bold text-lg">ปฏิเสธคำขอยกเลิก (คงสภาพ)</h3>
+              <h3 className="text-white font-bold text-lg">ไม่อนุมัติการยกเลิก (ใบลายังมีผล)</h3>
               <button onClick={() => { setShowRejectModal(false); setConfirmData(null); setRejectReasonInput(""); }} className="text-white/80 hover:text-white">
                 <X className="w-5 h-5" strokeWidth={3} />
               </button>
             </div>
             <div className="p-6">
-              <p className="text-gray-700 text-sm font-medium mb-1">คุณต้องการปฏิเสธคำขอยกเลิกนี้ ใช่หรือไม่?</p>
+              <p className="text-gray-700 text-sm font-medium mb-1">คุณต้องการไม่อนุมัติคำขอยกเลิกนี้ใช่หรือไม่?</p>
               <p className="text-[13px] text-gray-500 mb-4">ใบลาจะยังคงมีผลและสถานะกลับเป็น <strong>&quot;อนุมัติแล้ว&quot;</strong></p>
               <div className="mb-5">
                 <label className="block text-xs font-bold text-gray-700 mb-1">
-                  เหตุผลที่ปฏิเสธ <span className="text-red-500">*</span>
+                  เหตุผลที่ไม่อนุมัติ <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
@@ -442,7 +442,7 @@ export default function HrCancelApprovalPage() {
                   onClick={executeReject}
                   className="px-5 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg text-sm font-bold transition-colors"
                 >
-                  ยืนยันการปฏิเสธ
+                  ยืนยันไม่อนุมัติ
                 </button>
               </div>
             </div>

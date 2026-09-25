@@ -345,7 +345,7 @@ export default function HRLeaveTypes() {
                         )}
                         {lt.isSpecial && (
                           <Badge className="bg-rose-100 text-rose-700 hover:bg-rose-200 border-rose-200 w-max text-[10px]">
-                            ส่งตรงให้ CEO อนุมัติ
+                            ส่งตรงให้ผู้บริหาร (CEO) อนุมัติ
                           </Badge>
                         )}
                         {!lt.requiresCertificate && !lt.isSpecial && (
@@ -427,7 +427,7 @@ export default function HRLeaveTypes() {
                 <input
                   {...register('name')}
                   type="text"
-                  placeholder="Annual Leave (ลาพักร้อน)"
+                  placeholder="เช่น ลาพักผ่อนประจำปี"
                   className="block w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 px-3 py-2 text-sm focus:outline-hidden focus:ring-2 focus:ring-indigo-500"
                 />
                 {errors.name && (
@@ -502,7 +502,7 @@ export default function HRLeaveTypes() {
                     htmlFor="requiresCertificate"
                     className="text-sm font-semibold text-slate-700 dark:text-slate-300 cursor-pointer"
                   >
-                    บังคับแนบเอกสารหลักฐาน (Requires Certificate)
+                    บังคับแนบเอกสารหลักฐาน
                   </label>
                 </div>
 
@@ -532,13 +532,13 @@ export default function HRLeaveTypes() {
                 onClick={() => setDialogOpen(false)}
                 className="px-4 py-2 text-sm font-semibold rounded-xl border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-850 text-slate-655 dark:text-slate-350 cursor-pointer"
               >
-                ยกเลิก (Cancel)
+                ยกเลิก
               </button>
               <button
                 type="submit"
                 className="px-4 py-2 text-sm font-semibold rounded-xl text-white bg-indigo-600 hover:bg-indigo-500 cursor-pointer"
               >
-                บันทึกข้อมูล (Save)
+                บันทึกข้อมูล
               </button>
             </DialogFooter>
           </form>
