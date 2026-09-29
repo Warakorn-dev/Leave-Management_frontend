@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { useSidebarCollapsed } from "@/hooks/useSidebarCollapsed";
+import { endSession } from "@/lib/session";
 import { LogOut, PieChart, Users, Activity, Shield, Key, ClipboardList, HardDrive, Settings, Menu, ChevronLeft, User, List } from "lucide-react";
 
 export function AdminSidebar({ onNavigate }: { onNavigate?: () => void }) {
@@ -11,20 +13,7 @@ export function AdminSidebar({ onNavigate }: { onNavigate?: () => void }) {
   const [username, setUsername] = useState("");
   const [fullName, setFullName] = useState("");
   const [profilePic, setProfilePic] = useState<string | null>(null);
-  const [isCollapsed, setIsCollapsed] = useState(true);
-
-  useEffect(() => {
-    const handleResize = () => {
-      if (window.innerWidth >= 1024) {
-        setIsCollapsed(false);
-      } else {
-        setIsCollapsed(true);
-      }
-    };
-    handleResize();
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
+  const [isCollapsed, setIsCollapsed] = useSidebarCollapsed();
 
   useEffect(() => {
     setUsername(sessionStorage.getItem("username") || "Super Admin");
@@ -34,7 +23,7 @@ export function AdminSidebar({ onNavigate }: { onNavigate?: () => void }) {
   }, []);
 
   const handleLogout = () => {
-    sessionStorage.clear();
+    void endSession();
     router.push("/login");
   };
 

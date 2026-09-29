@@ -12,6 +12,10 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Playwright e2e build output and reports (npm run test:e2e)
+    ".next-e2e/**",
+    "test-results/**",
+    "playwright-report/**",
   ]),
   {
     rules: {

@@ -3,6 +3,9 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { useAuth } from "@/context/AuthContext";
+import { useSidebarCollapsed } from "@/hooks/useSidebarCollapsed";
+import { endSession } from "@/lib/session";
 import { LogOut, PieChart, FileEdit, Activity, BookOpen, Calendar, CalendarDays, User, UserCog, Building, ListTodo, FileText, Settings, Menu, ChevronLeft, ChevronDown, Boxes, XCircle, FileCheck, Megaphone, BarChart3 } from "lucide-react";
 
 type MenuIcon = React.ComponentType<{ className?: string; strokeWidth?: number }>;
@@ -15,72 +18,24 @@ const isGroup = (item: NavItem): item is MenuGroup => "children" in item;
 export function HRSidebar({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = usePathname();
   const router = useRouter();
+  // Profile comes from the dashboard-wide AuthProvider (one shared /leave/me
+  // poll); it starts from sessionStorage and a failed request keeps it.
+  const { user } = useAuth();
   const [username, setUsername] = useState("");
-  const [fullName, setFullName] = useState("");
-  const [position, setPosition] = useState("");
-  const [department, setDepartment] = useState("");
-  const [profilePic, setProfilePic] = useState<string | null>(null);
-  const [isCollapsed, setIsCollapsed] = useState(true);
+  const [isCollapsed, setIsCollapsed] = useSidebarCollapsed();
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
-    const handleResize = () => {
-      if (window.innerWidth >= 1024) {
-        setIsCollapsed(false);
-      } else {
-        setIsCollapsed(true);
-      }
-    };
-    handleResize(); // run on mount
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
-
-  useEffect(() => {
     setUsername(sessionStorage.getItem("username") || "");
-    const storedPic = sessionStorage.getItem("profilePic");
-    if (storedPic) setProfilePic(storedPic);
-
-    const token = sessionStorage.getItem("accessToken");
-    if (token) {
-      fetch("/api/leave/me", {
-        headers: { Authorization: `Bearer ${token}` }
-      })
-        .then(r => r.json())
-        .then(res => {
-          const user = res.data || res;
-          if (user) {
-            const name = [user.firstName, user.lastName].filter(Boolean).join(" ");
-            if (name) setFullName(name);
-            const deptName = typeof user.department === "object" && user.department !== null
-              ? user.department.name || "" : user.departmentName || "";
-            setDepartment(deptName);
-            const posName = user.positionName || user.position?.name || "";
-            setPosition(posName);
-            const avatar = user.user?.avatarUrl || user.avatarUrl || user.profilePic;
-            if (avatar) {
-              setProfilePic(avatar);
-              sessionStorage.setItem("profilePic", avatar);
-            }
-            if (name) sessionStorage.setItem("fullName", name);
-            sessionStorage.setItem("position", posName);
-            sessionStorage.setItem("department", deptName);
-          }
-        })
-        .catch(() => {
-          setFullName(sessionStorage.getItem("fullName") || "");
-          setPosition(sessionStorage.getItem("position") || "");
-          setDepartment(sessionStorage.getItem("department") || "");
-        });
-    } else {
-      setFullName(sessionStorage.getItem("fullName") || "");
-      setPosition(sessionStorage.getItem("position") || "");
-      setDepartment(sessionStorage.getItem("department") || "");
-    }
   }, []);
+
+  const fullName = user?.fullName || "";
+  const department = user?.department || "";
+  const position = user?.position || "";
+  const profilePic = user?.profilePic || null;
 
   const handleLogout = () => {
-    sessionStorage.clear();
+    void endSession();
     router.push("/login");
   };
 

@@ -37,6 +37,8 @@ function useAuthLogic() {
     const fullName = sessionStorage.getItem('fullName');
 
     if (role) {
+      // Admin accounts have no employee profile: /leave/me answers 403.
+      const hasEmployeeProfile = role.toLowerCase() !== 'admin';
       setUser({
         id: sessionStorage.getItem('userId') || undefined,
         role,
@@ -99,6 +101,8 @@ function useAuthLogic() {
         }
       };
 
+      if (!hasEmployeeProfile) return;
+
       // Fetch immediately on mount
       fetchLatestProfile();
 
@@ -115,17 +119,9 @@ function useAuthLogic() {
   return { user };
 }
 
-export const useAuth = () => {
-  // We can just rely on the local state since AuthProvider is not actually wrapping the application
-  // but just in case, we will always call useContext.
-  const context = useContext(AuthContext);
-  const localAuth = useAuthLogic();
-
-  // If the context is somehow populated (someone used AuthProvider), return it
-  if (context.user) {
-    return context;
-  }
-
-  // Otherwise fallback to our local state
-  return localAuth;
-};
+/**
+ * The signed-in user. AuthProvider wraps the whole dashboard (app/dashboard/
+ * layout.tsx), so there is exactly one profile fetch + 5-second poll for the
+ * page and its sidebar — every caller shares it instead of starting its own.
+ */
+export const useAuth = () => useContext(AuthContext);
