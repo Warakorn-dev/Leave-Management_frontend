@@ -50,7 +50,8 @@ export default function DashboardShell({ children }: { children: React.ReactNode
         router.push("/dashboard/manager/dashboard");
         return;
       }
-      if (storedRole === "user" && !pathname.startsWith("/dashboard/user")) {
+      // The backend role is "Employee"; "user" is the older name for the same area.
+      if ((storedRole === "employee" || storedRole === "user") && !pathname.startsWith("/dashboard/user")) {
         router.push("/dashboard/user/dashboard");
         return;
       }

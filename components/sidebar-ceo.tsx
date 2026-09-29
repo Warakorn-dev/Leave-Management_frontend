@@ -15,7 +15,6 @@ export function CEOSidebar({ onNavigate }: { onNavigate?: () => void }) {
   const [profilePic, setProfilePic] = useState<string | null>(null);
   const [isCollapsed, setIsCollapsed] = useState(true);
 
-  // Start collapsed on mobile (<1024px), expanded on desktop
   useEffect(() => {
     const handleResize = () => {
       if (window.innerWidth >= 1024) {

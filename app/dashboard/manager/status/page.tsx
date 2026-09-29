@@ -5,7 +5,12 @@ import { Activity } from 'lucide-react';
 import { useLeave } from '@/hooks/useLeave';
 import { getLeaveStatusBadgeColor, getLeaveStatusText } from '@/lib/api/utils';
 import type { Leave } from '@/lib/api/types';
-import { reachedExecutive, showExecutiveStep } from '@/lib/leaveRoute';
+import {
+  reachedExecutive,
+  rejectionComment,
+  showExecutiveStep,
+  stageStatus,
+} from '@/lib/leaveRoute';
 
 interface LeaveWithExtras extends Leave {
   user?: Leave['user'] & { role?: string; position?: string | { name?: string } };
@@ -49,37 +54,6 @@ const getLeaveDetails = (req: LeaveWithExtras) => {
   return `(${days} วัน)`;
 };
 
-const getStageStatus = (
-  currentStatus: string,
-  stage: 'HR' | 'MANAGER' | 'CEO',
-) => {
-  if (currentStatus === 'CANCELLED' || currentStatus === 'Cancelled')
-    return 'cancelled';
-  if (currentStatus === 'REJECTED') return 'rejected';
-
-  if (stage === 'HR') {
-    if (
-      currentStatus === 'PENDING_VERIFY' ||
-      currentStatus === 'PENDING_CANCELLATION'
-    )
-      return 'pending';
-    return 'approved';
-  }
-
-  if (stage === 'MANAGER') {
-    if (currentStatus === 'PENDING_VERIFY') return 'waiting';
-    if (currentStatus === 'PENDING_SUPERVISOR') return 'pending';
-    return 'approved';
-  }
-
-  if (stage === 'CEO') {
-    if (currentStatus === 'PENDING_EXECUTIVE') return 'pending';
-    if (currentStatus === 'APPROVED') return 'approved';
-    return 'waiting';
-  }
-
-  return 'waiting';
-};
 
 export default function LeaveStatusPage() {
   const [requests, setRequests] = useState<LeaveWithExtras[]>([]);
@@ -132,14 +106,14 @@ export default function LeaveStatusPage() {
             <div className="space-y-6">
               {requests.map((req) => {
                 const status = req.status || 'PENDING_VERIFY';
-                const hrStage = getStageStatus(status, 'HR');
-                const managerStage = getStageStatus(status, 'MANAGER');
+                const hrStage = stageStatus(status, 'HR', req.approvals);
+                const managerStage = stageStatus(status, 'MANAGER', req.approvals);
                 const wentToCeo = reachedExecutive(status, req.approvals);
                 // An APPROVED request only counts as CEO-approved if it really reached the CEO.
                 const ceoStage =
                   status === 'APPROVED' && !wentToCeo
                     ? 'waiting'
-                    : getStageStatus(status, 'CEO');
+                    : stageStatus(status, 'CEO', req.approvals);
 
                 const requesterRole = req.user?.role || req.employee?.role || '';
                 const requesterPosition = typeof req.user?.position === 'string' ? req.user?.position : req.user?.position?.name || req.employee?.position?.name || '';
@@ -161,8 +135,7 @@ export default function LeaveStatusPage() {
                 const isCancelled = status === 'CANCELLED';
                 const isCancellationPending = status === 'PENDING_CANCELLATION';
                 const approverComment =
-                  req.approverReason ||
-                  req.approvals?.[req.approvals.length - 1]?.comment;
+                  req.approverReason || rejectionComment(req.approvals);
 
                 return (
                   <div

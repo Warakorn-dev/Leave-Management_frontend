@@ -23,7 +23,6 @@ export function HRSidebar({ onNavigate }: { onNavigate?: () => void }) {
   const [isCollapsed, setIsCollapsed] = useState(true);
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({});
 
-  // Start collapsed on mobile (<1024px), expanded on desktop
   useEffect(() => {
     const handleResize = () => {
       if (window.innerWidth >= 1024) {

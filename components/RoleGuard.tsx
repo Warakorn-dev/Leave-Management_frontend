@@ -33,7 +33,7 @@ export default function RoleGuard({
           router.push('/dashboard/ceo/dashboard');
         } else if (userRole === 'admin') {
           router.push('/dashboard/admin/dashboard');
-        } else if (userRole === 'user') {
+        } else if (userRole === 'employee' || userRole === 'user') {
           router.push('/dashboard/user/status');
         } else {
           router.push('/login');
