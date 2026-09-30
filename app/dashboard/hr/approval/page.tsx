@@ -135,6 +135,7 @@ export default function HrApprovePage() {
 
   useEffect(() => {
     const filtered = allLeaves.filter((r) => {
+      if (selectedMonthRaw === 'ALL') return true;
       if (!r.startDate) return false;
       const d = new Date(r.startDate);
       const yyyyMM = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
@@ -332,7 +333,7 @@ export default function HrApprovePage() {
             onClick={() => setIsPickerOpen(!isPickerOpen)}
             className="border border-gray-300 text-gray-700 text-sm font-bold py-2 px-5 rounded-full shadow-sm flex items-center gap-3 hover:bg-gray-50 transition-all active:scale-95"
           >
-            {formatMonthYear(selectedMonthRaw)}
+            {selectedMonthRaw === 'ALL' ? 'แสดงทั้งหมด' : formatMonthYear(selectedMonthRaw)}
             <CalendarIcon className="w-4 h-4 text-gray-700" strokeWidth={2.5} />
           </button>
 
@@ -415,6 +416,21 @@ export default function HrApprovePage() {
                     );
                   })}
                 </div>
+                <div className="mt-3 pt-3 border-t border-gray-100">
+                  <button
+                    onClick={() => {
+                      setSelectedMonthRaw('ALL');
+                      setIsPickerOpen(false);
+                    }}
+                    className={`w-full py-2.5 rounded-xl text-[14px] font-bold transition-all ${
+                      selectedMonthRaw === 'ALL'
+                        ? 'bg-blue-600 text-white shadow-md shadow-blue-600/20'
+                        : 'bg-gray-50 text-gray-600 hover:bg-blue-50 hover:text-blue-700'
+                    }`}
+                  >
+                    แสดงทั้งหมด
+                  </button>
+                </div>
               </div>
             </>
           )}
@@ -453,8 +469,7 @@ export default function HrApprovePage() {
                     colSpan={7}
                     className="py-12 text-center text-gray-500 font-medium bg-white"
                   >
-                    ไม่มีรายการคำขอรอตรวจสอบในเดือน{' '}
-                    {formatMonthYear(selectedMonthRaw)}
+                    ไม่มีรายการคำขอรอตรวจสอบ{selectedMonthRaw === 'ALL' ? 'ทั้งหมด' : `ในเดือน ${formatMonthYear(selectedMonthRaw)}`}
                   </td>
                 </tr>
               ) : (

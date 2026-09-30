@@ -105,17 +105,16 @@ export default function AdminAuditLogsPage() {
                       <th className="p-3 border-b font-medium">ผู้ใช้งาน</th>
                       <th className="p-3 border-b font-medium">การกระทำ (Action)</th>
                       <th className="p-3 border-b font-medium">ส่วนที่เกี่ยวข้อง (Entity)</th>
-                      <th className="p-3 border-b font-medium">ไอพีแอดเดรส</th>
                     </tr>
                   </thead>
                   <tbody>
                     {loading ? (
                       <tr>
-                        <td colSpan={5} className="p-8 text-center text-slate-500">กำลังโหลดข้อมูล...</td>
+                        <td colSpan={4} className="p-8 text-center text-slate-500">กำลังโหลดข้อมูล...</td>
                       </tr>
                     ) : logs.length === 0 ? (
                       <tr>
-                        <td colSpan={5} className="p-8 text-center text-slate-500">ไม่พบประวัติการใช้งาน</td>
+                        <td colSpan={4} className="p-8 text-center text-slate-500">ไม่พบประวัติการใช้งาน</td>
                       </tr>
                     ) : (
                       logs.map(log => {
@@ -139,9 +138,6 @@ export default function AdminAuditLogsPage() {
                             </td>
                             <td className="p-3 text-slate-600">
                               {log.entity}
-                            </td>
-                            <td className="p-3 font-mono text-xs text-slate-500">
-                              {log.ipAddress || '-'}
                             </td>
                           </tr>
                         );
