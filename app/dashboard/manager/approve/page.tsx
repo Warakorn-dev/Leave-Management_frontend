@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { Calendar as CalendarIcon } from "lucide-react";
 import Swal from "sweetalert2";
 import { LeaveDetailModal } from "@/components/LeaveDetailModal";
+import { LeaveActionButtons, LeaveStatusBadge, type LeaveActionKind } from "@/components/LeaveActions";
 import type { Leave } from "@/lib/api/types";
 import { getErrorMessage } from "@/lib/api/utils";
 import { escapeHtml } from "@/lib/escapeHtml";
@@ -121,6 +122,7 @@ export default function ManagerApprovePage() {
   const [tempYear, setTempYear] = useState(new Date().getFullYear());
 
   const [selectedRequest, setSelectedRequest] = useState<ReturnType<typeof mapRequest> | null>(null);
+  const [processing, setProcessing] = useState<{ id: string; action: LeaveActionKind } | null>(null);
 
   const refetch = useCallback(async () => {
     setIsLoading(true);
@@ -167,6 +169,7 @@ export default function ManagerApprovePage() {
     });
     if (!result.isConfirmed) return;
 
+    setProcessing({ id: req.id, action: "approve" });
     try {
       await approveLeave(req.id, comment);
       setSelectedRequest(null);
@@ -174,6 +177,8 @@ export default function ManagerApprovePage() {
       Swal.fire({ icon: "success", title: "อนุมัติสำเร็จ", timer: 1500, showConfirmButton: false });
     } catch (err) {
       Swal.fire({ icon: "error", title: "เกิดข้อผิดพลาด", text: getErrorMessage(err) });
+    } finally {
+      setProcessing(null);
     }
   };
 
@@ -200,6 +205,7 @@ export default function ManagerApprovePage() {
     });
     if (!isConfirmed || !reason?.trim()) return;
 
+    setProcessing({ id: req.id, action: "reject" });
     try {
       await rejectLeave(req.id, reason.trim());
       setSelectedRequest(null);
@@ -207,6 +213,8 @@ export default function ManagerApprovePage() {
       Swal.fire({ icon: "success", title: "ไม่อนุมัติคำขอสำเร็จ", timer: 1500, showConfirmButton: false });
     } catch (err) {
       Swal.fire({ icon: "error", title: "เกิดข้อผิดพลาด", text: getErrorMessage(err) });
+    } finally {
+      setProcessing(null);
     }
   };
 
@@ -283,13 +291,14 @@ export default function ManagerApprovePage() {
                   <th className="py-4 px-6 font-bold whitespace-nowrap">ประเภทวันลา</th>
                   <th className="py-4 px-6 font-bold whitespace-nowrap">วันเวลาที่ขอลา</th>
                   <th className="py-4 px-6 font-bold whitespace-nowrap">เอกสารแนบ</th>
-                  <th className="py-4 px-6 font-bold whitespace-nowrap rounded-r-md text-right pr-8">การจัดการ</th>
+                  <th className="py-4 px-6 font-bold whitespace-nowrap">สถานะ</th>
+                  <th className="py-4 px-6 font-bold whitespace-nowrap rounded-r-md">การดำเนินการ</th>
                 </tr>
               </thead>
               <tbody>
                 {requests.length === 0 ? (
                   <tr>
-                    <td colSpan={8} className="py-12 text-center text-gray-500 font-medium">
+                    <td colSpan={9} className="py-12 text-center text-gray-500 font-medium">
                       ไม่มีรายการคำขออนุมัติในเดือน {formatMonthYear(selectedMonthRaw)}
                     </td>
                   </tr>
@@ -314,27 +323,17 @@ export default function ManagerApprovePage() {
                           <span className="text-emerald-600 font-bold">มีเอกสารแนบ</span>
                         ) : "-"}
                       </td>
-                      <td className="py-6 px-6 text-right whitespace-nowrap">
-                        <div className="flex items-center justify-end gap-2 pr-2">
-                          <button
-                            onClick={() => setSelectedRequest(req)}
-                            className="bg-[#FFA000] hover:bg-[#F57C00] text-black text-[11px] font-bold py-1.5 px-3 rounded shadow-sm transition-colors"
-                          >
-                            รายละเอียด
-                          </button>
-                          <button
-                            onClick={() => handleApproveClick(req)}
-                            className="bg-[#00C853] hover:bg-[#00B04A] text-white text-[11px] font-bold py-1.5 px-3 rounded shadow-sm transition-colors"
-                          >
-                            อนุมัติ
-                          </button>
-                          <button
-                            onClick={() => handleRejectClick(req)}
-                            className="bg-[#FF0000] hover:bg-[#E50000] text-white text-[11px] font-bold py-1.5 px-3 rounded shadow-sm transition-colors"
-                          >
-                            ไม่อนุมัติ
-                          </button>
-                        </div>
+                      <td className="py-6 px-6 whitespace-nowrap">
+                        <LeaveStatusBadge status={req.status} />
+                      </td>
+                      <td className="py-6 px-6 whitespace-nowrap">
+                        <LeaveActionButtons
+                          onDetail={() => setSelectedRequest(req)}
+                          onApprove={() => handleApproveClick(req)}
+                          onReject={() => handleRejectClick(req)}
+                          loading={processing?.id === req.id ? processing.action : null}
+                          disabled={processing !== null}
+                        />
                       </td>
                     </tr>
                   ))
@@ -351,20 +350,13 @@ export default function ManagerApprovePage() {
           leave={selectedRequest}
           onClose={() => setSelectedRequest(null)}
           footer={
-            <>
-              <button
-                onClick={() => handleApproveClick(selectedRequest)}
-                className="bg-[#00E676] hover:bg-[#00C853] text-white text-[13px] font-bold py-2 px-6 rounded-lg shadow-sm transition-colors"
-              >
-                อนุมัติ
-              </button>
-              <button
-                onClick={() => handleRejectClick(selectedRequest)}
-                className="bg-[#FF0000] hover:bg-[#E50000] text-white text-[13px] font-bold py-2 px-6 rounded-lg shadow-sm transition-colors"
-              >
-                ไม่อนุมัติ
-              </button>
-            </>
+            <LeaveActionButtons
+              size="lg"
+              onApprove={() => handleApproveClick(selectedRequest)}
+              onReject={() => handleRejectClick(selectedRequest)}
+              loading={processing?.id === selectedRequest.id ? processing.action : null}
+              disabled={processing !== null}
+            />
           }
         />
       )}

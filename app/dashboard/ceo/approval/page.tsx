@@ -10,12 +10,11 @@ import {
   ListOrdered,
   Clock4,
   CalendarDays,
-  Check,
-  X,
 } from 'lucide-react';
 import { getErrorMessage } from '@/lib/api/utils';
 import type { Leave } from '@/lib/api/types';
 import { LeaveDetailModal } from '@/components/LeaveDetailModal';
+import { LeaveActionButtons, LeaveStatusBadge, type LeaveActionKind } from '@/components/LeaveActions';
 import { escapeHtml } from '@/lib/escapeHtml';
 
 const getToken = () =>
@@ -148,6 +147,7 @@ export default function CEOApproval() {
     'thisMonth',
   );
   const [selectedLeave, setSelectedLeave] = useState<ReturnType<typeof mapLeave> | null>(null);
+  const [processing, setProcessing] = useState<{ id: string; action: LeaveActionKind } | null>(null);
 
   const refetch = useCallback(async () => {
     setIsLoading(true);
@@ -208,6 +208,7 @@ export default function CEOApproval() {
       cancelButtonText: 'ยกเลิก',
     });
     if (!result.isConfirmed) return;
+    setProcessing({ id: leave.id, action: 'approve' });
     try {
       await ceoApprove(leave.id);
       setSelectedLeave(null);
@@ -220,6 +221,8 @@ export default function CEOApproval() {
       });
     } catch (err) {
       Swal.fire({ icon: 'error', title: 'เกิดข้อผิดพลาด', text: getErrorMessage(err) });
+    } finally {
+      setProcessing(null);
     }
   };
 
@@ -244,6 +247,7 @@ export default function CEOApproval() {
       },
     });
     if (!isConfirmed || !reason?.trim()) return;
+    setProcessing({ id: leave.id, action: 'reject' });
     try {
       await ceoReject(leave.id, reason.trim());
       setSelectedLeave(null);
@@ -256,6 +260,8 @@ export default function CEOApproval() {
       });
     } catch (err) {
       Swal.fire({ icon: 'error', title: 'เกิดข้อผิดพลาด', text: getErrorMessage(err) });
+    } finally {
+      setProcessing(null);
     }
   };
 
@@ -363,8 +369,8 @@ export default function CEOApproval() {
                   <th className="px-6 py-4">แผนก</th>
                   <th className="px-6 py-4">ประเภทการลา</th>
                   <th className="px-6 py-4">วันที่ลา</th>
-                  <th className="px-6 py-4 text-center">สถานะ</th>
-                  <th className="px-6 py-4 text-center">การดำเนินการ</th>
+                  <th className="px-6 py-4">สถานะ</th>
+                  <th className="px-6 py-4">การดำเนินการ</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800/50">
@@ -407,32 +413,17 @@ export default function CEOApproval() {
                       <td className="px-6 py-4 text-slate-600 dark:text-slate-300">
                         {leave.dateRangeStr}
                       </td>
-                      <td className="px-6 py-4 text-center">
-                        <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
-                          รอดำเนินการ
-                        </span>
+                      <td className="px-6 py-4">
+                        <LeaveStatusBadge status={leave.status} />
                       </td>
                       <td className="px-6 py-4">
-                        <div className="flex items-center justify-center gap-2">
-                          <button
-                            onClick={() => handleApprove(leave)}
-                            className="bg-[#00C853] hover:bg-[#00B04A] text-white text-xs font-semibold px-3.5 py-1.5 rounded-xl transition-all shadow-sm"
-                          >
-                            อนุมัติ
-                          </button>
-                          <button
-                            onClick={() => handleReject(leave)}
-                            className="bg-red-100 hover:bg-red-200 text-red-600 text-xs font-semibold px-3.5 py-1.5 rounded-xl transition-all"
-                          >
-                            ไม่อนุมัติ
-                          </button>
-                          <button
-                            onClick={() => setSelectedLeave(leave)}
-                            className="flex items-center gap-1.5 text-slate-500 hover:text-indigo-600 text-xs font-semibold transition-colors bg-slate-100 hover:bg-indigo-50 px-3 py-1.5 rounded-xl"
-                          >
-                            รายละเอียด
-                          </button>
-                        </div>
+                        <LeaveActionButtons
+                          onDetail={() => setSelectedLeave(leave)}
+                          onApprove={() => handleApprove(leave)}
+                          onReject={() => handleReject(leave)}
+                          loading={processing?.id === leave.id ? processing.action : null}
+                          disabled={processing !== null}
+                        />
                       </td>
                     </tr>
                   ))
@@ -452,22 +443,13 @@ export default function CEOApproval() {
           fallbackDepartment={selectedLeave.departmentName}
           fallbackPosition={selectedLeave.positionName}
           footer={
-            <>
-              <button
-                onClick={() => handleApprove(selectedLeave)}
-                className="bg-[#00C853] hover:bg-[#00B04A] text-white px-5 py-3 rounded-xl font-bold text-[14px] shadow-sm transition-colors flex items-center justify-center gap-1.5"
-              >
-                <Check className="w-[18px] h-[18px]" strokeWidth={3} />
-                อนุมัติ
-              </button>
-              <button
-                onClick={() => handleReject(selectedLeave)}
-                className="bg-[#FF0000] hover:bg-[#E50000] text-white px-5 py-3 rounded-xl font-bold text-[14px] shadow-sm transition-colors flex items-center justify-center gap-1.5"
-              >
-                <X className="w-[18px] h-[18px]" strokeWidth={3} />
-                ไม่อนุมัติ
-              </button>
-            </>
+            <LeaveActionButtons
+              size="lg"
+              onApprove={() => handleApprove(selectedLeave)}
+              onReject={() => handleReject(selectedLeave)}
+              loading={processing?.id === selectedLeave.id ? processing.action : null}
+              disabled={processing !== null}
+            />
           }
         />
       )}

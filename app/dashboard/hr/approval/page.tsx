@@ -1,10 +1,11 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { User, Calendar as CalendarIcon, Eye, Check, X } from 'lucide-react';
+import { User, Calendar as CalendarIcon, Check, X } from 'lucide-react';
 import { useLeave } from '@/hooks/useLeave';
 import { useAuth } from '@/context/AuthContext';
 import { LeaveDetailModal } from '@/components/LeaveDetailModal';
+import { LeaveActionButton, LeaveActionButtons, LeaveStatusBadge } from '@/components/LeaveActions';
 import { getErrorMessage } from '@/lib/api/utils';
 
 export default function HrApprovePage() {
@@ -54,6 +55,7 @@ export default function HrApprovePage() {
     reason: string;
   } | null>(null);
   const [rejectReasonInput, setRejectReasonInput] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const formatMonthYear = (yyyyMM: string) => {
     const [y, m] = yyyyMM.split('-');
@@ -248,7 +250,8 @@ export default function HrApprovePage() {
   };
 
   const executeApprove = async () => {
-    if (!confirmData) return;
+    if (!confirmData || isSubmitting) return;
+    setIsSubmitting(true);
     try {
       await verifyLeave({
         id: confirmData.id,
@@ -263,6 +266,7 @@ export default function HrApprovePage() {
       refetchLeaves();
       setShowConfirmModal(false);
       setConfirmData(null);
+      setIsSubmitting(false);
     }
   };
 
@@ -273,11 +277,12 @@ export default function HrApprovePage() {
   };
 
   const executeReject = async () => {
-    if (!rejectData) return;
+    if (!rejectData || isSubmitting) return;
     if (rejectReasonInput.trim() === '') {
       alert('กรณีไม่อนุมัติคำขอลา ต้องระบุเหตุผล');
       return;
     }
+    setIsSubmitting(true);
     try {
       await verifyLeave({
         id: rejectData.id,
@@ -293,6 +298,7 @@ export default function HrApprovePage() {
       setShowRejectModal(false);
       setRejectData(null);
       setRejectReasonInput('');
+      setIsSubmitting(false);
     }
   };
 
@@ -438,11 +444,11 @@ export default function HrApprovePage() {
                 <th className="py-4 px-6 font-bold whitespace-nowrap">
                   วันที่ลา
                 </th>
-                <th className="py-4 px-6 font-bold whitespace-nowrap text-center">
+                <th className="py-4 px-6 font-bold whitespace-nowrap">
                   สถานะ
                 </th>
-                <th className="py-4 px-6 font-bold whitespace-nowrap text-center">
-                  จัดการ
+                <th className="py-4 px-6 font-bold whitespace-nowrap">
+                  การดำเนินการ
                 </th>
               </tr>
             </thead>
@@ -496,115 +502,43 @@ export default function HrApprovePage() {
                       <td className="py-5 px-6 text-[14px] text-gray-800 font-bold whitespace-nowrap">
                         {req.dateRange}
                       </td>
-                      <td className="py-5 px-6 whitespace-nowrap text-center">
-                        {isLockedByOther ||
-                        isLockedByMe ||
-                        req.status === 'REVIEWING_HR' ? (
-                          <div className="flex flex-col items-center">
-                            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[12px] font-bold bg-blue-50 text-blue-500 border border-blue-100">
-                              <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />{' '}
-                              HR กำลังตรวจสอบ
-                            </span>
-                            {isLockedByOther && (
-                              <span className="text-[11px] text-orange-500 mt-1 font-medium">
-                                ตรวจสอบโดย ผู้อื่น
-                              </span>
-                            )}
-                            {isLockedByMe && (
-                              <span className="text-[11px] text-blue-500 mt-1 font-medium">
-                                ตรวจสอบโดย คุณ
-                              </span>
-                            )}
-                          </div>
-                        ) : req.status === 'PENDING_CANCELLATION' ? (
-                          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[12px] font-bold bg-rose-50 text-rose-500 border border-rose-100">
-                            รอยกเลิก
-                          </span>
+                      <td className="py-5 px-6 whitespace-nowrap">
+                        {isLockedByOther || isLockedByMe ? (
+                          <LeaveStatusBadge
+                            status="REVIEWING_HR"
+                            hint={
+                              isLockedByMe
+                                ? 'ตรวจสอบโดยคุณ'
+                                : `ตรวจสอบโดย ${
+                                    req.currentReviewer?.employee
+                                      ? `${req.currentReviewer.employee.firstName} ${req.currentReviewer.employee.lastName}`
+                                      : req.currentReviewer?.username || 'ผู้อื่น'
+                                  }`
+                            }
+                          />
                         ) : (
-                          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[12px] font-bold bg-blue-50 text-blue-500 border border-blue-100">
-                            <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />{' '}
-                            รอ HR ตรวจสอบ
-                          </span>
+                          <LeaveStatusBadge status={req.status} />
                         )}
                       </td>
-                      <td className="py-5 px-6 text-center whitespace-nowrap">
-                        {isLockedByOther ? (
-                          <div className="flex items-center justify-center gap-2">
-                            <span className="text-[12px] text-orange-500 font-bold bg-orange-50 px-2 py-1 rounded-md border border-orange-100">
-                              ตรวจสอบโดย{' '}
-                              {req.currentReviewer?.employee
-                                ? `${req.currentReviewer.employee.firstName} ${req.currentReviewer.employee.lastName}`
-                                : req.currentReviewer?.username || 'ผู้อื่น'}
-                            </span>
-                            <button
-                              onClick={() => handleViewDetails(req)}
-                              className="inline-flex items-center justify-center p-1.5 rounded-md border border-blue-200 text-blue-600 bg-white hover:bg-blue-50 transition-colors shadow-sm"
-                              title="ดูรายละเอียด"
-                            >
-                              <Eye
-                                className="w-[14px] h-[14px]"
-                                strokeWidth={2.5}
-                              />
-                            </button>
-                          </div>
-                        ) : isLockedByMe ? (
-                          <button
-                            onClick={() => handleViewDetails(req)}
-                            className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-md text-[12px] font-bold bg-blue-600 text-white hover:bg-blue-700 transition-colors shadow-sm"
-                          >
-                            <svg
-                              width="14"
-                              height="14"
-                              viewBox="0 0 24 24"
-                              fill="none"
-                              stroke="currentColor"
-                              strokeWidth="2.5"
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                            >
-                              <path d="M2 12h4l3-9 5 18 3-9h5" />
-                            </svg>
-                            ตรวจสอบเอกสาร
-                          </button>
+                      <td className="py-5 px-6 whitespace-nowrap">
+                        {isLockedByMe ? (
+                          <LeaveActionButtons
+                            onDetail={() => handleViewDetails(req)}
+                            onApprove={() => handleApproveClick(req.id || '')}
+                            onReject={() => handleRejectClick(req.id || '')}
+                            disabled={isSubmitting}
+                          />
+                        ) : isLockedByOther ? (
+                          <LeaveActionButtons onDetail={() => handleViewDetails(req)} />
                         ) : (
-                          <div className="flex items-center justify-center gap-2">
-                            <button
+                          <LeaveActionButtons onDetail={() => handleViewDetails(req)}>
+                            <LeaveActionButton
+                              variant="primary"
                               onClick={() => handlePullRequest(req)}
-                              className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-md text-[12px] font-bold bg-blue-50 text-blue-600 hover:bg-blue-100 transition-colors"
                             >
-                              <svg
-                                width="14"
-                                height="14"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="currentColor"
-                                strokeWidth="2.5"
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                              >
-                                <rect
-                                  x="3"
-                                  y="11"
-                                  width="18"
-                                  height="11"
-                                  rx="2"
-                                  ry="2"
-                                ></rect>
-                                <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
-                              </svg>
                               รับเรื่องตรวจสอบ
-                            </button>
-                            <button
-                              onClick={() => handleViewDetails(req)}
-                              className="inline-flex items-center justify-center p-1.5 rounded-md border border-blue-200 text-blue-600 bg-white hover:bg-blue-50 transition-colors shadow-sm"
-                              title="ดูรายละเอียด"
-                            >
-                              <Eye
-                                className="w-[14px] h-[14px]"
-                                strokeWidth={2.5}
-                              />
-                            </button>
-                          </div>
+                            </LeaveActionButton>
+                          </LeaveActionButtons>
                         )}
                       </td>
                     </tr>
@@ -651,22 +585,12 @@ export default function HrApprovePage() {
           }
           footer={
             selectedRequest.currentHrReviewerId === user?.id ? (
-              <>
-                <button
-                  onClick={onModalApprove}
-                  className="bg-[#00C853] hover:bg-[#00B04A] text-white px-5 py-3 rounded-xl font-bold text-[14px] shadow-sm transition-colors flex items-center justify-center gap-1.5"
-                >
-                  <Check className="w-[18px] h-[18px]" strokeWidth={3} />
-                  อนุมัติ
-                </button>
-                <button
-                  onClick={onModalReject}
-                  className="bg-[#FF0000] hover:bg-[#E50000] text-white px-5 py-3 rounded-xl font-bold text-[14px] shadow-sm transition-colors flex items-center justify-center gap-1.5"
-                >
-                  <X className="w-[18px] h-[18px]" strokeWidth={3} />
-                  ไม่อนุมัติ
-                </button>
-              </>
+              <LeaveActionButtons
+                size="lg"
+                onApprove={onModalApprove}
+                onReject={onModalReject}
+                disabled={isSubmitting}
+              />
             ) : null
           }
         />
@@ -693,7 +617,8 @@ export default function HrApprovePage() {
                 </button>
                 <button
                   onClick={executeApprove}
-                  className="flex-1 px-4 py-2 bg-[#00C853] hover:bg-[#00B04A] text-white rounded-lg text-sm font-bold transition-colors shadow-sm"
+                  disabled={isSubmitting}
+                  className="flex-1 px-4 py-2 bg-[#00C853] hover:bg-[#00B04A] text-white rounded-lg text-sm font-bold transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   ยืนยันอนุมัติ
                 </button>
@@ -732,7 +657,8 @@ export default function HrApprovePage() {
                 </button>
                 <button
                   onClick={executeReject}
-                  className="px-4 py-2 bg-[#FF0000] hover:bg-[#E50000] text-white rounded-lg text-sm font-bold transition-colors"
+                  disabled={isSubmitting}
+                  className="px-4 py-2 bg-[#FF0000] hover:bg-[#E50000] text-white rounded-lg text-sm font-bold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   ยืนยันไม่อนุมัติ
                 </button>

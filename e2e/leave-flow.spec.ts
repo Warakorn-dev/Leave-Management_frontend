@@ -55,18 +55,18 @@ async function fileLeaveViaForm(page: Page, date: string, reason: string) {
   return leave.id;
 }
 
-/** HR takes the request (รับเรื่องตรวจสอบ), opens it and approves or rejects. */
+/** HR takes the request (รับเรื่องตรวจสอบ), then approves or rejects it from the row. */
 async function hrDecide(page: Page, date: string, action: 'approve' | 'reject', reason = '') {
   await page.goto('/dashboard/hr/approval');
   await settle(page);
   await pickMonth(page, date);
-  await page.getByRole('button', { name: 'รับเรื่องตรวจสอบ' }).first().click();
-  await page.getByRole('button', { name: 'ตรวจสอบเอกสาร' }).first().click();
+  const row = page.locator('tbody tr').first();
+  await row.getByRole('button', { name: 'รับเรื่องตรวจสอบ' }).click();
   if (action === 'approve') {
-    await page.getByRole('button', { name: 'อนุมัติ', exact: true }).click();
+    await row.getByRole('button', { name: 'อนุมัติ', exact: true }).click();
     await page.getByRole('button', { name: 'ยืนยันอนุมัติ' }).click();
   } else {
-    await page.getByRole('button', { name: 'ไม่อนุมัติ', exact: true }).click();
+    await row.getByRole('button', { name: 'ปฏิเสธ', exact: true }).click();
     await page.getByPlaceholder('พิมพ์เหตุผลที่นี่...').fill(reason);
     await page.getByRole('button', { name: 'ยืนยันไม่อนุมัติ' }).click();
   }
@@ -82,7 +82,7 @@ async function managerDecide(page: Page, date: string, action: 'approve' | 'reje
     await row.getByRole('button', { name: 'อนุมัติ', exact: true }).click();
     await page.locator('.swal2-confirm').click();
   } else {
-    await row.getByRole('button', { name: 'ไม่อนุมัติ', exact: true }).click();
+    await row.getByRole('button', { name: 'ปฏิเสธ', exact: true }).click();
     await page.locator('.swal2-textarea').fill(reason);
     await page.locator('.swal2-confirm').click();
   }
