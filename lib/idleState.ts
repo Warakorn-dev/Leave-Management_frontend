@@ -71,6 +71,8 @@ const idleState = {
       await endSession();
       this.isPopupShowing = false;
       this.lastActivityTime = Date.now();
+      // Full reload on purpose (outside React, no router): drops in-memory state.
+      // eslint-disable-next-line @next/next/no-location-assign-relative-destination
       window.location.href = '/login';
     });
   },

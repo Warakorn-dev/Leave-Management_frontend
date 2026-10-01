@@ -108,22 +108,16 @@ export default function AdminAuditLogsPage() {
                     <tr className="bg-slate-50 text-slate-500 text-sm">
                       <th className="p-3 border-b font-medium">วันและเวลา</th>
                       <th className="p-3 border-b font-medium">ผู้ใช้งาน</th>
-<<<<<<< HEAD
                       <th className="p-3 border-b font-medium">การดำเนินการ</th>
                       <th className="p-3 border-b font-medium">
                         ส่วนที่เกี่ยวข้อง
                       </th>
                       <th className="p-3 border-b font-medium">IP Address</th>
-=======
-                      <th className="p-3 border-b font-medium">การกระทำ (Action)</th>
-                      <th className="p-3 border-b font-medium">ส่วนที่เกี่ยวข้อง (Entity)</th>
->>>>>>> 60ec41f1a1a8d4194d382ca7c3770f7a253348dd
                     </tr>
                   </thead>
                   <tbody>
                     {loading ? (
                       <tr>
-<<<<<<< HEAD
                         <td
                           colSpan={5}
                           className="p-8 text-center text-slate-500"
@@ -139,13 +133,6 @@ export default function AdminAuditLogsPage() {
                         >
                           ไม่พบประวัติการใช้งาน
                         </td>
-=======
-                        <td colSpan={4} className="p-8 text-center text-slate-500">กำลังโหลดข้อมูล...</td>
-                      </tr>
-                    ) : logs.length === 0 ? (
-                      <tr>
-                        <td colSpan={4} className="p-8 text-center text-slate-500">ไม่พบประวัติการใช้งาน</td>
->>>>>>> 60ec41f1a1a8d4194d382ca7c3770f7a253348dd
                       </tr>
                     ) : (
                       logs.map((log) => {
@@ -176,14 +163,9 @@ export default function AdminAuditLogsPage() {
                                 {log.action}
                               </span>
                             </td>
-<<<<<<< HEAD
                             <td className="p-3 text-slate-600">{log.entity}</td>
                             <td className="p-3 font-mono text-xs text-slate-500">
                               {log.ipAddress || '-'}
-=======
-                            <td className="p-3 text-slate-600">
-                              {log.entity}
->>>>>>> 60ec41f1a1a8d4194d382ca7c3770f7a253348dd
                             </td>
                           </tr>
                         );

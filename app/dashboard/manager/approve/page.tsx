@@ -314,13 +314,8 @@ export default function ManagerApprovePage() {
               <tbody>
                 {requests.length === 0 ? (
                   <tr>
-<<<<<<< HEAD
                     <td colSpan={9} className="py-12 text-center text-gray-500 font-medium">
-                      ไม่มีรายการคำขออนุมัติในเดือน {formatMonthYear(selectedMonthRaw)}
-=======
-                    <td colSpan={8} className="py-12 text-center text-gray-500 font-medium">
                       ไม่มีรายการคำขออนุมัติ{selectedMonthRaw === "ALL" ? "ทั้งหมด" : `ในเดือน ${formatMonthYear(selectedMonthRaw)}`}
->>>>>>> 60ec41f1a1a8d4194d382ca7c3770f7a253348dd
                     </td>
                   </tr>
                 ) : (

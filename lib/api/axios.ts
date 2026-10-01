@@ -11,12 +11,10 @@ interface RetryableRequestConfig extends InternalAxiosRequestConfig {
   _retry?: boolean;
 }
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000/api';
-
 // Create an Axios instance
 const axiosInstance = axios.create({
-  baseURL: API_URL, // Bypass Next.js proxy to prevent hanging on large payload POST requests
-  timeout: 30000,
+  baseURL: '/api', // Always use the Next.js proxy (same origin; works on every server)
+  timeout: 30000, // base64 attachments can take longer than 10s to upload
   headers: {
     'Content-Type': 'application/json',
   },
@@ -103,6 +101,8 @@ axiosInstance.interceptors.response.use(
             }).then(() => {
               sessionStorage.clear();
               if (window.location.pathname !== '/login') {
+                // Full reload on purpose: drops all in-memory state of the kicked-out session.
+                // eslint-disable-next-line @next/next/no-location-assign-relative-destination
                 window.location.href = '/login';
               }
             });

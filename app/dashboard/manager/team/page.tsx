@@ -20,12 +20,14 @@ import {
   ResponsiveContainer,
 } from 'recharts';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 
 import { useDashboardStats } from '@/hooks/useDashboard';
 
 export default function TeamDashboard() {
+  const router = useRouter();
   const [username, setUsername] = useState('');
 
   const [currentYear] = useState(new Date().getFullYear());
@@ -167,7 +169,7 @@ export default function TeamDashboard() {
         {/* Pending Approvals */}
         <Card
           className="rounded-2xl border border-gray-200 shadow-sm bg-white hover:shadow-md transition-shadow cursor-pointer"
-          onClick={() => (window.location.href = '/dashboard/manager/approve')}
+          onClick={() => router.push('/dashboard/manager/approve')}
         >
           <CardContent className="p-5 flex flex-col items-start h-full justify-center">
             <div className="flex items-center gap-3 mb-2">
