@@ -11,10 +11,12 @@ interface RetryableRequestConfig extends InternalAxiosRequestConfig {
   _retry?: boolean;
 }
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000/api';
+
 // Create an Axios instance
 const axiosInstance = axios.create({
-  baseURL: '/api', // Always use Next.js proxy to avoid CORS issues
-  timeout: 10000,
+  baseURL: API_URL, // Bypass Next.js proxy to prevent hanging on large payload POST requests
+  timeout: 30000,
   headers: {
     'Content-Type': 'application/json',
   },

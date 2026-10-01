@@ -120,8 +120,12 @@ export default function AdminDashboardPage() {
                     <tr className="bg-slate-50 text-slate-500 text-sm">
                       <th className="p-3 border-b font-medium">เวลา</th>
                       <th className="p-3 border-b font-medium">ผู้ใช้งาน</th>
+<<<<<<< HEAD
                       <th className="p-3 border-b font-medium">การดำเนินการ</th>
                       <th className="p-3 border-b font-medium">IP Address</th>
+=======
+                      <th className="p-3 border-b font-medium">การกระทำ</th>
+>>>>>>> 60ec41f1a1a8d4194d382ca7c3770f7a253348dd
                     </tr>
                   </thead>
                   <tbody>
@@ -142,14 +146,11 @@ export default function AdminDashboardPage() {
                             {log.action}
                           </span>
                         </td>
-                        <td className="p-3 border-b text-slate-500 font-mono text-xs">
-                          {log.ipAddress}
-                        </td>
                       </tr>
                     ))}
                     {(!stats?.recentLogs || stats.recentLogs.length === 0) && (
                       <tr>
-                        <td colSpan={4} className="p-4 text-center text-slate-500">
+                        <td colSpan={3} className="p-4 text-center text-slate-500">
                           ไม่พบประวัติการใช้งานล่าสุด
                         </td>
                       </tr>

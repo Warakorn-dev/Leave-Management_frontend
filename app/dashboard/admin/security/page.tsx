@@ -11,14 +11,12 @@ import { escapeHtml } from "@/lib/escapeHtml";
 interface SettingForm {
   MAX_FAILED_LOGINS: string;
   LOCKOUT_DURATION_MINUTES: string;
-  JWT_EXPIRATION: string;
   IDLE_TIMEOUT_MINUTES: string;
 }
 
 const DEFAULT_FORM: SettingForm = {
   MAX_FAILED_LOGINS: "5",
   LOCKOUT_DURATION_MINUTES: "15",
-  JWT_EXPIRATION: "15m",
   IDLE_TIMEOUT_MINUTES: "60",
 };
 
@@ -190,13 +188,6 @@ export default function AdminSecuritySettingsPage() {
                       "ระยะเวลาที่บัญชีจะถูกระงับการใช้งานชั่วคราว",
                       "number",
                       { min: 1 }
-                    )}
-
-                    {field(
-                      "JWT_EXPIRATION",
-                      "อายุของ Token (JWT Expiration)",
-                      "เช่น '15m', '1h', '7d' (หากเปลี่ยนในระบบฐานข้อมูลนี้จะทับซ้อนการตั้งค่าใน .env)",
-                      "text"
                     )}
 
                     {field(
