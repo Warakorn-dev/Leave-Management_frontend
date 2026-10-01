@@ -31,14 +31,14 @@ export default function AdminCaptchaPage() {
   }, []);
 
   const handlePurge = async () => {
-    if (!confirm('คุณแน่ใจหรือไม่ที่ต้องการล้างข้อมูลแคปช่า (CAPTCHA) ที่ใช้งานแล้วหรือหมดอายุทิ้งทั้งหมด?')) return;
+    if (!confirm('คุณแน่ใจหรือไม่ที่ต้องการล้างข้อมูลCAPTCHA ที่ใช้งานแล้วหรือหมดอายุทิ้งทั้งหมด?')) return;
     setPurging(true);
     try {
       await api.delete('/admin/captcha/purge');
       alert('ล้างข้อมูลเรียบร้อยแล้ว');
       fetchStats();
     } catch {
-      alert('ไม่สามารถล้างข้อมูลแคปช่าได้');
+      alert('ไม่สามารถล้างข้อมูลCAPTCHAได้');
     } finally {
       setPurging(false);
     }
@@ -57,7 +57,7 @@ export default function AdminCaptchaPage() {
               ตรวจสอบระบบ CAPTCHA
             </h1>
             <p className="text-xs text-gray-500 mt-1 font-medium">
-              ติดตามและเคลียร์พื้นที่ฐานข้อมูลแคปช่า (CAPTCHA)
+              ติดตามและเคลียร์พื้นที่ฐานข้อมูลCAPTCHA
             </p>
           </div>
         </div>
@@ -109,7 +109,7 @@ export default function AdminCaptchaPage() {
         )}
 
         <div className="bg-blue-50 border border-blue-200 rounded-xl p-5 text-sm text-blue-800">
-          <strong>คำแนะนำ:</strong> ภาพแคปช่า (CAPTCHAs) จะถูกตรวจสอบและทำเครื่องหมายว่าถูกใช้งานแล้วเมื่อผู้ใช้ล็อกอินสำเร็จ อย่างไรก็ตามแคปช่าที่ถูกสร้างขึ้นแต่ผู้ใช้ไม่ได้กดล็อกอินจะสะสมในฐานข้อมูลและหมดอายุไปเอง ควรใช้ปุ่ม &quot;ล้างข้อมูล&quot; เป็นครั้งคราวเพื่อคืนพื้นที่และทำให้ฐานข้อมูลทำงานได้เร็วขึ้น
+          <strong>คำแนะนำ:</strong> ภาพCAPTCHA จะถูกตรวจสอบและทำเครื่องหมายว่าถูกใช้งานแล้วเมื่อผู้ใช้ล็อกอินสำเร็จ อย่างไรก็ตามCAPTCHAที่ถูกสร้างขึ้นแต่ผู้ใช้ไม่ได้กดล็อกอินจะสะสมในฐานข้อมูลและหมดอายุไปเอง ควรใช้ปุ่ม &quot;ล้างข้อมูล&quot; เป็นครั้งคราวเพื่อคืนพื้นที่และทำให้ฐานข้อมูลทำงานได้เร็วขึ้น
         </div>
           </div>
         </div>

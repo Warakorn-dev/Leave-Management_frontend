@@ -8,7 +8,7 @@ export default function DashboardRoot() {
 
   useEffect(() => {
     const role = sessionStorage.getItem("role")?.toLowerCase();
-    if (role === "user") {
+    if (role === "employee" || role === "user") {
       router.replace("/dashboard/user/dashboard");
     } else if (role === "manager") {
       router.replace("/dashboard/manager/dashboard");
@@ -16,6 +16,8 @@ export default function DashboardRoot() {
       router.replace("/dashboard/hr/dashboard");
     } else if (role === "ceo") {
       router.replace("/dashboard/ceo/dashboard");
+    } else if (role === "admin") {
+      router.replace("/dashboard/admin/dashboard");
     } else {
       router.replace("/login");
     }
@@ -23,7 +25,7 @@ export default function DashboardRoot() {
 
   return (
     <div className="flex h-full items-center justify-center min-h-[50vh]">
-      <div className="animate-pulse text-zinc-400">กำลังโหลดหน้า dashboard...</div>
+      <div className="animate-pulse text-zinc-400">กำลังโหลด...</div>
     </div>
   );
 }

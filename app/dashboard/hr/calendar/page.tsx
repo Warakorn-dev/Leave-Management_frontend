@@ -178,10 +178,10 @@ export default function LeaveCalendarPage() {
         </div>
         <div>
           <h1 className="text-base sm:text-xl font-bold text-black tracking-tight">
-            ปฏิทินวันลา
+            ปฏิทินการทำงาน
           </h1>
           <p className="text-xs text-gray-500 mt-1 font-medium">
-            ภาพรวมวันลาของพนักงานทั้งบริษัทในรูปแบบปฏิทิน
+            ภาพรวมวันลาของพนักงานทั้งบริษัท
           </p>
         </div>
       </div>

@@ -125,16 +125,16 @@ export default function CEODashboard() {
       typeText = 'อนุมัติแล้ว';
       color = 'bg-[#4CAF50]';
     } else if (req.status === 'REJECTED') {
-      typeText = 'ปฏิเสธแล้ว';
+      typeText = 'ไม่อนุมัติ';
       color = 'bg-[#F44336]';
     } else if (req.status === 'PENDING_EXECUTIVE') {
-      typeText = 'รอ CEO อนุมัติ';
+      typeText = 'รอผู้บริหารอนุมัติ';
       color = 'bg-[#2196F3]';
     } else if (req.status === 'PENDING_VERIFY') {
-      typeText = 'รอ HR ตรวจสอบ';
+      typeText = 'รอฝ่ายบุคคลตรวจสอบ';
       color = 'bg-[#FF9800]';
     } else if (req.status === 'PENDING_SUPERVISOR') {
-      typeText = 'รอหัวหน้างานอนุมัติ';
+      typeText = 'รอหัวหน้าแผนกอนุมัติ';
       color = 'bg-[#FF9800]';
     }
 
@@ -182,7 +182,7 @@ export default function CEODashboard() {
       case 'rejected':
         return (
           <span className="text-red-500 bg-red-50 px-3 py-1 rounded-full text-xs font-bold">
-            ปฏิเสธ
+            ไม่อนุมัติ
           </span>
         );
       case 'cancelled':
@@ -194,19 +194,19 @@ export default function CEODashboard() {
       case 'pending_executive':
         return (
           <span className="text-amber-500 bg-amber-50 px-3 py-1 rounded-full text-xs font-bold">
-            รอ CEO อนุมัติ
+            รอผู้บริหารอนุมัติ
           </span>
         );
       case 'pending_verify':
         return (
           <span className="text-amber-500 bg-amber-50 px-3 py-1 rounded-full text-xs font-bold">
-            รอ HR ตรวจสอบ
+            รอฝ่ายบุคคลตรวจสอบ
           </span>
         );
       case 'pending_supervisor':
         return (
           <span className="text-amber-500 bg-amber-50 px-3 py-1 rounded-full text-xs font-bold">
-            รอหัวหน้างานอนุมัติ
+            รอหัวหน้าแผนกอนุมัติ
           </span>
         );
       default:
@@ -249,7 +249,7 @@ export default function CEODashboard() {
           <div className="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
             <div className="text-white">
               <h1 className="text-white text-2xl md:text-3xl font-bold mb-2">
-                สวัสดี คุณ CEOครับ
+                {user?.fullName ? `สวัสดี คุณ${user.fullName}` : 'สวัสดี'}
               </h1>
               <p className="text-[#9EA1FF]  text-sm mb-4">
                 ยินดีต้อนรับสู่ Dashboard ของคุณ

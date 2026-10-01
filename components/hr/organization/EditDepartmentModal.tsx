@@ -47,7 +47,7 @@ export function EditDepartmentModal({
         <div className="p-6 space-y-4">
           <div>
             <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-              รหัสแผนก (Code)
+              รหัสแผนก
             </label>
             <input
               type="text"
@@ -62,7 +62,7 @@ export function EditDepartmentModal({
           </div>
           <div>
             <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-              ชื่อแผนก (Department Name) <span className="text-red-500">*</span>
+              ชื่อแผนก <span className="text-red-500">*</span>
             </label>
             <input
               type="text"

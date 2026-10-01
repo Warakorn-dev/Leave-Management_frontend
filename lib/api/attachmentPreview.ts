@@ -1,20 +1,23 @@
 import Swal from 'sweetalert2';
+import { escapeHtml, safeDataUrlKind } from '@/lib/escapeHtml';
 
 export const previewAttachment = (e: React.MouseEvent, attachmentData: string, attachmentName: string) => {
   e.preventDefault();
   e.stopPropagation();
-  
+
   if (!attachmentData) return;
 
-  const isImage = attachmentData.startsWith('data:image');
-  const isPDF = attachmentData.startsWith('data:application/pdf');
+  // Only a well-formed image/PDF data URL is embedded, and it is escaped:
+  // the stored value and the file name both come from users.
+  const kind = safeDataUrlKind(attachmentData);
+  const src = escapeHtml(attachmentData);
 
   let htmlContent = '';
-  
-  if (isImage) {
-    htmlContent = `<div style="display: flex; justify-content: center;"><img src="${attachmentData}" style="max-width: 100%; max-height: 70vh; border-radius: 8px;" /></div>`;
-  } else if (isPDF) {
-    htmlContent = `<iframe src="${attachmentData}" style="width: 100%; height: 70vh; border: none; border-radius: 8px;"></iframe>`;
+
+  if (kind === 'image') {
+    htmlContent = `<div style="display: flex; justify-content: center;"><img src="${src}" style="max-width: 100%; max-height: 70vh; border-radius: 8px;" /></div>`;
+  } else if (kind === 'pdf') {
+    htmlContent = `<iframe src="${src}" style="width: 100%; height: 70vh; border: none; border-radius: 8px;"></iframe>`;
   } else {
     htmlContent = `
       <div style="padding: 2rem; text-align: center; color: #64748b;">
@@ -26,7 +29,7 @@ export const previewAttachment = (e: React.MouseEvent, attachmentData: string, a
   }
 
   Swal.fire({
-    title: attachmentName,
+    titleText: attachmentName, // plain text — `title` would render HTML
     html: htmlContent,
     width: '80%',
     showCloseButton: true,

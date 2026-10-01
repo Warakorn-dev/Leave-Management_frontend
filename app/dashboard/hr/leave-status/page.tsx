@@ -4,6 +4,12 @@ import { useState, useEffect } from 'react';
 import { Activity } from 'lucide-react';
 import { getLeaveStatusText, getLeaveStatusBadgeColor } from '@/lib/api/utils';
 import type { Leave } from '@/lib/api/types';
+import {
+  reachedExecutive,
+  rejectionComment,
+  showExecutiveStep,
+  stageStatus,
+} from '@/lib/leaveRoute';
 
 interface LeaveWithExtras extends Leave {
   approverReason?: string;
@@ -47,50 +53,6 @@ const getLeaveDetails = (req: LeaveWithExtras) => {
     return '(0.5 วัน)';
   }
   return `(${days} วัน)`;
-};
-
-const getStageStatus = (
-  req: LeaveWithExtras,
-  stage: 'HR' | 'MANAGER' | 'CEO',
-) => {
-  const currentStatus = req.status || 'PENDING_VERIFY';
-  if (currentStatus === 'CANCELLED' || currentStatus === 'Cancelled')
-    return 'cancelled';
-
-  const approvals = req.approvals || [];
-
-  if (stage === 'HR') {
-    if (currentStatus === 'PENDING_VERIFY' || currentStatus === 'PENDING_CANCELLATION') return 'pending';
-    if (currentStatus === 'REJECTED') {
-      return approvals.length === 1 ? 'rejected' : 'approved';
-    }
-    return 'approved';
-  }
-
-  if (stage === 'MANAGER') {
-    if (currentStatus === 'PENDING_VERIFY') return 'waiting';
-    if (currentStatus === 'PENDING_SUPERVISOR') return 'pending';
-    if (currentStatus === 'REJECTED') {
-      if (approvals.length === 1) return 'waiting'; // HR rejected, Manager never saw it
-      if (approvals.length === 2 && (typeof req.leaveType === 'object' ? req.leaveType?.isSpecial : undefined)) return 'waiting'; // HR -> CEO, Manager skipped
-      return approvals.length === 2 ? 'rejected' : 'approved';
-    }
-    return 'approved';
-  }
-
-  if (stage === 'CEO') {
-    if (currentStatus === 'PENDING_VERIFY' || currentStatus === 'PENDING_SUPERVISOR') return 'waiting';
-    if (currentStatus === 'PENDING_EXECUTIVE') return 'pending';
-    if (currentStatus === 'REJECTED') {
-      if (approvals.length === 1) return 'waiting';
-      if (approvals.length === 2 && !(typeof req.leaveType === 'object' ? req.leaveType?.isSpecial : undefined)) return 'waiting';
-      return 'rejected';
-    }
-    if (currentStatus === 'APPROVED') return 'approved';
-    return 'waiting';
-  }
-
-  return 'waiting';
 };
 
 import { useLeave } from '@/hooks/useLeave';
@@ -152,31 +114,36 @@ export default function LeaveStatusPage() {
             <div className="space-y-6">
               {requests.map((req) => {
                 const status = req.status || 'PENDING_VERIFY';
-                const hrStage = getStageStatus(req, 'HR');
-                const managerStage = getStageStatus(req, 'MANAGER');
-                const ceoStage = getStageStatus(req, 'CEO');
+                const hrStage = stageStatus(status, 'HR', req.approvals);
+                const managerStage = stageStatus(status, 'MANAGER', req.approvals);
+                const wentToCeo = reachedExecutive(status, req.approvals);
+                // An APPROVED request only counts as CEO-approved if it really reached the CEO.
+                const ceoStage =
+                  status === 'APPROVED' && !wentToCeo
+                    ? 'waiting'
+                    : stageStatus(status, 'CEO', req.approvals);
 
                 const requesterRole = req.user?.role || req.employee?.role || '';
                 const requesterPosition = typeof req.user?.position === 'string' ? req.user?.position : req.user?.position?.name || req.employee?.position?.name || '';
                 const isRequesterManagerOrCEO = 
                   ['Manager', 'CEO'].includes(requesterRole) || 
-                  requesterPosition.toLowerCase().includes('leader') || 
-                  requesterPosition.toLowerCase().includes('manager') ||
+                  requesterPosition.toLowerCase().includes('leader') || // only Leader is a department head
                   requesterRole.toLowerCase().includes('leader');
                 
-                const isNormalLeave = (typeof req.leaveType === 'object' ? req.leaveType?.isSpecial : undefined) === false;
-                const showCEO =
-                  !isNormalLeave ||
-                  isRequesterManagerOrCEO ||
-                  status === 'PENDING_EXECUTIVE';
+                const isSpecialLeave =
+                  typeof req.leaveType === 'object' && req.leaveType?.isSpecial === true;
+                const showCEO = showExecutiveStep(
+                  status,
+                  req.approvals,
+                  isSpecialLeave || isRequesterManagerOrCEO,
+                );
                 const showManager = !isRequesterManagerOrCEO;
                 const isFinalApproved = status === 'APPROVED';
                 const isFinalRejected = status === 'REJECTED';
                 const isCancelled = status === 'CANCELLED';
                 const isCancellationPending = status === 'PENDING_CANCELLATION';
                 const approverComment =
-                  req.approverReason ||
-                  req.approvals?.[req.approvals.length - 1]?.comment;
+                  req.approverReason || rejectionComment(req.approvals);
 
                 return (
                   <div
@@ -287,7 +254,7 @@ export default function LeaveStatusPage() {
                             : hrStage === 'approved'
                               ? 'ฝ่ายบุคคลตรวจสอบแล้ว'
                               : isFinalRejected && hrStage === 'pending'
-                                ? 'ฝ่ายบุคคลปฏิเสธคำขอ'
+                                ? 'ฝ่ายบุคคลไม่อนุมัติคำขอ'
                                 : hrStage === 'pending'
                                   ? 'รอฝ่ายบุคคลตรวจสอบ'
                                   : 'รอฝ่ายบุคคลตรวจสอบ'}
@@ -327,10 +294,10 @@ export default function LeaveStatusPage() {
                           }`}
                         >
                           {managerStage === 'approved'
-                            ? 'หัวหน้างานอนุมัติแล้ว'
+                            ? 'หัวหน้าแผนกอนุมัติแล้ว'
                             : isFinalRejected && managerStage === 'pending'
-                              ? 'หัวหน้างานปฏิเสธคำขอ'
-                              : 'รอหัวหน้างานอนุมัติ'}
+                              ? 'หัวหน้าแผนกไม่อนุมัติคำขอ'
+                              : 'รอหัวหน้าแผนกอนุมัติ'}
                         </h4>
                         {isFinalRejected &&
                           managerStage === 'pending' &&
@@ -368,10 +335,10 @@ export default function LeaveStatusPage() {
                             }`}
                           >
                             {ceoStage === 'approved'
-                              ? 'CEO อนุมัติแล้ว'
+                              ? 'ผู้บริหารอนุมัติแล้ว'
                               : isFinalRejected && ceoStage === 'pending'
-                                ? 'CEO ปฏิเสธคำขอ'
-                                : 'รอ CEO อนุมัติ'}
+                                ? 'ผู้บริหารไม่อนุมัติคำขอ'
+                                : 'รอผู้บริหารอนุมัติ'}
                           </h4>
                           {isFinalRejected &&
                             ceoStage === 'pending' &&
@@ -399,7 +366,7 @@ export default function LeaveStatusPage() {
                               : 'text-[#D1D5DB]'
                           }`}
                         >
-                          เสร็จสิ้น (Completed)
+                          เสร็จสิ้น
                         </h4>
                       </div>
                     </div>

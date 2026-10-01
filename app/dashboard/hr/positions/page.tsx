@@ -206,7 +206,7 @@ export default function HRPositions() {
         </div>
         <div>
           <h1 className="text-base sm:text-xl font-bold text-black tracking-tight">
-            ตำแหน่งงาน (Positions)
+            ตำแหน่งงาน
           </h1>
           <p className="text-xs text-gray-500 mt-1 font-medium">
             บริหารจัดการตำแหน่งหน้าที่และเกรดโครงสร้างองค์กร
@@ -223,7 +223,7 @@ export default function HRPositions() {
           className="inline-flex items-center space-x-2 px-4 py-2.5 rounded-xl text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-500 cursor-pointer shadow-sm"
         >
           <Plus className="w-4.5 h-4.5" />
-          <span>เพิ่มตำแหน่ง (Add Position)</span>
+          <span>เพิ่มตำแหน่ง</span>
         </button>
       </div>
 
@@ -258,7 +258,7 @@ export default function HRPositions() {
                   <th className="py-4.5 px-5">รหัสย่อ</th>
                   <th className="py-4.5 px-5">ชื่อตำแหน่ง</th>
                   <th className="py-4.5 px-5">แผนกงานที่สังกัด</th>
-                  <th className="py-4.5 px-5">สิทธิ์ใช้งาน</th>
+                  <th className="py-4.5 px-5">สิทธิ์การใช้งาน</th>
                   <th className="py-4.5 px-5">สถานะ</th>
                   <th className="py-4.5 px-5 text-right">จัดการ</th>
                 </tr>
@@ -299,7 +299,7 @@ export default function HRPositions() {
                       <Badge
                         variant={p.status === 'active' ? 'success' : 'neutral'}
                       >
-                        {p.status === 'active' ? 'ใช้งานปกติ' : 'งดใช้งาน'}
+                        {p.status === 'active' ? 'ใช้งานอยู่' : 'ปิดการใช้งาน'}
                       </Badge>
                     </td>
                     <td className="py-4 px-5 text-right space-x-1">
@@ -368,7 +368,7 @@ export default function HRPositions() {
             <div className="space-y-4 mt-2">
               <div>
                 <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">
-                  รหัสตำแหน่ง (Code) *
+                  รหัสตำแหน่ง *
                 </label>
                 <input
                   {...register('code')}
@@ -385,7 +385,7 @@ export default function HRPositions() {
 
               <div>
                 <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">
-                  ชื่อตำแหน่ง (Title) *
+                  ชื่อตำแหน่ง *
                 </label>
                 <input
                   {...register('title')}
@@ -402,13 +402,13 @@ export default function HRPositions() {
 
               <div>
                 <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">
-                  สังกัดแผนกงาน (Department) *
+                  สังกัดแผนกงาน *
                 </label>
                 <select
                   {...register('departmentId')}
                   className="block w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 px-3 py-2 text-sm focus:outline-hidden focus:ring-2 focus:ring-indigo-500"
                 >
-                  <option value="">-- เลือกแผนก (Select Department) --</option>
+                  <option value="">-- เลือกแผนก --</option>
                   {departments.map((d) => (
                     <option key={d.id} value={d.id}>
                       {d.name}
@@ -424,7 +424,7 @@ export default function HRPositions() {
 
               <div>
                 <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">
-                  ระดับสิทธิ์ (Role) *
+                  สิทธิ์การใช้งาน *
                 </label>
                 <select
                   {...register('role')}
@@ -443,14 +443,14 @@ export default function HRPositions() {
 
               <div>
                 <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">
-                  สถานะ (Status) *
+                  สถานะ *
                 </label>
                 <select
                   {...register('status')}
                   className="block w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 px-3 py-2 text-sm focus:outline-hidden focus:ring-2 focus:ring-indigo-500"
                 >
-                  <option value="active">ใช้งานปกติ (Active)</option>
-                  <option value="inactive">งดใช้งาน (Inactive)</option>
+                  <option value="active">ใช้งานอยู่</option>
+                  <option value="inactive">ปิดการใช้งาน</option>
                 </select>
               </div>
             </div>
@@ -461,13 +461,13 @@ export default function HRPositions() {
                 onClick={() => setDialogOpen(false)}
                 className="px-4 py-2 text-sm font-semibold rounded-xl border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-850 text-slate-655 dark:text-slate-350 cursor-pointer"
               >
-                ยกเลิก (Cancel)
+                ยกเลิก
               </button>
               <button
                 type="submit"
                 className="px-4 py-2 text-sm font-semibold rounded-xl text-white bg-indigo-600 hover:bg-indigo-500 cursor-pointer"
               >
-                บันทึกข้อมูล (Save)
+                บันทึกข้อมูล
               </button>
             </DialogFooter>
           </form>

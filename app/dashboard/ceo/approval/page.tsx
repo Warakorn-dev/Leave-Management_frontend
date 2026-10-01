@@ -10,12 +10,12 @@ import {
   ListOrdered,
   Clock4,
   CalendarDays,
-  Check,
-  X,
 } from 'lucide-react';
 import { getErrorMessage } from '@/lib/api/utils';
 import type { Leave } from '@/lib/api/types';
 import { LeaveDetailModal } from '@/components/LeaveDetailModal';
+import { LeaveActionButtons, LeaveStatusBadge, type LeaveActionKind } from '@/components/LeaveActions';
+import { escapeHtml } from '@/lib/escapeHtml';
 
 const getToken = () =>
   typeof window !== 'undefined' ? sessionStorage.getItem('accessToken') : '';
@@ -147,6 +147,7 @@ export default function CEOApproval() {
     'thisMonth',
   );
   const [selectedLeave, setSelectedLeave] = useState<ReturnType<typeof mapLeave> | null>(null);
+  const [processing, setProcessing] = useState<{ id: string; action: LeaveActionKind } | null>(null);
 
   const refetch = useCallback(async () => {
     setIsLoading(true);
@@ -207,6 +208,7 @@ export default function CEOApproval() {
       cancelButtonText: 'ยกเลิก',
     });
     if (!result.isConfirmed) return;
+    setProcessing({ id: leave.id, action: 'approve' });
     try {
       await ceoApprove(leave.id);
       setSelectedLeave(null);
@@ -219,42 +221,47 @@ export default function CEOApproval() {
       });
     } catch (err) {
       Swal.fire({ icon: 'error', title: 'เกิดข้อผิดพลาด', text: getErrorMessage(err) });
+    } finally {
+      setProcessing(null);
     }
   };
 
   // ── reject ──
   const handleReject = async (leave: ReturnType<typeof mapLeave>) => {
     const { value: reason, isConfirmed } = await Swal.fire({
-      title: 'ยืนยันการปฏิเสธ',
-      html: `<p class="text-sm text-gray-600 mb-3">ปฏิเสธคำขอ <strong>${leave.leaveTypeName}</strong> ของ <strong>${leave.employeeName}</strong></p>`,
+      title: 'ยืนยันไม่อนุมัติ',
+      html: `<p class="text-sm text-gray-600 mb-3">ไม่อนุมัติคำขอ <strong>${escapeHtml(leave.leaveTypeName)}</strong> ของ <strong>${escapeHtml(leave.employeeName)}</strong></p>`,
       input: 'textarea',
-      inputPlaceholder: 'ระบุเหตุผลที่ปฏิเสธ (บังคับ)...',
+      inputPlaceholder: 'ระบุเหตุผลที่ไม่อนุมัติ (บังคับ)...',
       icon: 'warning',
       showCancelButton: true,
       confirmButtonColor: '#dc2626',
       cancelButtonColor: '#94a3b8',
-      confirmButtonText: 'ปฏิเสธคำขอ',
+      confirmButtonText: 'ไม่อนุมัติคำขอ',
       cancelButtonText: 'ยกเลิก',
       preConfirm: (text) => {
         if (!text?.trim()) {
-          Swal.showValidationMessage('กรุณาระบุเหตุผลในการปฏิเสธ');
+          Swal.showValidationMessage('กรุณาระบุเหตุผลที่ไม่อนุมัติ');
         }
         return text;
       },
     });
     if (!isConfirmed || !reason?.trim()) return;
+    setProcessing({ id: leave.id, action: 'reject' });
     try {
       await ceoReject(leave.id, reason.trim());
       setSelectedLeave(null);
       refetch();
       Swal.fire({
         icon: 'success',
-        title: 'ปฏิเสธสำเร็จ',
+        title: 'ไม่อนุมัติคำขอสำเร็จ',
         timer: 1500,
         showConfirmButton: false,
       });
     } catch (err) {
       Swal.fire({ icon: 'error', title: 'เกิดข้อผิดพลาด', text: getErrorMessage(err) });
+    } finally {
+      setProcessing(null);
     }
   };
 
@@ -270,7 +277,7 @@ export default function CEOApproval() {
             รายการคำขออนุมัติการลา (CEO)
           </h1>
           <p className="text-xs text-gray-500 mt-1 font-medium">
-            อนุมัติหรือปฏิเสธคำขอลาที่ต้องผ่านการพิจารณาจากผู้บริหาร
+            อนุมัติหรือไม่อนุมัติคำขอลาที่ต้องผ่านการพิจารณาจากผู้บริหาร
           </p>
         </div>
       </div>
@@ -330,7 +337,7 @@ export default function CEOApproval() {
       <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-sm border border-slate-100 dark:border-slate-800 overflow-hidden">
         <div className="p-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-slate-100 dark:border-slate-800">
           <h2 className="text-lg font-bold text-slate-900 dark:text-white">
-            คำขอลาที่ค้างอยู่ (PENDING_EXECUTIVE)
+            คำขอลาที่รอผู้บริหารอนุมัติ
           </h2>
           <div className="relative">
             <select
@@ -362,8 +369,8 @@ export default function CEOApproval() {
                   <th className="px-6 py-4">แผนก</th>
                   <th className="px-6 py-4">ประเภทการลา</th>
                   <th className="px-6 py-4">วันที่ลา</th>
-                  <th className="px-6 py-4 text-center">สถานะ</th>
-                  <th className="px-6 py-4 text-center">การดำเนินการ</th>
+                  <th className="px-6 py-4">สถานะ</th>
+                  <th className="px-6 py-4">การดำเนินการ</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800/50">
@@ -406,32 +413,17 @@ export default function CEOApproval() {
                       <td className="px-6 py-4 text-slate-600 dark:text-slate-300">
                         {leave.dateRangeStr}
                       </td>
-                      <td className="px-6 py-4 text-center">
-                        <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
-                          รอดำเนินการ
-                        </span>
+                      <td className="px-6 py-4">
+                        <LeaveStatusBadge status={leave.status} />
                       </td>
                       <td className="px-6 py-4">
-                        <div className="flex items-center justify-center gap-2">
-                          <button
-                            onClick={() => handleApprove(leave)}
-                            className="bg-[#00C853] hover:bg-[#00B04A] text-white text-xs font-semibold px-3.5 py-1.5 rounded-xl transition-all shadow-sm"
-                          >
-                            อนุมัติ
-                          </button>
-                          <button
-                            onClick={() => handleReject(leave)}
-                            className="bg-red-100 hover:bg-red-200 text-red-600 text-xs font-semibold px-3.5 py-1.5 rounded-xl transition-all"
-                          >
-                            ปฏิเสธ
-                          </button>
-                          <button
-                            onClick={() => setSelectedLeave(leave)}
-                            className="flex items-center gap-1.5 text-slate-500 hover:text-indigo-600 text-xs font-semibold transition-colors bg-slate-100 hover:bg-indigo-50 px-3 py-1.5 rounded-xl"
-                          >
-                            รายละเอียด
-                          </button>
-                        </div>
+                        <LeaveActionButtons
+                          onDetail={() => setSelectedLeave(leave)}
+                          onApprove={() => handleApprove(leave)}
+                          onReject={() => handleReject(leave)}
+                          loading={processing?.id === leave.id ? processing.action : null}
+                          disabled={processing !== null}
+                        />
                       </td>
                     </tr>
                   ))
@@ -451,22 +443,13 @@ export default function CEOApproval() {
           fallbackDepartment={selectedLeave.departmentName}
           fallbackPosition={selectedLeave.positionName}
           footer={
-            <>
-              <button
-                onClick={() => handleApprove(selectedLeave)}
-                className="bg-[#00C853] hover:bg-[#00B04A] text-white px-5 py-3 rounded-xl font-bold text-[14px] shadow-sm transition-colors flex items-center justify-center gap-1.5"
-              >
-                <Check className="w-[18px] h-[18px]" strokeWidth={3} />
-                อนุมัติ
-              </button>
-              <button
-                onClick={() => handleReject(selectedLeave)}
-                className="bg-[#FF0000] hover:bg-[#E50000] text-white px-5 py-3 rounded-xl font-bold text-[14px] shadow-sm transition-colors flex items-center justify-center gap-1.5"
-              >
-                <X className="w-[18px] h-[18px]" strokeWidth={3} />
-                ปฏิเสธ
-              </button>
-            </>
+            <LeaveActionButtons
+              size="lg"
+              onApprove={() => handleApprove(selectedLeave)}
+              onReject={() => handleReject(selectedLeave)}
+              loading={processing?.id === selectedLeave.id ? processing.action : null}
+              disabled={processing !== null}
+            />
           }
         />
       )}

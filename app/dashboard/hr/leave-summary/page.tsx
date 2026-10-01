@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import axiosInstance from '@/lib/api/axios';
 import {
   FileSpreadsheet,
@@ -11,9 +11,12 @@ import {
   ChevronDown,
   X,
   FileText,
+  Columns3,
+  Check,
 } from 'lucide-react';
 import { DatePicker } from '@/components/DateAndTime';
 import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 import * as XLSX from 'xlsx';
 
 // --- TypeScript Interfaces ---
@@ -36,6 +39,59 @@ interface LeaveSummaryRecord {
   leaveDates?: string[]; // Array of formatted date strings
 }
 
+/** YYYY-MM-DD in local time (toISOString() would shift Thai midnight to the previous day). */
+function toLocalDateKey(date: Date): string {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+}
+
+/** Days used of one leave type within the selected period. */
+function usedDays(row: LeaveSummaryRecord, lt: LeaveType): number {
+  return row.leaveData[lt.name] || 0;
+}
+
+/**
+ * Current real balance from LeaveBalance (includes carry-over, independent of the
+ * date filter). Falls back to the type's default quota minus usage when the
+ * employee has no balance row for that type.
+ */
+function remainingDays(row: LeaveSummaryRecord, lt: LeaveType): number {
+  const balance = row.remainingData?.[lt.name];
+  if (balance !== undefined) return balance;
+  return Math.max(0, (lt.defaultDays || 0) - usedDays(row, lt));
+}
+
+/** Annual quotas everyone draws on: sick, personal business, vacation. */
+function isRoutineLeaveType(name: string): boolean {
+  return (
+    name.includes('ลาป่วย') ||
+    name.includes('ลากิจ') ||
+    name.includes('พักผ่อน') ||
+    name.includes('พักร้อน')
+  );
+}
+
+const HIDDEN_COLUMNS_KEY = 'leaveSummary.hiddenLeaveTypeIds';
+
+function loadHiddenColumns(): string[] {
+  try {
+    const raw = localStorage.getItem(HIDDEN_COLUMNS_KEY);
+    const parsed: unknown = raw ? JSON.parse(raw) : [];
+    return Array.isArray(parsed)
+      ? parsed.filter((v): v is string => typeof v === 'string')
+      : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveHiddenColumns(ids: string[]) {
+  try {
+    localStorage.setItem(HIDDEN_COLUMNS_KEY, JSON.stringify(ids));
+  } catch {
+    // storage unavailable (private mode etc.): selection just is not persisted
+  }
+}
+
 export default function LeaveSummaryView() {
   // Advanced Filter States
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -51,6 +107,44 @@ export default function LeaveSummaryView() {
   const [isDownloadModalOpen, setIsDownloadModalOpen] =
     useState<boolean>(false);
 
+  // Column chooser: store the *hidden* ids so newly added leave types show by default
+  const [hiddenTypeIds, setHiddenTypeIds] = useState<string[]>([]);
+  const [isColumnMenuOpen, setIsColumnMenuOpen] = useState(false);
+  const columnMenuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    setHiddenTypeIds(loadHiddenColumns());
+  }, []);
+
+  useEffect(() => {
+    if (!isColumnMenuOpen) return;
+    const onPointerDown = (e: PointerEvent) => {
+      if (!columnMenuRef.current?.contains(e.target as Node)) {
+        setIsColumnMenuOpen(false);
+      }
+    };
+    document.addEventListener('pointerdown', onPointerDown);
+    return () => document.removeEventListener('pointerdown', onPointerDown);
+  }, [isColumnMenuOpen]);
+
+  const updateHiddenColumns = (ids: string[]) => {
+    setHiddenTypeIds(ids);
+    saveHiddenColumns(ids);
+  };
+
+  const toggleColumn = (id: string) => {
+    if (hiddenTypeIds.includes(id)) {
+      updateHiddenColumns(hiddenTypeIds.filter((h) => h !== id));
+      return;
+    }
+    // keep at least one leave-type column visible
+    const visibleCount = leaveTypes.filter(
+      (lt) => !hiddenTypeIds.includes(lt.id),
+    ).length;
+    if (visibleCount <= 1) return;
+    updateHiddenColumns([...hiddenTypeIds, id]);
+  };
+
   // Other states
   const [currentPage, setCurrentPage] = useState<number>(1);
   const itemsPerPage = 10;
@@ -62,8 +156,8 @@ export default function LeaveSummaryView() {
       let url = '/hr/leave-summary?';
 
       if (searchQuery) url += `searchQuery=${encodeURIComponent(searchQuery)}&`;
-      if (fromDate) url += `startDate=${fromDate.toISOString()}&`;
-      if (toDate) url += `endDate=${toDate.toISOString()}&`;
+      if (fromDate) url += `startDate=${toLocalDateKey(fromDate)}&`;
+      if (toDate) url += `endDate=${toLocalDateKey(toDate)}&`;
       if (filterType !== 'all')
         url += `leaveTypeId=${encodeURIComponent(filterType)}&`;
       if (filterStatus !== 'all')
@@ -156,6 +250,7 @@ export default function LeaveSummaryView() {
     setFromDate(null);
     setToDate(null);
     setCurrentPage(1);
+    updateHiddenColumns([]);
   };
 
   const formatThaiDate = (date: Date | null) => {
@@ -185,10 +280,29 @@ export default function LeaveSummaryView() {
     return `1 ม.ค. - 31 ธ.ค. ${new Date().getFullYear()}`;
   };
 
+  const hasCustomColumns =
+    filterType === 'all' &&
+    leaveTypes.some((lt) => hiddenTypeIds.includes(lt.id));
+
   const displayedLeaveTypes =
     filterType === 'all'
-      ? leaveTypes
+      ? leaveTypes.filter((lt) => !hiddenTypeIds.includes(lt.id))
       : leaveTypes.filter((lt) => lt.id === filterType);
+
+  const rowTotalUsed = (row: LeaveSummaryRecord) =>
+    displayedLeaveTypes.reduce((sum, lt) => sum + usedDays(row, lt), 0);
+  // With every column shown, only the everyday annual quotas are summed — one-off
+  // event leaves (ordination 120, sterilisation 365, ...) would swamp the number.
+  // A single-type filter or a hand-picked column set sums exactly what is shown.
+  const limitRemainingToRoutine = filterType === 'all' && !hasCustomColumns;
+  const remainingLeaveTypes = limitRemainingToRoutine
+    ? displayedLeaveTypes.filter((lt) => isRoutineLeaveType(lt.name))
+    : displayedLeaveTypes;
+  const rowTotalRemaining = (row: LeaveSummaryRecord) =>
+    remainingLeaveTypes.reduce((sum, lt) => sum + remainingDays(row, lt), 0);
+  const remainingHeaderHint = limitRemainingToRoutine
+    ? '(ป่วย / กิจ / พักผ่อน)'
+    : null;
 
   // Pagination logic
   const totalItems = summaryData.length;
@@ -223,10 +337,6 @@ export default function LeaveSummaryView() {
   };
 
   const handleDownloadPDF = async () => {
-    let textContent = '==== รายงานสรุปการลางาน (Simulated PDF) ====\n\n';
-    textContent += `วันที่พิมพ์: ${new Date().toLocaleDateString('th-TH')}\n`;
-    textContent += `ช่วงเวลา: ${getPeriodString()}\n\n`;
-
     const doc = new jsPDF('landscape');
 
     // Load & Register Thai Font in jsPDF
@@ -238,41 +348,50 @@ export default function LeaveSummaryView() {
     }
 
     doc.setFontSize(18);
-    doc.text('รายงานสรุปผลการลางาน (Leave Summary Report)', 14, 15);
+    doc.text('รายงานสรุปการลา (Leave Summary Report)', 14, 15);
     doc.setFontSize(10);
     doc.text(`วันที่พิมพ์: ${new Date().toLocaleDateString('th-TH')}`, 14, 22);
     doc.text(`ช่วงเวลา: ${getPeriodString()}`, 14, 27);
 
-    summaryData.forEach((row, index) => {
-      textContent += `ลำดับที่ ${index + 1} | พนักงาน: ${row.employeeCode} - ${row.firstName} ${row.lastName} (${row.department})\n`;
-      displayedLeaveTypes.forEach((lt) => {
-        const days = row.leaveData[lt.name] || 0;
-        if (days > 0) textContent += `- ${lt.name}: ${days} วัน\n`;
-      });
+    const head = [
+      [
+        'ลำดับ',
+        'รหัสพนักงาน',
+        'ชื่อ-นามสกุล',
+        'แผนก',
+        ...displayedLeaveTypes.map((lt) => lt.name),
+        'รวม (วัน)',
+        `คงเหลือรวม (วัน)${remainingHeaderHint ? ` ${remainingHeaderHint}` : ''}`,
+      ],
+    ];
+    const body = summaryData.map((row, index) => [
+      index + 1,
+      row.employeeCode,
+      `${row.firstName} ${row.lastName}`,
+      row.department,
+      ...displayedLeaveTypes.map((lt) => usedDays(row, lt) || '-'),
+      rowTotalUsed(row),
+      rowTotalRemaining(row),
+    ]);
 
-      const rowTotalUsed = displayedLeaveTypes.reduce(
-        (sum, lt) => sum + (row.leaveData[lt.name] || 0),
-        0,
-      );
-      const rowTotalRemaining = displayedLeaveTypes.reduce(
-        (sum, lt) =>
-          sum + ((lt.defaultDays || 0) - (row.leaveData[lt.name] || 0)),
-        0,
-      );
-
-      textContent += `-> รวมการลาทั้งหมด: ${rowTotalUsed} วัน (คงเหลือรวม: ${rowTotalRemaining} วัน)\n`;
-      textContent += '--------------------------------------------------\n';
+    autoTable(doc, {
+      head,
+      body,
+      startY: 32,
+      theme: 'striped',
+      headStyles: {
+        fillColor: [11, 15, 78],
+        font: fontBase64 ? 'Sarabun' : undefined,
+        fontStyle: 'normal',
+        halign: 'center',
+      },
+      styles: {
+        font: fontBase64 ? 'Sarabun' : undefined,
+        fontSize: 8,
+      },
     });
 
-    const blob = new Blob([textContent], { type: 'text/plain;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = 'leave_summary_report.txt';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-
+    doc.save(`leave_summary_report_${toLocalDateKey(new Date())}.pdf`);
     setIsDownloadModalOpen(false);
   };
 
@@ -287,18 +406,12 @@ export default function LeaveSummaryView() {
       };
 
       displayedLeaveTypes.forEach((lt) => {
-        baseData[lt.name] = row.leaveData[lt.name] || 0;
+        baseData[lt.name] = usedDays(row, lt);
       });
 
-      baseData['รวมการลาทั้งหมด (วัน)'] = displayedLeaveTypes.reduce(
-        (sum, lt) => sum + (row.leaveData[lt.name] || 0),
-        0,
-      );
-      baseData['ยอดคงเหลือรวม (วัน)'] = displayedLeaveTypes.reduce(
-        (sum, lt) =>
-          sum + ((lt.defaultDays || 0) - (row.leaveData[lt.name] || 0)),
-        0,
-      );
+      baseData['รวมการลาทั้งหมด (วัน)'] = rowTotalUsed(row);
+      baseData[`ยอดคงเหลือรวม (วัน)${remainingHeaderHint ? ` ${remainingHeaderHint}` : ''}`] =
+        rowTotalRemaining(row);
 
       return baseData;
     });
@@ -339,16 +452,90 @@ export default function LeaveSummaryView() {
             <div className="flex items-center gap-2 text-indigo-600">
               <Filter size={18} />
               <span className="font-semibold text-sm sm:text-base">
-                ตัวกรองรายงานขั้นสูง (Advanced Report Filter)
+                ตัวกรองรายงานขั้นสูง
               </span>
             </div>
             <div className="flex items-center gap-4">
+              <div className="relative" ref={columnMenuRef}>
+                <button
+                  type="button"
+                  onClick={() => setIsColumnMenuOpen((open) => !open)}
+                  disabled={filterType !== 'all'}
+                  title={
+                    filterType !== 'all'
+                      ? 'เลือก "ทุกประเภทการลา" ก่อนจึงจะเลือกคอลัมน์ได้'
+                      : undefined
+                  }
+                  className={`flex items-center gap-1.5 text-sm font-medium transition-colors disabled:text-slate-300 disabled:cursor-not-allowed ${hasCustomColumns ? 'text-indigo-700' : 'text-indigo-500 hover:text-indigo-700'}`}
+                >
+                  <Columns3 size={14} />
+                  <span className="hidden sm:inline">เลือกคอลัมน์</span>
+                  {hasCustomColumns && (
+                    <span className="rounded-full bg-indigo-100 px-1.5 text-[11px] text-indigo-700">
+                      {displayedLeaveTypes.length}/{leaveTypes.length}
+                    </span>
+                  )}
+                </button>
+                {isColumnMenuOpen && (
+                  <div className="absolute right-0 top-full mt-2 w-72 max-w-[calc(100vw-2rem)] rounded-xl border border-slate-200 bg-white p-3 shadow-lg z-50">
+                    <div className="mb-2 text-xs font-semibold text-slate-500">
+                      แสดงคอลัมน์ประเภทการลา
+                    </div>
+                    <div className="mb-2 flex gap-2">
+                      <button
+                        type="button"
+                        onClick={() => updateHiddenColumns([])}
+                        className="flex-1 rounded-lg border border-slate-200 px-2 py-1 text-xs text-slate-600 hover:border-indigo-300 hover:text-indigo-600"
+                      >
+                        ทั้งหมด
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          updateHiddenColumns(
+                            leaveTypes
+                              .filter((lt) => !isRoutineLeaveType(lt.name))
+                              .map((lt) => lt.id),
+                          )
+                        }
+                        className="flex-1 rounded-lg border border-slate-200 px-2 py-1 text-xs text-slate-600 hover:border-indigo-300 hover:text-indigo-600"
+                      >
+                        ป่วย / กิจ / พักผ่อน
+                      </button>
+                    </div>
+                    <div className="max-h-64 space-y-0.5 overflow-y-auto">
+                      {leaveTypes.map((lt) => {
+                        const checked = !hiddenTypeIds.includes(lt.id);
+                        return (
+                          <label
+                            key={lt.id}
+                            className="flex cursor-pointer items-center gap-2 rounded-lg px-2 py-1.5 text-sm text-slate-700 hover:bg-slate-50"
+                          >
+                            <input
+                              type="checkbox"
+                              checked={checked}
+                              onChange={() => toggleColumn(lt.id)}
+                              className="sr-only"
+                            />
+                            <span
+                              className={`flex h-4 w-4 shrink-0 items-center justify-center rounded border ${checked ? 'border-indigo-600 bg-indigo-600 text-white' : 'border-slate-300 bg-white'}`}
+                            >
+                              {checked && <Check size={12} strokeWidth={3} />}
+                            </span>
+                            <span className="truncate">{lt.name}</span>
+                          </label>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+              </div>
               <button
                 onClick={resetFilters}
                 className="flex items-center gap-1.5 text-sm text-indigo-500 hover:text-indigo-700 font-medium transition-colors"
               >
                 <RefreshCw size={14} />
-                ล้างค่าทั้งหมด (Reset)
+                ล้างค่าทั้งหมด
               </button>
               <button
                 onClick={() => setIsDownloadModalOpen(true)}
@@ -469,6 +656,30 @@ export default function LeaveSummaryView() {
                 />
               </div>
             </div>
+            {/* 6. สถานะพนักงาน */}
+            <div>
+              <label className="block text-xs font-medium text-slate-500 mb-1.5">
+                สถานะพนักงาน
+              </label>
+              <div className="relative">
+                <select
+                  value={filterStatus}
+                  onChange={(e) => {
+                    setFilterStatus(e.target.value);
+                    setCurrentPage(1);
+                  }}
+                  className="w-full appearance-none bg-white border border-slate-200 text-slate-700 py-2.5 pl-4 pr-10 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 cursor-pointer transition-all"
+                >
+                  <option value="all">ทุกสถานะ</option>
+                  <option value="active">ใช้งานอยู่</option>
+                  <option value="inactive">ปิดการใช้งาน</option>
+                </select>
+                <ChevronDown
+                  size={16}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"
+                />
+              </div>
+            </div>
           </div>
           {/* Mobile Download Button */}
           <div className="px-6 pb-6 md:hidden">
@@ -513,6 +724,11 @@ export default function LeaveSummaryView() {
                   </th>
                   <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider text-center bg-amber-50/50 whitespace-nowrap">
                     ยอดคงเหลือรวม
+                    {remainingHeaderHint && (
+                      <div className="mt-0.5 text-[10px] font-normal normal-case tracking-normal text-slate-400">
+                        {remainingHeaderHint}
+                      </div>
+                    )}
                   </th>
                 </tr>
               </thead>
@@ -571,7 +787,7 @@ export default function LeaveSummaryView() {
                       </td>
 
                       {displayedLeaveTypes.map((lt) => {
-                        const days = row.leaveData[lt.name] || 0;
+                        const days = usedDays(row, lt);
                         return (
                           <td key={lt.id} className="px-6 py-4 text-center">
                             <span
@@ -584,22 +800,13 @@ export default function LeaveSummaryView() {
                       })}
                       <td className="px-6 py-4 text-center bg-indigo-50/30">
                         <span className="text-sm font-bold text-indigo-700">
-                          {displayedLeaveTypes.reduce(
-                            (sum, lt) => sum + (row.leaveData[lt.name] || 0),
-                            0,
-                          )}{' '}
+                          {rowTotalUsed(row)}{' '}
                           วัน
                         </span>
                       </td>
                       <td className="px-6 py-4 text-center bg-amber-50/30">
                         <span className="text-sm font-bold text-amber-700">
-                          {displayedLeaveTypes.reduce(
-                            (sum, lt) =>
-                              sum +
-                              ((lt.defaultDays || 0) -
-                                (row.leaveData[lt.name] || 0)),
-                            0,
-                          )}{' '}
+                          {rowTotalRemaining(row)}{' '}
                           วัน
                         </span>
                       </td>

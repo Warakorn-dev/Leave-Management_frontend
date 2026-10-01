@@ -54,7 +54,7 @@ export default function AdminRolesPage() {
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="bg-slate-50 text-slate-500 text-sm">
-                  <th className="p-3 border-b font-medium">ชื่อสิทธิ์ (Role)</th>
+                  <th className="p-3 border-b font-medium">ชื่อสิทธิ์</th>
                   <th className="p-3 border-b font-medium">คำอธิบาย</th>
                   <th className="p-3 border-b font-medium">จำนวนผู้ใช้</th>
                   <th className="p-3 border-b font-medium">สร้างเมื่อ</th>
@@ -81,7 +81,7 @@ export default function AdminRolesPage() {
                         {role.name === 'Admin' ? 'ผู้ดูแลระบบ (เข้าถึงสิทธิ์สูงสุด)' : 
                          role.name === 'CEO' ? 'ผู้บริหาร (ดูรายงานภาพรวมได้ทั้งหมด)' : 
                          role.name === 'HR' ? 'ฝ่ายบุคคล (จัดการพนักงานและวันลา)' :
-                         role.name === 'Manager' ? 'ผู้จัดการแผนก (อนุมัติวันลาระดับ 1)' :
+                         role.name === 'Manager' ? 'หัวหน้าแผนก (อนุมัติวันลาระดับ 1)' :
                          'พนักงานทั่วไป'}
                       </td>
                       <td className="p-4">

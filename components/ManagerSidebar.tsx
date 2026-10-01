@@ -3,88 +3,31 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { useAuth } from "@/context/AuthContext";
+import { useSidebarCollapsed } from "@/hooks/useSidebarCollapsed";
+import { endSession } from "@/lib/session";
 import { LogOut, PieChart, FileEdit, Activity, BookOpen, Calendar, User, FileCheck, Settings, Menu, ChevronLeft } from "lucide-react";
 
 export function ManagerSidebar({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = usePathname();
   const router = useRouter();
+  // Profile comes from the dashboard-wide AuthProvider (one shared /leave/me
+  // poll); it starts from sessionStorage and a failed request keeps it.
+  const { user } = useAuth();
   const [username, setUsername] = useState("");
-  const [fullName, setFullName] = useState("");
-  const [position, setPosition] = useState("");
-  const [department, setDepartment] = useState("");
-  const [profilePic, setProfilePic] = useState<string | null>(null);
-  const [isCollapsed, setIsCollapsed] = useState(true);
-
-  // Start collapsed on mobile (<1024px), expanded on desktop
-  useEffect(() => {
-    const handleResize = () => {
-      if (window.innerWidth >= 1024) {
-        setIsCollapsed(false);
-      } else {
-        setIsCollapsed(true);
-      }
-    };
-    handleResize();
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
+  const [isCollapsed, setIsCollapsed] = useSidebarCollapsed();
 
   useEffect(() => {
-    const fetchUserProfile = async () => {
-      try {
-        const token = sessionStorage.getItem("accessToken");
-        if (!token) return;
-        const res = await fetch("/api/leave/me", {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        if (res.ok) {
-          const json = await res.json();
-          const user = json.data || json;
-          
-          const name = [user.firstName, user.lastName].filter(Boolean).join(" ");
-          if (name) {
-            setFullName(name);
-            sessionStorage.setItem("fullName", name);
-          }
-          
-          const deptName = typeof user.department === "object" && user.department !== null
-            ? user.department.name || "" : user.departmentName || "";
-          setDepartment(deptName);
-          sessionStorage.setItem("department", deptName);
-          
-          const posName = typeof user.position === "object" && user.position !== null
-            ? user.position.name || "" : user.positionName || "";
-          setPosition(posName);
-          sessionStorage.setItem("position", posName);
-          
-          const avatar = user.user?.avatarUrl || user.avatarUrl || user.profilePic;
-          if (avatar) {
-            setProfilePic(avatar);
-            sessionStorage.setItem("profilePic", avatar);
-          }
-        } else {
-          // fallback
-          setFullName(sessionStorage.getItem("fullName") || "");
-          setPosition(sessionStorage.getItem("position") || "");
-          setDepartment(sessionStorage.getItem("department") || "");
-        }
-      } catch {
-        setFullName(sessionStorage.getItem("fullName") || "");
-        setPosition(sessionStorage.getItem("position") || "");
-        setDepartment(sessionStorage.getItem("department") || "");
-      }
-    };
-    
     setUsername(sessionStorage.getItem("username") || "");
-    const storedPic = sessionStorage.getItem("profilePic");
-    if (storedPic) setProfilePic(storedPic);
-    
-    fetchUserProfile();
   }, []);
+
+  const fullName = user?.fullName || "";
+  const department = user?.department || "";
+  const position = user?.position || "";
+  const profilePic = user?.profilePic || null;
 
   const handleLogout = () => {
-    sessionStorage.removeItem("role");
-    sessionStorage.removeItem("username");
+    void endSession();
     router.push("/login");
   };
 

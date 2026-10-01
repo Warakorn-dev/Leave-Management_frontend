@@ -16,6 +16,7 @@ import {
 import { userApi } from '@/lib/api';
 import Swal from 'sweetalert2';
 import { getErrorMessage } from '@/lib/api/utils';
+import ChangePasswordCard from '@/components/ChangePasswordCard';
 
 export default function HRSettingsPage() {
   const [username, setUsername] = useState('');
@@ -274,7 +275,7 @@ export default function HRSettingsPage() {
                 <Upload className="w-4 h-4" />
                 <input
                   type="file"
-                  accept="image/*"
+                  accept="image/png,image/jpeg,image/webp,image/gif"
                   className="hidden"
                   onChange={handleProfilePicChange}
                   disabled={isUploading}
@@ -515,6 +516,8 @@ export default function HRSettingsPage() {
             </div>
           </div>
         </div>
+
+        <ChangePasswordCard />
       </div>
     </div>
   );

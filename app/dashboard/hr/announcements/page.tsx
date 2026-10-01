@@ -15,6 +15,7 @@ import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { previewAttachment } from '@/lib/api/attachmentPreview';
 import { hrApi } from '@/lib/api';
 import type { Announcement } from '@/lib/api/hr.api';
+import { escapeHtml } from '@/lib/escapeHtml';
 
 export default function AnnouncementManagementPage() {
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
@@ -142,6 +143,15 @@ export default function AnnouncementManagementPage() {
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
+    if (file && file.size > 5 * 1024 * 1024) {
+      e.target.value = '';
+      Swal.fire({
+        icon: 'warning',
+        title: 'ไฟล์มีขนาดใหญ่เกินไป',
+        text: 'ไฟล์แนบของประกาศต้องมีขนาดไม่เกิน 5 MB',
+      });
+      return;
+    }
     if (file) {
       const reader = new FileReader();
       reader.onloadend = () => {
@@ -164,7 +174,7 @@ export default function AnnouncementManagementPage() {
           </div>
           <h2 class="text-[24px] font-bold text-[#1e293b] mb-6">ยืนยันการลบข้อมูล</h2>
           <p class="text-[#64748b] text-[17px] mb-5">คุณต้องการลบประกาศ</p>
-          <p class="text-[22px] font-bold text-[#1e293b] mb-5">"${title}"</p>
+          <p class="text-[22px] font-bold text-[#1e293b] mb-5">"${escapeHtml(title)}"</p>
           <p class="text-[#64748b] text-[17px]">ออกจากระบบใช่หรือไม่?</p>
         </div>
       `,
@@ -437,7 +447,7 @@ export default function AnnouncementManagementPage() {
 
               <div>
                 <label className="block text-sm font-bold text-slate-700 mb-1.5">
-                  แนบไฟล์ (ไม่บังคับ)
+                  แนบไฟล์ (ไม่บังคับ, ขนาดไม่เกิน 5 MB)
                 </label>
                 <div className="flex items-center gap-3">
                   <input
@@ -561,7 +571,7 @@ export default function AnnouncementManagementPage() {
 
               <div>
                 <label className="block text-sm font-bold text-slate-700 mb-1.5">
-                  แนบไฟล์ (ไม่บังคับ)
+                  แนบไฟล์ (ไม่บังคับ, ขนาดไม่เกิน 5 MB)
                 </label>
                 <div className="flex items-center gap-3">
                   <input

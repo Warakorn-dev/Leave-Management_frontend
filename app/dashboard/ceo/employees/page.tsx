@@ -90,7 +90,7 @@ export default function CEOEmployeesPage() {
             value={departmentFilter}
             onChange={(e) => setDepartmentFilter(e.target.value)}
           >
-            <option value="all">ทุกแผนก (All Departments)</option>
+            <option value="all">ทุกแผนก</option>
             {departments.map((dept, idx) => (
               <option key={idx} value={dept}>{dept}</option>
             ))}
@@ -114,8 +114,8 @@ export default function CEOEmployeesPage() {
                 <th className="px-6 py-4">รหัสพนักงาน</th>
                 <th className="px-6 py-4">ชื่อ</th>
                 <th className="px-6 py-4">นามสกุล</th>
-                <th className="px-6 py-4">แผนก (Department)</th>
-                <th className="px-6 py-4">ตำแหน่ง (Position)</th>
+                <th className="px-6 py-4">แผนก</th>
+                <th className="px-6 py-4">ตำแหน่ง</th>
                 <th className="px-6 py-4">อีเมล</th>
                 <th className="px-6 py-4">เบอร์ติดต่อ</th>
                 <th className="px-6 py-4 text-center">สถานะ</th>

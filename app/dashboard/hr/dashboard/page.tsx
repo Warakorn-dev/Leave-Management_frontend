@@ -102,7 +102,7 @@ export default function HRCompanyDashboard() {
                 className="bg-[#2D3A7A] hover:bg-[#3D4B92] text-white border border-[#4452A3] font-semibold py-2 px-4 rounded-xl transition-colors shadow-sm text-xs sm:text-sm flex items-center justify-center space-x-1.5"
               >
                 <Plus className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                <span>ยื่นคำลา</span>
+                <span>ยื่นคำขอลา</span>
               </Link>
             </div>
           </div>

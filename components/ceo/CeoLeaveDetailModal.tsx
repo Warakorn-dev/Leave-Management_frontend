@@ -38,7 +38,7 @@ export function CeoLeaveDetailModal({
     statusColor = 'bg-[#00E676]';
     reasonColor = 'border-[#D1F2DF] text-green-600 bg-[#F4FDF8]';
   } else if (statusLower === 'rejected' || statusLower.includes('rejected')) {
-    statusText = 'ปฏิเสธ';
+    statusText = 'ไม่อนุมัติ';
     statusColor = 'bg-[#FF0000]';
     reasonColor = 'border-red-200 text-red-600 bg-red-50';
   }
@@ -70,7 +70,7 @@ export function CeoLeaveDetailModal({
             </div>
             <div className="flex-1">
               <h3 className="font-bold text-[15px] text-black mb-3">
-                ข้อมูลพนักงาน (Employee Info)
+                ข้อมูลพนักงาน
               </h3>
               <div className="text-[14px] text-gray-800 space-y-2">
                 <p className="flex items-center gap-2">
@@ -184,7 +184,7 @@ export function CeoLeaveDetailModal({
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-[13px] text-gray-500">
               <p className="flex gap-2">
                 <span className="font-bold min-w-[120px]">
-                  วันที่ยื่นคำลา:
+                  วันที่ยื่นคำขอลา:
                 </span>
                 {leave.createdAt
                   ? new Date(leave.createdAt).toLocaleString('th-TH')
@@ -204,7 +204,7 @@ export function CeoLeaveDetailModal({
           {/* Approval */}
           <div className="mt-2">
             <h3 className="font-bold text-[#00A859] flex items-center gap-2 text-[15px] mb-2">
-              การอนุมัติ (Approval)
+              การอนุมัติ
             </h3>
             <div className="flex flex-col md:flex-row items-stretch gap-4 bg-[#F8F9FA] border border-gray-200 rounded-xl p-4">
               <div className="w-[120px] flex flex-col justify-center border-r border-gray-200 pr-4">

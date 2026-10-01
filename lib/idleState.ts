@@ -7,6 +7,7 @@
  */
 
 import Swal from 'sweetalert2';
+import { endSession } from './session';
 
 const idleState = {
   lastActivityTime: Date.now(),
@@ -64,11 +65,14 @@ const idleState = {
       confirmButtonColor: '#3b82f6',
       allowOutsideClick: false,
       allowEscapeKey: false,
-    }).then(() => {
-      // Clear session AFTER user clicks confirm
-      sessionStorage.clear();
+    }).then(async () => {
+      // Clear session AFTER user clicks confirm, and revoke it on the backend
+      // before the full-page navigation below cuts the requests off.
+      await endSession();
       this.isPopupShowing = false;
       this.lastActivityTime = Date.now();
+      // Full reload on purpose (outside React, no router): drops in-memory state.
+      // eslint-disable-next-line @next/next/no-location-assign-relative-destination
       window.location.href = '/login';
     });
   },
