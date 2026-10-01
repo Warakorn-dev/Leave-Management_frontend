@@ -121,7 +121,10 @@ export default function AdminDashboardPage() {
                       <th className="p-3 border-b font-medium">เวลา</th>
                       <th className="p-3 border-b font-medium">ผู้ใช้งาน</th>
                       <th className="p-3 border-b font-medium">การดำเนินการ</th>
+<<<<<<< HEAD
                       <th className="p-3 border-b font-medium">IP Address</th>
+=======
+>>>>>>> 38c00f1fed461518731d3ff5480e9d8350e34715
                     </tr>
                   </thead>
                   <tbody>
