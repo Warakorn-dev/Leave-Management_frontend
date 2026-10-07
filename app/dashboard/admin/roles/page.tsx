@@ -38,7 +38,7 @@ export default function AdminRolesPage() {
           </div>
           <div>
             <h1 className="text-base sm:text-xl font-bold text-black tracking-tight">
-              จัดการสิทธิ์ผู้ใช้งาน
+              แสดงสิทธิ์ผู้ใช้งาน
             </h1>
             <p className="text-xs text-gray-500 mt-1 font-medium">
               รายการสิทธิ์ทั้งหมดและจำนวนสมาชิกในระบบ
@@ -49,56 +49,56 @@ export default function AdminRolesPage() {
         <div className="flex-1 p-4 sm:p-6">
           <div className="max-w-5xl mx-auto space-y-6">
 
-        <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="bg-slate-50 text-slate-500 text-sm">
-                  <th className="p-3 border-b font-medium">ชื่อสิทธิ์</th>
-                  <th className="p-3 border-b font-medium">คำอธิบาย</th>
-                  <th className="p-3 border-b font-medium">จำนวนผู้ใช้</th>
-                  <th className="p-3 border-b font-medium">สร้างเมื่อ</th>
-                </tr>
-              </thead>
-              <tbody>
-                {loading ? (
-                  <tr>
-                    <td colSpan={4} className="p-8 text-center text-slate-500">กำลังโหลดข้อมูลสิทธิ์...</td>
-                  </tr>
-                ) : roles.length === 0 ? (
-                  <tr>
-                    <td colSpan={4} className="p-8 text-center text-slate-500">ไม่พบสิทธิ์ในระบบ</td>
-                  </tr>
-                ) : (
-                  roles.map(role => (
-                    <tr key={role.id} className="hover:bg-slate-50 border-b last:border-0 text-sm">
-                      <td className="p-4">
-                        <span className="font-bold text-slate-800 bg-slate-100 px-3 py-1 rounded-full border border-slate-200">
-                          {role.name}
-                        </span>
-                      </td>
-                      <td className="p-4 text-slate-500">
-                        {role.name === 'Admin' ? 'ผู้ดูแลระบบ (เข้าถึงสิทธิ์สูงสุด)' : 
-                         role.name === 'CEO' ? 'ผู้บริหาร (ดูรายงานภาพรวมได้ทั้งหมด)' : 
-                         role.name === 'HR' ? 'ฝ่ายบุคคล (จัดการพนักงานและวันลา)' :
-                         role.name === 'Manager' ? 'หัวหน้าแผนก (อนุมัติวันลาระดับ 1)' :
-                         'พนักงานทั่วไป'}
-                      </td>
-                      <td className="p-4">
-                        <div className="flex items-center gap-2 text-slate-700 font-medium">
-                          <Users className="w-4 h-4 text-slate-400" /> {role.userCount}
-                        </div>
-                      </td>
-                      <td className="p-4 text-slate-500 text-xs">
-                        {new Date(role.createdAt).toLocaleString('th-TH')}
-                      </td>
+            <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="bg-slate-50 text-slate-500 text-sm">
+                      <th className="p-3 border-b font-medium">ชื่อสิทธิ์</th>
+                      <th className="p-3 border-b font-medium">คำอธิบาย</th>
+                      <th className="p-3 border-b font-medium">จำนวนผู้ใช้</th>
+                      <th className="p-3 border-b font-medium">สร้างเมื่อ</th>
                     </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
+                  </thead>
+                  <tbody>
+                    {loading ? (
+                      <tr>
+                        <td colSpan={4} className="p-8 text-center text-slate-500">กำลังโหลดข้อมูลสิทธิ์...</td>
+                      </tr>
+                    ) : roles.length === 0 ? (
+                      <tr>
+                        <td colSpan={4} className="p-8 text-center text-slate-500">ไม่พบสิทธิ์ในระบบ</td>
+                      </tr>
+                    ) : (
+                      roles.map(role => (
+                        <tr key={role.id} className="hover:bg-slate-50 border-b last:border-0 text-sm">
+                          <td className="p-4">
+                            <span className="font-bold text-slate-800 bg-slate-100 px-3 py-1 rounded-full border border-slate-200">
+                              {role.name}
+                            </span>
+                          </td>
+                          <td className="p-4 text-slate-500">
+                            {role.name === 'Admin' ? 'ผู้ดูแลระบบ (เข้าถึงสิทธิ์สูงสุด)' :
+                              role.name === 'CEO' ? 'ผู้บริหาร (ดูรายงานภาพรวมได้ทั้งหมด)' :
+                                role.name === 'HR' ? 'ฝ่ายบุคคล (จัดการพนักงานและวันลา)' :
+                                  role.name === 'Manager' ? 'หัวหน้าแผนก (อนุมัติวันลาระดับ 1)' :
+                                    'พนักงานทั่วไป'}
+                          </td>
+                          <td className="p-4">
+                            <div className="flex items-center gap-2 text-slate-700 font-medium">
+                              <Users className="w-4 h-4 text-slate-400" /> {role.userCount}
+                            </div>
+                          </td>
+                          <td className="p-4 text-slate-500 text-xs">
+                            {new Date(role.createdAt).toLocaleString('th-TH')}
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
           </div>
         </div>
       </div>

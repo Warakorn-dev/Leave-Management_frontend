@@ -33,7 +33,7 @@ export function AdminSidebar({ onNavigate }: { onNavigate?: () => void }) {
     { name: "รายชื่อผู้ใช้งาน", href: "/dashboard/admin/users-list", icon: List },
     { name: "ตั้งค่าความปลอดภัย", href: "/dashboard/admin/security", icon: Shield },
     { name: "ประวัติระบบ", href: "/dashboard/admin/audit-logs", icon: ClipboardList },
-    { name: "จัดการสิทธิ์", href: "/dashboard/admin/roles", icon: Key },
+    { name: "แสดงสิทธิ์ผู้ใช้งาน", href: "/dashboard/admin/roles", icon: Key },
     { name: "ตรวจสอบ CAPTCHA", href: "/dashboard/admin/captcha", icon: Activity },
     { name: "สถานะระบบ", href: "/dashboard/admin/system", icon: HardDrive },
     { name: "โปรไฟล์ผู้ดูแล", href: "/dashboard/admin/settings", icon: Settings },
@@ -81,8 +81,8 @@ export function AdminSidebar({ onNavigate }: { onNavigate?: () => void }) {
               key={item.name}
               href={item.href}
               className={`flex items-center ${isCollapsed ? 'justify-center px-0' : 'gap-4 px-5'} py-3.5 rounded-xl transition-all relative overflow-hidden ${isExactActive
-                  ? 'bg-white/10 text-white'
-                  : 'text-white/60 hover:text-white hover:bg-white/5'
+                ? 'bg-white/10 text-white'
+                : 'text-white/60 hover:text-white hover:bg-white/5'
                 }`}
               title={isCollapsed ? item.name : undefined}
               onClick={onNavigate}

@@ -142,11 +142,12 @@ export default function ManagerApprovePage() {
 
 
 
-  // Filter by selected month
+  // Filter by selected month — use createdAt (วันที่ส่งคำขอ) not startDate (วันที่ลา)
   const requests = rawRequests.filter((r) => {
     if (selectedMonthRaw === "ALL") return true;
-    if (!r.startDate) return false;
-    const d = new Date(r.startDate);
+    const dateRef = r.createdAt || r.startDate;
+    if (!dateRef) return false;
+    const d = new Date(dateRef);
     const yyyyMM = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
     return yyyyMM === selectedMonthRaw;
   });
