@@ -14,6 +14,8 @@ export function roleForPosition(
   if (currentRole === 'CEO' || currentRole === 'Admin') return currentRole;
   const dept = (departmentName ?? '').toLowerCase();
   const pos = (positionName ?? '').toLowerCase();
+
+  if (pos.includes('ceo') || pos.includes('ผู้บริหาร') || pos.includes('president')) return 'CEO';
   if (dept.includes('hr') || dept.includes('human resource')) return 'HR';
   if (pos.includes('leader')) return 'Manager';
   return 'Employee';

@@ -93,11 +93,11 @@ export function formatLeaveDuration(
     days > 0
       ? days
       : calculateLeaveDays(
-          leave.startDate,
-          leave.endDate,
-          leave.startFormat,
-          leave.endFormat,
-          holidaysData,
-        );
+        leave.startDate,
+        leave.endDate,
+        leave.startFormat,
+        leave.endFormat,
+        holidaysData,
+      );
   return `${finalDays} วัน`;
 }
