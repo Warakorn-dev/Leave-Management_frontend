@@ -283,13 +283,17 @@ export default function LeaveHistoryPage() {
   }, [requests, selectedRequest, isEditing]);
 
   const handleDelete = async () => {
-    const isApprovedCancel = selectedRequest?.status?.toLowerCase().includes('approved');
+    const unapprovedStatuses = ['pending_verify', 'reviewing_hr'];
+    const statusLower = (selectedRequest?.status || '').toLowerCase();
+    const isUnapproved = unapprovedStatuses.includes(statusLower);
+    const requiresCancelApproval = !isUnapproved;
+
     const result = await Swal.fire({
-      title: isApprovedCancel
+      title: requiresCancelApproval
         ? 'ยืนยันการขอยกเลิกวันลา'
         : 'ยืนยันการยกเลิกคำขอ',
-      text: isApprovedCancel
-        ? 'คุณต้องการยกเลิกวันลาที่อนุมัติแล้วใช่หรือไม่? (ระบบจะคืนโควตาวันลาให้)'
+      text: requiresCancelApproval
+        ? 'คุณต้องการยกเลิกคำขอนี้ใช่หรือไม่? (ระบบจะส่งคำขอยกเลิกให้ HR พิจารณา)'
         : 'คุณต้องการยกเลิกคำขอลาใช่หรือไม่?',
       icon: 'warning',
       showCancelButton: true,
@@ -306,10 +310,10 @@ export default function LeaveHistoryPage() {
         refetchLeaves();
         Swal.fire({
           icon: 'success',
-          title: isApprovedCancel
+          title: requiresCancelApproval
             ? 'ส่งคำขอยกเลิกวันลาแล้ว'
             : 'ยกเลิกคำขอสำเร็จ',
-          text: isApprovedCancel
+          text: requiresCancelApproval
             ? 'คำขอถูกส่งให้ HR พิจารณา เมื่ออนุมัติแล้วระบบจะคืนสิทธิ์วันลาให้'
             : undefined,
           showConfirmButton: false,
@@ -652,14 +656,9 @@ export default function LeaveHistoryPage() {
           }
           footer={
             <>
-              {(selectedRequest.status || '').toLowerCase() === 'approved' &&
-                selectedRequest.raw?.startDate &&
-                new Date(selectedRequest.raw.startDate).setHours(
-                  0,
-                  0,
-                  0,
-                  0,
-                ) > new Date().setHours(0, 0, 0, 0) && (
+              {['pending_supervisor', 'pending_executive', 'approved'].includes(
+                (selectedRequest.status || '').toLowerCase()
+              ) && (
                   <button
                     onClick={handleDelete}
                     className="font-bold text-[14px] flex items-center gap-1.5 transition-colors text-red-500 hover:text-red-600 bg-red-50 hover:bg-red-100 px-4 py-2 rounded-lg"
@@ -668,17 +667,27 @@ export default function LeaveHistoryPage() {
                     ขอยกเลิกวันลา
                   </button>
                 )}
-              {['pending_verify'].includes(
-                (selectedRequest.status || '').toLowerCase(),
-              ) &&
-                !selectedRequest.raw?.isViewedByHr && (
-                  <button
-                    onClick={handleEditClick}
-                    className="text-blue-600 hover:text-blue-700 font-bold text-[14px] flex items-center gap-1.5 transition-colors"
-                  >
-                    <Edit3 className="w-4 h-4" strokeWidth={2.5} />
-                    แก้ไขข้อมูล
-                  </button>
+              {['pending_verify', 'reviewing_hr'].includes(
+                (selectedRequest.status || '').toLowerCase()
+              ) && (
+                  <div className="flex items-center gap-3">
+                    {['pending_verify'].includes((selectedRequest.status || '').toLowerCase()) && !selectedRequest.raw?.isViewedByHr && (
+                      <button
+                        onClick={handleEditClick}
+                        className="text-blue-600 hover:text-blue-700 font-bold text-[14px] flex items-center gap-1.5 transition-colors"
+                      >
+                        <Edit3 className="w-4 h-4" strokeWidth={2.5} />
+                        แก้ไขข้อมูล
+                      </button>
+                    )}
+                    <button
+                      onClick={handleDelete}
+                      className="font-bold text-[14px] flex items-center gap-1.5 transition-colors text-red-500 hover:text-red-600 bg-red-50 hover:bg-red-100 px-4 py-2 rounded-lg"
+                    >
+                      <Trash2 className="w-4 h-4" strokeWidth={2.5} />
+                      ยกเลิกคำขอ
+                    </button>
+                  </div>
                 )}
             </>
           }

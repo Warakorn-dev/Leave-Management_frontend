@@ -283,7 +283,13 @@ export function EditEmployeeModal({
                       deptName.toLowerCase().includes('human resource');
 
                     let roleName = 'Employee';
-                    if (isHRDept) {
+                    if (
+                      posName.toLowerCase().includes('ceo') ||
+                      posName.includes('ผู้บริหาร') ||
+                      posName.toLowerCase().includes('president')
+                    ) {
+                      roleName = 'CEO';
+                    } else if (isHRDept) {
                       roleName = 'HR';
                     } else if (editingEmployee.roleName === 'CEO') {
                       roleName = 'CEO';
@@ -297,11 +303,11 @@ export function EditEmployeeModal({
                       positionName: posName,
                       roleName: roleName,
                       ...(selectedPos?.department &&
-                      !editingEmployee.departmentId
+                        !editingEmployee.departmentId
                         ? {
-                            departmentId: String(selectedPos.department.id),
-                            departmentName: selectedPos.department.name || '',
-                          }
+                          departmentId: String(selectedPos.department.id),
+                          departmentName: selectedPos.department.name || '',
+                        }
                         : {}),
                     });
                   }}

@@ -167,9 +167,11 @@ export default function LeaveHistoryPage() {
       }
 
       if (filterType === 'monthly') {
-        if (!r.startDate) return false;
-        const d = new Date(r.startDate);
-        const yyyyMM = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+        // ใช้ createdAt (วันที่ส่งคำขอ) ไม่ใช่ startDate (วันที่ต้องการลา)
+        const dateRef = r.createdAt || r.startDate;
+        if (!dateRef) return false;
+        const d = new Date(dateRef);
+        const yyyyMM = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
         return yyyyMM === selectedMonthRaw;
       } else {
         if (!selectedDate) return true;

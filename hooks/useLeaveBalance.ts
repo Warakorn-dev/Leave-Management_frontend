@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import axiosInstance from '@/lib/api/axios';
 
 export interface LeaveBalance {
   id?: string;
@@ -23,18 +24,10 @@ export const useLeaveBalancesQuery = () => {
   const fetchBalances = useCallback(async () => {
     setIsLoading(true);
     try {
-      const token = typeof window !== 'undefined' ? sessionStorage.getItem('accessToken') : '';
-
-      const res = await fetch(`/api/leave/balance`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        },
-        cache: 'no-store'
-      });
-      if (res.ok) {
-        const json = await res.json();
-        setData(json.data ?? json);
-      }
+      // Through axiosInstance so an expired access token is refreshed (D-06);
+      // on failure the list stays as it was, like before.
+      const res = await axiosInstance.get('/leave/balance', { skipErrorAlert: true });
+      setData(res.data?.data ?? res.data);
     } catch (error) {
       console.error(error);
     } finally {

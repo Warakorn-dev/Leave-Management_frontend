@@ -54,10 +54,10 @@ export default function AddEmployeePage() {
 
   const availablePositions = formData.departmentId
     ? positions.filter(
-        (p) =>
-          !p.department?.id ||
-          String(p.department?.id) === String(formData.departmentId),
-      )
+      (p) =>
+        !p.department?.id ||
+        String(p.department?.id) === String(formData.departmentId),
+    )
     : positions;
 
   useEffect(() => {
@@ -142,7 +142,13 @@ export default function AddEmployeePage() {
         deptName.toLowerCase().includes('human resource');
 
       let roleName = 'Employee';
-      if (isHRDept) {
+      if (
+        posName.toLowerCase().includes('ceo') ||
+        posName.includes('ผู้บริหาร') ||
+        posName.toLowerCase().includes('president')
+      ) {
+        roleName = 'CEO';
+      } else if (isHRDept) {
         roleName = 'HR';
       } else if (isLeaderOrManager) {
         roleName = 'Manager';
@@ -155,9 +161,9 @@ export default function AddEmployeePage() {
         roleName: roleName,
         ...(selectedPos?.department && !prev.departmentId
           ? {
-              departmentId: String(selectedPos.department.id),
-              departmentName: selectedPos.department.name || '',
-            }
+            departmentId: String(selectedPos.department.id),
+            departmentName: selectedPos.department.name || '',
+          }
           : {}),
       }));
     } else {
@@ -277,439 +283,437 @@ export default function AddEmployeePage() {
       <div className="flex-1 p-4 sm:p-6 md:p-8">
         <div className="max-w-[1000px] mx-auto">
 
-      {/* Main Content Area */}
-      <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden p-5 sm:p-8 md:p-10">
-        <form onSubmit={handleSubmit}>
-          <div className="mb-6 md:mb-8 border-b border-slate-100 pb-3 md:pb-4">
-            <h2 className="text-base md:text-lg font-semibold text-slate-700">
-              ข้อมูลผู้ใช้งาน
-            </h2>
-          </div>
+          {/* Main Content Area */}
+          <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden p-5 sm:p-8 md:p-10">
+            <form onSubmit={handleSubmit}>
+              <div className="mb-6 md:mb-8 border-b border-slate-100 pb-3 md:pb-4">
+                <h2 className="text-base md:text-lg font-semibold text-slate-700">
+                  ข้อมูลผู้ใช้งาน
+                </h2>
+              </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 md:gap-x-8 gap-y-5 md:gap-y-6 mb-8 md:mb-10">
-            <div className="space-y-3">
-              <label className="block text-[#475569] font-medium text-[17px]">
-                ชื่อผู้ใช้งาน <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="text"
-                name="username"
-                placeholder="เช่น user123"
-                value={formData.username}
-                onChange={handleChange}
-                autoComplete="off"
-                className="w-full bg-[#f8fafc] border border-[#e2e8f0] px-5 py-3.5 rounded-xl text-[15px] text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-100 transition-all placeholder:text-[#94a3b8]"
-                required
-              />
-            </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 md:gap-x-8 gap-y-5 md:gap-y-6 mb-8 md:mb-10">
+                <div className="space-y-3">
+                  <label className="block text-[#475569] font-medium text-[17px]">
+                    ชื่อผู้ใช้งาน <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    name="username"
+                    placeholder="เช่น user123"
+                    value={formData.username}
+                    onChange={handleChange}
+                    autoComplete="off"
+                    className="w-full bg-[#f8fafc] border border-[#e2e8f0] px-5 py-3.5 rounded-xl text-[15px] text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-100 transition-all placeholder:text-[#94a3b8]"
+                    required
+                  />
+                </div>
 
-            <div className="space-y-3">
-              <label className="block text-[#475569] font-medium text-[17px]">
-                รหัสพนักงาน (Employee ID){' '}
-                <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="text"
-                name="employeeId"
-                placeholder="เช่น EMP-002"
-                value={formData.employeeId}
-                onChange={handleChange}
-                className={`w-full bg-[#f8fafc] border ${employeeIdError ? 'border-red-500 focus:ring-red-100' : 'border-[#e2e8f0] focus:ring-blue-100'} px-5 py-3.5 rounded-xl text-[15px] text-slate-800 focus:outline-none focus:ring-2 transition-all placeholder:text-[#94a3b8]`}
-                required
-              />
-              {employeeIdError && (
-                <p className="text-red-500 text-sm mt-1">{employeeIdError}</p>
-              )}
-            </div>
-
-            <div className="space-y-3">
-              <label className="block text-[#475569] font-medium text-[17px]">
-                รหัสผ่าน <span className="text-red-500">*</span>
-              </label>
-              <div className="relative">
-                <input
-                  type={showPassword ? 'text' : 'password'}
-                  name="password"
-                  placeholder="รหัสผ่าน"
-                  value={formData.password}
-                  onChange={handleChange}
-                  autoComplete="new-password"
-                  className="w-full bg-[#f8fafc] border border-[#e2e8f0] px-5 py-3.5 pr-12 rounded-xl text-[15px] text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-100 transition-all placeholder:text-[#94a3b8]"
-                  required
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 focus:outline-none"
-                >
-                  {showPassword ? (
-                    <EyeOff className="w-5 h-5" />
-                  ) : (
-                    <Eye className="w-5 h-5" />
+                <div className="space-y-3">
+                  <label className="block text-[#475569] font-medium text-[17px]">
+                    รหัสพนักงาน (Employee ID){' '}
+                    <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    name="employeeId"
+                    placeholder="เช่น EMP-002"
+                    value={formData.employeeId}
+                    onChange={handleChange}
+                    className={`w-full bg-[#f8fafc] border ${employeeIdError ? 'border-red-500 focus:ring-red-100' : 'border-[#e2e8f0] focus:ring-blue-100'} px-5 py-3.5 rounded-xl text-[15px] text-slate-800 focus:outline-none focus:ring-2 transition-all placeholder:text-[#94a3b8]`}
+                    required
+                  />
+                  {employeeIdError && (
+                    <p className="text-red-500 text-sm mt-1">{employeeIdError}</p>
                   )}
+                </div>
+
+                <div className="space-y-3">
+                  <label className="block text-[#475569] font-medium text-[17px]">
+                    รหัสผ่าน <span className="text-red-500">*</span>
+                  </label>
+                  <div className="relative">
+                    <input
+                      type={showPassword ? 'text' : 'password'}
+                      name="password"
+                      placeholder="รหัสผ่าน"
+                      value={formData.password}
+                      onChange={handleChange}
+                      autoComplete="new-password"
+                      className="w-full bg-[#f8fafc] border border-[#e2e8f0] px-5 py-3.5 pr-12 rounded-xl text-[15px] text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-100 transition-all placeholder:text-[#94a3b8]"
+                      required
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 focus:outline-none"
+                    >
+                      {showPassword ? (
+                        <EyeOff className="w-5 h-5" />
+                      ) : (
+                        <Eye className="w-5 h-5" />
+                      )}
+                    </button>
+                  </div>
+                </div>
+
+                <div className="space-y-3">
+                  <label className="block text-[#475569] font-medium text-[17px]">
+                    ยืนยันรหัสผ่าน (Confirm Password){' '}
+                    <span className="text-red-500">*</span>
+                  </label>
+                  <div className="relative">
+                    <input
+                      type={showConfirmPassword ? 'text' : 'password'}
+                      name="confirmPassword"
+                      placeholder="กรอกรหัสผ่านอีกครั้ง"
+                      value={formData.confirmPassword}
+                      onChange={handleChange}
+                      autoComplete="new-password"
+                      className={`w-full bg-[#f8fafc] border ${formData.confirmPassword && formData.password !== formData.confirmPassword ? 'border-red-500 focus:ring-red-100' : 'border-[#e2e8f0] focus:ring-blue-100'} px-5 py-3.5 pr-12 rounded-xl text-[15px] text-slate-800 focus:outline-none focus:ring-2 transition-all placeholder:text-[#94a3b8]`}
+                      required
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                      className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 focus:outline-none"
+                    >
+                      {showConfirmPassword ? (
+                        <EyeOff className="w-5 h-5" />
+                      ) : (
+                        <Eye className="w-5 h-5" />
+                      )}
+                    </button>
+                  </div>
+                  {formData.confirmPassword &&
+                    formData.password !== formData.confirmPassword && (
+                      <p className="text-red-500 text-sm mt-1">รหัสผ่านไม่ตรงกัน</p>
+                    )}
+                </div>
+              </div>
+
+              <div className="mb-6 md:mb-8 border-b border-slate-100 pb-3 md:pb-4">
+                <h2 className="text-base md:text-lg font-semibold text-slate-700">
+                  ข้อมูลส่วนตัว
+                </h2>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 md:gap-x-8 gap-y-5 md:gap-y-6">
+                <div className="space-y-3">
+                  <label className="block text-[#475569] font-medium text-[17px]">
+                    คำนำหน้าชื่อ <span className="text-red-500">*</span>
+                  </label>
+                  <div className="relative">
+                    <select
+                      name="title"
+                      value={formData.title}
+                      onChange={handleChange}
+                      className="w-full bg-[#f8fafc] border border-[#e2e8f0] px-5 py-3.5 rounded-xl text-[15px] text-slate-800 appearance-none focus:outline-none focus:ring-2 focus:ring-blue-100 transition-all cursor-pointer"
+                      required
+                    >
+                      <option value="" disabled>
+                        -- เลือกคำนำหน้า --
+                      </option>
+                      <option value="นาย ">นาย</option>
+                      <option value="นาง ">นาง</option>
+                      <option value="นางสาว ">นางสาว</option>
+                    </select>
+                    <ChevronDown
+                      className="absolute right-5 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-700 pointer-events-none"
+                      strokeWidth={2.5}
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-3">
+                  <label className="block text-[#475569] font-medium text-[17px]">
+                    เพศ
+                  </label>
+                  <div className="relative">
+                    <select
+                      name="gender"
+                      value={formData.gender}
+                      onChange={handleChange}
+                      className="w-full bg-[#f8fafc] border border-[#e2e8f0] px-5 py-3.5 rounded-xl text-[15px] text-slate-800 appearance-none focus:outline-none focus:ring-2 focus:ring-blue-100 transition-all cursor-pointer"
+                    >
+                      <option value="Unspecified">ไม่ระบุ</option>
+                      <option value="Male">ชาย</option>
+                      <option value="Female">หญิง</option>
+                    </select>
+                    <ChevronDown
+                      className="absolute right-5 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-700 pointer-events-none"
+                      strokeWidth={2.5}
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-3">
+                  <label className="block text-[#475569] font-medium text-[17px]">
+                    ชื่อจริง <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    name="firstName"
+                    placeholder="ชื่อจริง"
+                    value={formData.firstName}
+                    onChange={handleChange}
+                    className="w-full bg-[#f8fafc] border border-[#e2e8f0] px-5 py-3.5 rounded-xl text-[15px] text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-100 transition-all placeholder:text-[#94a3b8]"
+                    required
+                  />
+                </div>
+
+                <div className="space-y-3">
+                  <label className="block text-[#475569] font-medium text-[17px]">
+                    นามสกุล <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    name="lastName"
+                    placeholder="นามสกุล"
+                    value={formData.lastName}
+                    onChange={handleChange}
+                    className="w-full bg-[#f8fafc] border border-[#e2e8f0] px-5 py-3.5 rounded-xl text-[15px] text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-100 transition-all placeholder:text-[#94a3b8]"
+                    required
+                  />
+                </div>
+
+                <div className="space-y-3">
+                  <label className="block text-[#475569] font-medium text-[17px]">
+                    ชื่อ (ภาษาอังกฤษ)
+                  </label>
+                  <input
+                    type="text"
+                    name="firstNameEN"
+                    placeholder="First Name"
+                    value={formData.firstNameEN}
+                    onChange={handleChange}
+                    className="w-full bg-[#f8fafc] border border-[#e2e8f0] px-5 py-3.5 rounded-xl text-[15px] text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-100 transition-all placeholder:text-[#94a3b8]"
+                  />
+                </div>
+
+                <div className="space-y-3">
+                  <label className="block text-[#475569] font-medium text-[17px]">
+                    นามสกุล (ภาษาอังกฤษ)
+                  </label>
+                  <input
+                    type="text"
+                    name="lastNameEN"
+                    placeholder="Last Name"
+                    value={formData.lastNameEN}
+                    onChange={handleChange}
+                    className="w-full bg-[#f8fafc] border border-[#e2e8f0] px-5 py-3.5 rounded-xl text-[15px] text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-100 transition-all placeholder:text-[#94a3b8]"
+                  />
+                </div>
+
+                <div className="space-y-3">
+                  <label className="block text-[#475569] font-medium text-[17px]">
+                    เลขบัตรประชาชน
+                  </label>
+                  <input
+                    type="text"
+                    name="idCardNumber"
+                    placeholder="เลข 13 หลัก"
+                    value={formData.idCardNumber}
+                    onChange={handleChange}
+                    maxLength={13}
+                    className="w-full bg-[#f8fafc] border border-[#e2e8f0] px-5 py-3.5 rounded-xl text-[15px] text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-100 transition-all placeholder:text-[#94a3b8]"
+                  />
+                </div>
+
+                <div className="space-y-3">
+                  <label className="block text-[#475569] font-medium text-[17px]">
+                    วันเกิด
+                  </label>
+                  <DatePicker
+                    selected={
+                      formData.dateOfBirth ? new Date(formData.dateOfBirth) : null
+                    }
+                    onChange={(date: Date | null) => {
+                      handleChange({
+                        target: {
+                          name: 'dateOfBirth',
+                          value: date ? date.toLocaleDateString('en-CA') : '',
+                        },
+                      } as React.ChangeEvent<HTMLInputElement>);
+                    }}
+                    placeholderText="วว/ดด/ปปปป"
+                    minYear={1990}
+                    maxYear={new Date().getFullYear()}
+                  />
+                </div>
+
+                <div className="space-y-3">
+                  <label className="block text-[#475569] font-medium text-[17px]">
+                    แผนก
+                  </label>
+                  <div className="relative">
+                    <select
+                      name="departmentId"
+                      value={formData.departmentId}
+                      onChange={handleChange}
+                      className="w-full bg-[#f8fafc] border border-[#e2e8f0] px-5 py-3.5 rounded-xl text-[15px] text-slate-800 appearance-none focus:outline-none focus:ring-2 focus:ring-blue-100 transition-all cursor-pointer"
+                      required
+                    >
+                      <option value="" disabled>
+                        -- กรุณาเลือกแผนก --
+                      </option>
+                      {departments.map((dept) => (
+                        <option key={dept.id} value={dept.id}>
+                          {dept.name}
+                        </option>
+                      ))}
+                    </select>
+                    <ChevronDown
+                      className="absolute right-5 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-700 pointer-events-none"
+                      strokeWidth={2.5}
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-3">
+                  <label className="block text-[#475569] font-medium text-[17px]">
+                    ตำแหน่ง
+                  </label>
+                  <div className="relative">
+                    <select
+                      name="positionId"
+                      value={formData.positionId}
+                      onChange={handleChange}
+                      className="w-full bg-[#f8fafc] border border-[#e2e8f0] px-5 py-3.5 rounded-xl text-[15px] text-slate-800 appearance-none focus:outline-none focus:ring-2 focus:ring-blue-100 transition-all cursor-pointer"
+                      required
+                    >
+                      <option value="" disabled>
+                        -- กรุณาเลือกตำแหน่ง --
+                      </option>
+                      {availablePositions.map((pos) => (
+                        <option key={pos.id} value={pos.id}>
+                          {pos.title || pos.name}
+                        </option>
+                      ))}
+                    </select>
+                    <ChevronDown
+                      className="absolute right-5 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-700 pointer-events-none"
+                      strokeWidth={2.5}
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-3">
+                  <label className="block text-[#475569] font-medium text-[17px]">
+                    เบอร์โทรศัพท์
+                  </label>
+                  <div className="relative">
+                    <input
+                      type="tel"
+                      name="phone"
+                      placeholder="0981234567"
+                      value={formData.phone}
+                      onChange={handleChange}
+                      maxLength={10}
+                      inputMode="numeric"
+                      pattern="[0-9]*"
+                      className={`w-full bg-[#f8fafc] border px-5 py-3.5 rounded-xl text-[15px] text-slate-800 focus:outline-none focus:ring-2 transition-all placeholder:text-[#94a3b8] pr-16 ${formData.phone && formData.phone.length < 10
+                          ? 'border-red-400 focus:ring-red-100'
+                          : formData.phone.length === 10
+                            ? 'border-green-400 focus:ring-green-100'
+                            : 'border-[#e2e8f0] focus:ring-blue-100'
+                        }`}
+                    />
+                    {formData.phone.length > 0 && (
+                      <span
+                        className={`absolute right-4 top-1/2 -translate-y-1/2 text-xs font-semibold px-1.5 py-0.5 rounded-md ${formData.phone.length === 10
+                            ? 'text-green-600 bg-green-50'
+                            : 'text-red-500 bg-red-50'
+                          }`}
+                      >
+                        {formData.phone.length}/10
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                <div className="space-y-3">
+                  <label className="block text-[#475569] font-medium text-[17px]">
+                    อีเมล <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="email"
+                    name="email"
+                    placeholder="example@nid.co.th"
+                    value={formData.email}
+                    onChange={handleChange}
+                    autoComplete="off"
+                    className="w-full bg-[#f8fafc] border border-[#e2e8f0] px-5 py-3.5 rounded-xl text-[15px] text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-100 transition-all placeholder:text-[#94a3b8]"
+                    required
+                  />
+                </div>
+
+                <div className="space-y-3">
+                  <label className="block text-[#475569] font-medium text-[17px]">
+                    ที่อยู่ตามบัตรประชาชน
+                  </label>
+                  <textarea
+                    name="idCardAddress"
+                    placeholder="กรอกที่อยู่ตามบัตรประชาชน"
+                    value={formData.idCardAddress}
+                    onChange={handleChange}
+                    rows={3}
+                    className="w-full bg-[#f8fafc] border border-[#e2e8f0] px-5 py-3.5 rounded-xl text-[15px] text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-100 transition-all placeholder:text-[#94a3b8] resize-none"
+                  ></textarea>
+                </div>
+
+                <div className="space-y-3">
+                  <label className="block text-[#475569] font-medium text-[17px]">
+                    ที่อยู่ปัจจุบัน
+                  </label>
+                  <textarea
+                    name="currentAddress"
+                    placeholder="กรอกที่อยู่ปัจจุบัน"
+                    value={formData.currentAddress}
+                    onChange={handleChange}
+                    rows={3}
+                    className="w-full bg-[#f8fafc] border border-[#e2e8f0] px-5 py-3.5 rounded-xl text-[15px] text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-100 transition-all placeholder:text-[#94a3b8] resize-none"
+                  ></textarea>
+                </div>
+
+                <div className="space-y-3 md:col-span-2 md:w-[calc(50%-1rem)]">
+                  <label className="block text-[#475569] font-medium text-[17px]">
+                    วันที่เริ่มทำงาน
+                  </label>
+                  <DatePicker
+                    selected={
+                      formData.joinDate ? new Date(formData.joinDate) : null
+                    }
+                    onChange={(date: Date | null) => {
+                      handleChange({
+                        target: {
+                          name: 'joinDate',
+                          value: date ? date.toLocaleDateString('en-CA') : '',
+                        },
+                      } as React.ChangeEvent<HTMLInputElement>);
+                    }}
+                    placeholderText="วว/ดด/ปปปป"
+                  />
+                </div>
+              </div>
+
+              <div className="flex flex-col sm:flex-row justify-end items-stretch sm:items-center gap-3 mt-10 md:mt-12 pt-5 md:pt-6 border-t border-slate-100">
+                <Link
+                  href="/dashboard/hr/employees"
+                  className="px-6 sm:px-8 py-3 sm:py-3.5 bg-[#f8fafc] border border-[#e2e8f0] hover:bg-[#f1f5f9] text-[#0f172a] rounded-xl font-medium text-base md:text-[17px] transition-colors cursor-pointer text-center"
+                >
+                  ยกเลิก
+                </Link>
+                <button
+                  type="submit"
+                  disabled={isLoading || !!employeeIdError}
+                  className={`px-8 sm:px-10 py-3 sm:py-3.5 ${employeeIdError ? 'bg-slate-400 cursor-not-allowed' : 'bg-[#2563eb] hover:bg-[#1d4ed8] cursor-pointer'} text-white rounded-xl font-medium text-base md:text-[17px] shadow-md shadow-blue-500/20 transition-all disabled:opacity-70 flex items-center justify-center gap-2`}
+                >
+                  {isLoading ? 'กำลังบันทึก...' : 'บันทึกข้อมูล'}
                 </button>
               </div>
-            </div>
-
-            <div className="space-y-3">
-              <label className="block text-[#475569] font-medium text-[17px]">
-                ยืนยันรหัสผ่าน (Confirm Password){' '}
-                <span className="text-red-500">*</span>
-              </label>
-              <div className="relative">
-                <input
-                  type={showConfirmPassword ? 'text' : 'password'}
-                  name="confirmPassword"
-                  placeholder="กรอกรหัสผ่านอีกครั้ง"
-                  value={formData.confirmPassword}
-                  onChange={handleChange}
-                  autoComplete="new-password"
-                  className={`w-full bg-[#f8fafc] border ${formData.confirmPassword && formData.password !== formData.confirmPassword ? 'border-red-500 focus:ring-red-100' : 'border-[#e2e8f0] focus:ring-blue-100'} px-5 py-3.5 pr-12 rounded-xl text-[15px] text-slate-800 focus:outline-none focus:ring-2 transition-all placeholder:text-[#94a3b8]`}
-                  required
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 focus:outline-none"
-                >
-                  {showConfirmPassword ? (
-                    <EyeOff className="w-5 h-5" />
-                  ) : (
-                    <Eye className="w-5 h-5" />
-                  )}
-                </button>
-              </div>
-              {formData.confirmPassword &&
-                formData.password !== formData.confirmPassword && (
-                  <p className="text-red-500 text-sm mt-1">รหัสผ่านไม่ตรงกัน</p>
-                )}
-            </div>
+            </form>
           </div>
-
-          <div className="mb-6 md:mb-8 border-b border-slate-100 pb-3 md:pb-4">
-            <h2 className="text-base md:text-lg font-semibold text-slate-700">
-              ข้อมูลส่วนตัว
-            </h2>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 md:gap-x-8 gap-y-5 md:gap-y-6">
-            <div className="space-y-3">
-              <label className="block text-[#475569] font-medium text-[17px]">
-                คำนำหน้าชื่อ <span className="text-red-500">*</span>
-              </label>
-              <div className="relative">
-                <select
-                  name="title"
-                  value={formData.title}
-                  onChange={handleChange}
-                  className="w-full bg-[#f8fafc] border border-[#e2e8f0] px-5 py-3.5 rounded-xl text-[15px] text-slate-800 appearance-none focus:outline-none focus:ring-2 focus:ring-blue-100 transition-all cursor-pointer"
-                  required
-                >
-                  <option value="" disabled>
-                    -- เลือกคำนำหน้า --
-                  </option>
-                  <option value="นาย ">นาย</option>
-                  <option value="นาง ">นาง</option>
-                  <option value="นางสาว ">นางสาว</option>
-                </select>
-                <ChevronDown
-                  className="absolute right-5 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-700 pointer-events-none"
-                  strokeWidth={2.5}
-                />
-              </div>
-            </div>
-
-            <div className="space-y-3">
-              <label className="block text-[#475569] font-medium text-[17px]">
-                เพศ
-              </label>
-              <div className="relative">
-                <select
-                  name="gender"
-                  value={formData.gender}
-                  onChange={handleChange}
-                  className="w-full bg-[#f8fafc] border border-[#e2e8f0] px-5 py-3.5 rounded-xl text-[15px] text-slate-800 appearance-none focus:outline-none focus:ring-2 focus:ring-blue-100 transition-all cursor-pointer"
-                >
-                  <option value="Unspecified">ไม่ระบุ</option>
-                  <option value="Male">ชาย</option>
-                  <option value="Female">หญิง</option>
-                </select>
-                <ChevronDown
-                  className="absolute right-5 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-700 pointer-events-none"
-                  strokeWidth={2.5}
-                />
-              </div>
-            </div>
-
-            <div className="space-y-3">
-              <label className="block text-[#475569] font-medium text-[17px]">
-                ชื่อจริง <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="text"
-                name="firstName"
-                placeholder="ชื่อจริง"
-                value={formData.firstName}
-                onChange={handleChange}
-                className="w-full bg-[#f8fafc] border border-[#e2e8f0] px-5 py-3.5 rounded-xl text-[15px] text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-100 transition-all placeholder:text-[#94a3b8]"
-                required
-              />
-            </div>
-
-            <div className="space-y-3">
-              <label className="block text-[#475569] font-medium text-[17px]">
-                นามสกุล <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="text"
-                name="lastName"
-                placeholder="นามสกุล"
-                value={formData.lastName}
-                onChange={handleChange}
-                className="w-full bg-[#f8fafc] border border-[#e2e8f0] px-5 py-3.5 rounded-xl text-[15px] text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-100 transition-all placeholder:text-[#94a3b8]"
-                required
-              />
-            </div>
-
-            <div className="space-y-3">
-              <label className="block text-[#475569] font-medium text-[17px]">
-                ชื่อ (ภาษาอังกฤษ)
-              </label>
-              <input
-                type="text"
-                name="firstNameEN"
-                placeholder="First Name"
-                value={formData.firstNameEN}
-                onChange={handleChange}
-                className="w-full bg-[#f8fafc] border border-[#e2e8f0] px-5 py-3.5 rounded-xl text-[15px] text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-100 transition-all placeholder:text-[#94a3b8]"
-              />
-            </div>
-
-            <div className="space-y-3">
-              <label className="block text-[#475569] font-medium text-[17px]">
-                นามสกุล (ภาษาอังกฤษ)
-              </label>
-              <input
-                type="text"
-                name="lastNameEN"
-                placeholder="Last Name"
-                value={formData.lastNameEN}
-                onChange={handleChange}
-                className="w-full bg-[#f8fafc] border border-[#e2e8f0] px-5 py-3.5 rounded-xl text-[15px] text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-100 transition-all placeholder:text-[#94a3b8]"
-              />
-            </div>
-
-            <div className="space-y-3">
-              <label className="block text-[#475569] font-medium text-[17px]">
-                เลขบัตรประชาชน
-              </label>
-              <input
-                type="text"
-                name="idCardNumber"
-                placeholder="เลข 13 หลัก"
-                value={formData.idCardNumber}
-                onChange={handleChange}
-                maxLength={13}
-                className="w-full bg-[#f8fafc] border border-[#e2e8f0] px-5 py-3.5 rounded-xl text-[15px] text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-100 transition-all placeholder:text-[#94a3b8]"
-              />
-            </div>
-
-            <div className="space-y-3">
-              <label className="block text-[#475569] font-medium text-[17px]">
-                วันเกิด
-              </label>
-              <DatePicker
-                selected={
-                  formData.dateOfBirth ? new Date(formData.dateOfBirth) : null
-                }
-                onChange={(date: Date | null) => {
-                  handleChange({
-                    target: {
-                      name: 'dateOfBirth',
-                      value: date ? date.toLocaleDateString('en-CA') : '',
-                    },
-                  } as React.ChangeEvent<HTMLInputElement>);
-                }}
-                placeholderText="วว/ดด/ปปปป"
-                minYear={1990}
-                maxYear={new Date().getFullYear()}
-              />
-            </div>
-
-            <div className="space-y-3">
-              <label className="block text-[#475569] font-medium text-[17px]">
-                แผนก
-              </label>
-              <div className="relative">
-                <select
-                  name="departmentId"
-                  value={formData.departmentId}
-                  onChange={handleChange}
-                  className="w-full bg-[#f8fafc] border border-[#e2e8f0] px-5 py-3.5 rounded-xl text-[15px] text-slate-800 appearance-none focus:outline-none focus:ring-2 focus:ring-blue-100 transition-all cursor-pointer"
-                  required
-                >
-                  <option value="" disabled>
-                    -- กรุณาเลือกแผนก --
-                  </option>
-                  {departments.map((dept) => (
-                    <option key={dept.id} value={dept.id}>
-                      {dept.name}
-                    </option>
-                  ))}
-                </select>
-                <ChevronDown
-                  className="absolute right-5 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-700 pointer-events-none"
-                  strokeWidth={2.5}
-                />
-              </div>
-            </div>
-
-            <div className="space-y-3">
-              <label className="block text-[#475569] font-medium text-[17px]">
-                ตำแหน่ง
-              </label>
-              <div className="relative">
-                <select
-                  name="positionId"
-                  value={formData.positionId}
-                  onChange={handleChange}
-                  className="w-full bg-[#f8fafc] border border-[#e2e8f0] px-5 py-3.5 rounded-xl text-[15px] text-slate-800 appearance-none focus:outline-none focus:ring-2 focus:ring-blue-100 transition-all cursor-pointer"
-                  required
-                >
-                  <option value="" disabled>
-                    -- กรุณาเลือกตำแหน่ง --
-                  </option>
-                  {availablePositions.map((pos) => (
-                    <option key={pos.id} value={pos.id}>
-                      {pos.title || pos.name}
-                    </option>
-                  ))}
-                </select>
-                <ChevronDown
-                  className="absolute right-5 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-700 pointer-events-none"
-                  strokeWidth={2.5}
-                />
-              </div>
-            </div>
-
-            <div className="space-y-3">
-              <label className="block text-[#475569] font-medium text-[17px]">
-                เบอร์โทรศัพท์
-              </label>
-              <div className="relative">
-                <input
-                  type="tel"
-                  name="phone"
-                  placeholder="0981234567"
-                  value={formData.phone}
-                  onChange={handleChange}
-                  maxLength={10}
-                  inputMode="numeric"
-                  pattern="[0-9]*"
-                  className={`w-full bg-[#f8fafc] border px-5 py-3.5 rounded-xl text-[15px] text-slate-800 focus:outline-none focus:ring-2 transition-all placeholder:text-[#94a3b8] pr-16 ${
-                    formData.phone && formData.phone.length < 10
-                      ? 'border-red-400 focus:ring-red-100'
-                      : formData.phone.length === 10
-                        ? 'border-green-400 focus:ring-green-100'
-                        : 'border-[#e2e8f0] focus:ring-blue-100'
-                  }`}
-                />
-                {formData.phone.length > 0 && (
-                  <span
-                    className={`absolute right-4 top-1/2 -translate-y-1/2 text-xs font-semibold px-1.5 py-0.5 rounded-md ${
-                      formData.phone.length === 10
-                        ? 'text-green-600 bg-green-50'
-                        : 'text-red-500 bg-red-50'
-                    }`}
-                  >
-                    {formData.phone.length}/10
-                  </span>
-                )}
-              </div>
-            </div>
-
-            <div className="space-y-3">
-              <label className="block text-[#475569] font-medium text-[17px]">
-                อีเมล <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="email"
-                name="email"
-                placeholder="example@nid.co.th"
-                value={formData.email}
-                onChange={handleChange}
-                autoComplete="off"
-                className="w-full bg-[#f8fafc] border border-[#e2e8f0] px-5 py-3.5 rounded-xl text-[15px] text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-100 transition-all placeholder:text-[#94a3b8]"
-                required
-              />
-            </div>
-
-            <div className="space-y-3">
-              <label className="block text-[#475569] font-medium text-[17px]">
-                ที่อยู่ตามบัตรประชาชน
-              </label>
-              <textarea
-                name="idCardAddress"
-                placeholder="กรอกที่อยู่ตามบัตรประชาชน"
-                value={formData.idCardAddress}
-                onChange={handleChange}
-                rows={3}
-                className="w-full bg-[#f8fafc] border border-[#e2e8f0] px-5 py-3.5 rounded-xl text-[15px] text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-100 transition-all placeholder:text-[#94a3b8] resize-none"
-              ></textarea>
-            </div>
-
-            <div className="space-y-3">
-              <label className="block text-[#475569] font-medium text-[17px]">
-                ที่อยู่ปัจจุบัน
-              </label>
-              <textarea
-                name="currentAddress"
-                placeholder="กรอกที่อยู่ปัจจุบัน"
-                value={formData.currentAddress}
-                onChange={handleChange}
-                rows={3}
-                className="w-full bg-[#f8fafc] border border-[#e2e8f0] px-5 py-3.5 rounded-xl text-[15px] text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-100 transition-all placeholder:text-[#94a3b8] resize-none"
-              ></textarea>
-            </div>
-
-            <div className="space-y-3 md:col-span-2 md:w-[calc(50%-1rem)]">
-              <label className="block text-[#475569] font-medium text-[17px]">
-                วันที่เริ่มทำงาน
-              </label>
-              <DatePicker
-                selected={
-                  formData.joinDate ? new Date(formData.joinDate) : null
-                }
-                onChange={(date: Date | null) => {
-                  handleChange({
-                    target: {
-                      name: 'joinDate',
-                      value: date ? date.toLocaleDateString('en-CA') : '',
-                    },
-                  } as React.ChangeEvent<HTMLInputElement>);
-                }}
-                placeholderText="วว/ดด/ปปปป"
-              />
-            </div>
-          </div>
-
-          <div className="flex flex-col sm:flex-row justify-end items-stretch sm:items-center gap-3 mt-10 md:mt-12 pt-5 md:pt-6 border-t border-slate-100">
-            <Link
-              href="/dashboard/hr/employees"
-              className="px-6 sm:px-8 py-3 sm:py-3.5 bg-[#f8fafc] border border-[#e2e8f0] hover:bg-[#f1f5f9] text-[#0f172a] rounded-xl font-medium text-base md:text-[17px] transition-colors cursor-pointer text-center"
-            >
-              ยกเลิก
-            </Link>
-            <button
-              type="submit"
-              disabled={isLoading || !!employeeIdError}
-              className={`px-8 sm:px-10 py-3 sm:py-3.5 ${employeeIdError ? 'bg-slate-400 cursor-not-allowed' : 'bg-[#2563eb] hover:bg-[#1d4ed8] cursor-pointer'} text-white rounded-xl font-medium text-base md:text-[17px] shadow-md shadow-blue-500/20 transition-all disabled:opacity-70 flex items-center justify-center gap-2`}
-            >
-              {isLoading ? 'กำลังบันทึก...' : 'บันทึกข้อมูล'}
-            </button>
-          </div>
-        </form>
-      </div>
         </div>
       </div>
     </div>

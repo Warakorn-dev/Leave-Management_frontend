@@ -1,19 +1,4 @@
-import axiosInstance from './axios';
-import { ApiResponse } from './types';
-
-export const reportApi = {
-  exportLeaveReport: async (filters?: Record<string, unknown>): Promise<Blob> => {
-    // Reports usually return files (Blobs)
-    const response = await axiosInstance.get('/hr/report/export', {
-      params: filters,
-      responseType: 'blob'
-    });
-    return response.data;
-  },
-
-  getStats: async (year?: number): Promise<ApiResponse<unknown>> => {
-    const query = year ? `?year=${year}` : '';
-    const response = await axiosInstance.get(`/hr/report/stats${query}`);
-    return response.data;
-  }
-};
+// ไฟล์นี้ไม่ได้ใช้แล้ว — ลบได้ (D-09, 14 ต.ค. 2569)
+// เหตุผล: ชี้ไป /hr/report/... ซึ่งไม่มีใน backend และไม่มีหน้าไหนเรียกใช้
+// ไม่ถูก export จาก lib/api/index.ts แล้ว
+export {};

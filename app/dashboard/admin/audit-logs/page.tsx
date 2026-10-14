@@ -112,14 +112,13 @@ export default function AdminAuditLogsPage() {
                       <th className="p-3 border-b font-medium">
                         ส่วนที่เกี่ยวข้อง
                       </th>
-                      <th className="p-3 border-b font-medium">IP Address</th>
                     </tr>
                   </thead>
                   <tbody>
                     {loading ? (
                       <tr>
                         <td
-                          colSpan={5}
+                          colSpan={4}
                           className="p-8 text-center text-slate-500"
                         >
                           กำลังโหลดข้อมูล...
@@ -128,7 +127,7 @@ export default function AdminAuditLogsPage() {
                     ) : logs.length === 0 ? (
                       <tr>
                         <td
-                          colSpan={5}
+                          colSpan={4}
                           className="p-8 text-center text-slate-500"
                         >
                           ไม่พบประวัติการใช้งาน
@@ -164,9 +163,6 @@ export default function AdminAuditLogsPage() {
                               </span>
                             </td>
                             <td className="p-3 text-slate-600">{log.entity}</td>
-                            <td className="p-3 font-mono text-xs text-slate-500">
-                              {log.ipAddress || '-'}
-                            </td>
                           </tr>
                         );
                       })

@@ -8,10 +8,10 @@ export const leaveApi = {
     return response.data;
   },
 
-  getAllLeaves: async (role: 'HR' | 'CEO'): Promise<ApiResponse<Leave[]>> => {
-    // HR and CEO can fetch all leaves
-    const endpoint = role === 'HR' ? '/hr/leaves' : '/ceo/leaves'; // Note: CEO actually fetches from /hr/leaves in current code
-    const response = await axiosInstance.get(endpoint);
+  /** Every leave in the company. HR and CEO both read it from /hr/leaves (there is no /ceo/leaves — D-09). */
+  getAllLeaves: async (role: 'HR' | 'CEO' = 'HR'): Promise<ApiResponse<Leave[]>> => {
+    void role; // kept so existing callers stay unchanged; both roles use the same endpoint
+    const response = await axiosInstance.get('/hr/leaves');
     return response.data;
   },
 
@@ -20,10 +20,8 @@ export const leaveApi = {
     return response.data;
   },
 
-  createLeave: async (data: Record<string, unknown>): Promise<ApiResponse<Leave>> => {
-    const response = await axiosInstance.post('/leave/request', data);
-    return response.data;
-  },
+  // Filing a leave: useCreateLeaveMutation in hooks/useLeave.ts (POST /leave).
+  // D-09: the old createLeave here posted to /leave/request, which does not exist.
 
   updateLeaveBalance: async (balanceId: string, data: Record<string, unknown>): Promise<ApiResponse<unknown>> => {
     const response = await axiosInstance.put(`/hr/leave-balances/${balanceId}`, data);

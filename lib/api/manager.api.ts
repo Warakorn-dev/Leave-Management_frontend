@@ -1,20 +1,4 @@
-import axiosInstance from './axios';
-import { ApiResponse } from './types';
-
-export const managerApi = {
-  approveLeave: async (leaveId: string): Promise<ApiResponse<unknown>> => {
-    const response = await axiosInstance.put(`/manager/approve/${leaveId}`);
-    return response.data;
-  },
-
-  rejectLeave: async (leaveId: string, reason: string): Promise<ApiResponse<unknown>> => {
-    const response = await axiosInstance.put(`/manager/reject/${leaveId}`, { reason });
-    return response.data;
-  },
-
-  getTeamLeaveSummary: async (): Promise<ApiResponse<unknown>> => {
-    // If there is a specific endpoint for manager stats
-    const response = await axiosInstance.get('/manager/team-stats');
-    return response.data;
-  }
-};
+// ไฟล์นี้ไม่ได้ใช้แล้ว — ลบได้ (D-09, 14 ต.ค. 2569)
+// เหตุผล: /manager/team-stats ไม่มีใน backend และ approve/reject ส่งชื่อช่องผิด (reason แทน comment) — หน้าอนุมัติใช้โค้ดของตัวเองใน app/dashboard/manager/approve และไม่มีหน้าไหนเรียกใช้
+// ไม่ถูก export จาก lib/api/index.ts แล้ว
+export {};

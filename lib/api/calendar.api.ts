@@ -1,24 +1,4 @@
-import axiosInstance from './axios';
-import { ApiResponse } from './types';
-
-export const calendarApi = {
-  getCalendar: async (): Promise<ApiResponse<unknown>> => {
-    const response = await axiosInstance.get('/calendar');
-    return response.data;
-  },
-
-  getCalendarByMonth: async (year: number, month: number): Promise<ApiResponse<unknown>> => {
-    const response = await axiosInstance.get(`/calendar?year=${year}&month=${month}`);
-    return response.data;
-  },
-
-  getCalendarByDate: async (date: string): Promise<ApiResponse<unknown>> => {
-    const response = await axiosInstance.get(`/calendar/date/${date}`);
-    return response.data;
-  },
-
-  getTeamCalendar: async (): Promise<ApiResponse<unknown>> => {
-    const response = await axiosInstance.get('/calendar/team');
-    return response.data;
-  }
-};
+// ไฟล์นี้ไม่ได้ใช้แล้ว — ลบได้ (D-09, 14 ต.ค. 2569)
+// เหตุผล: ทุกฟังก์ชันชี้ไป /calendar... ซึ่งไม่มีใน backend และไม่มีหน้าไหนเรียกใช้
+// ไม่ถูก export จาก lib/api/index.ts แล้ว
+export {};
