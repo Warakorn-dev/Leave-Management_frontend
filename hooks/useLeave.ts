@@ -1,5 +1,37 @@
 import { useState, useEffect, useCallback } from 'react';
+import type { Method } from 'axios';
+import axiosInstance from '@/lib/api/axios';
 import { Leave } from '@/lib/api/types';
+import { getErrorMessage } from '@/lib/api/utils';
+
+/*
+ * Every call here goes through axiosInstance so an expired access token is
+ * refreshed automatically (D-06). `skipErrorAlert` keeps the interceptor from
+ * showing its generic error popup: these hooks report errors to their callers,
+ * which show their own messages, exactly as before.
+ */
+
+/** GET `/api{url}`; returns the unwrapped `data` (or the body), or null on any error — like the old `if (res.ok)` checks. */
+async function getData<T = unknown>(url: string): Promise<T | null> {
+  try {
+    const res = await axiosInstance.get(url, { skipErrorAlert: true });
+    const body = res.data as { data?: T } | T;
+    return ((body as { data?: T })?.data ?? body) as T;
+  } catch (error) {
+    console.error(error);
+    return null;
+  }
+}
+
+/** Write call to `/api{url}`; throws an Error with the server's message (or `fallback`) on failure. */
+async function send<T = unknown>(method: Method, url: string, fallback: string, data?: unknown): Promise<T> {
+  try {
+    const res = await axiosInstance.request({ method, url, data, skipErrorAlert: true });
+    return res.data as T;
+  } catch (error) {
+    throw new Error(getErrorMessage(error, fallback));
+  }
+}
 
 interface RawLeaveItem {
   id?: string;
@@ -80,29 +112,24 @@ export const useLeavesQuery = (fetchCompanyLeaves: boolean = false) => {
   const fetchLeaves = useCallback(async () => {
     setIsLoading(true);
     try {
-      const token = typeof window !== 'undefined' ? sessionStorage.getItem('accessToken') : '';
       const rawRole = typeof window !== 'undefined' ? sessionStorage.getItem('role') : '';
       const role = rawRole?.toUpperCase() || '';
       const actualUserId = typeof window !== 'undefined' ? sessionStorage.getItem('userId') : '';
-      
-      const headers = { 'Authorization': `Bearer ${token}` };
 
       let allLeaves: ReturnType<typeof mapLeaveData> = [];
 
       // 1. Fetch personal leaves
-      const resPersonal = await fetch('/api/leave/history', { headers });
-      if (resPersonal.ok) {
-        const json = await resPersonal.json();
-        allLeaves = [...allLeaves, ...mapLeaveData(json.data ?? json, actualUserId, true)];
+      const personal = await getData<RawLeaveItem[]>('/leave/history');
+      if (personal) {
+        allLeaves = [...allLeaves, ...mapLeaveData(personal, actualUserId, true)];
       }
 
       if (role === 'HR' || role === 'CEO' || fetchCompanyLeaves) {
         // If HR/CEO, or explicitly requested company leaves, fetch all leaves
-        const endpoint = (role === 'HR' || role === 'CEO') ? '/api/hr/leaves' : '/api/leave/all-leaves';
-        const resAll = await fetch(endpoint, { headers });
-        if (resAll.ok) {
-          const json = await resAll.json();
-          const mappedAll = mapLeaveData(json.data ?? json, actualUserId, false);
+        const endpoint = (role === 'HR' || role === 'CEO') ? '/hr/leaves' : '/leave/all-leaves';
+        const all = await getData<RawLeaveItem[]>(endpoint);
+        if (all) {
+          const mappedAll = mapLeaveData(all, actualUserId, false);
           // Filter out personal leaves to prevent duplicates
           const otherLeaves = mappedAll.filter((l) => String(l.userId) !== String(actualUserId) && String(l.employeeId) !== String(actualUserId));
           allLeaves = [...allLeaves, ...otherLeaves];
@@ -110,18 +137,16 @@ export const useLeavesQuery = (fetchCompanyLeaves: boolean = false) => {
       } else {
         // Fetch department leaves
         if (role === 'USER' || role === 'EMPLOYEE') {
-          const resDept = await fetch('/api/leave/department', { headers });
-          if (resDept.ok) {
-            const json = await resDept.json();
-            const mappedDept = mapLeaveData(json.data ?? json, actualUserId, false);
+          const dept = await getData<RawLeaveItem[]>('/leave/department');
+          if (dept) {
+            const mappedDept = mapLeaveData(dept, actualUserId, false);
             const otherLeaves = mappedDept.filter((l) => String(l.userId) !== String(actualUserId) && String(l.employeeId) !== String(actualUserId));
             allLeaves = [...allLeaves, ...otherLeaves];
           }
         } else if (role === 'MANAGER') {
-          const resDept = await fetch('/api/manager/history', { headers });
-          if (resDept.ok) {
-            const json = await resDept.json();
-            const mappedDept = mapLeaveData(json.data ?? json, actualUserId, false);
+          const dept = await getData<RawLeaveItem[]>('/manager/history');
+          if (dept) {
+            const mappedDept = mapLeaveData(dept, actualUserId, false);
             const otherLeaves = mappedDept.filter((l) => String(l.userId) !== String(actualUserId) && String(l.employeeId) !== String(actualUserId));
             allLeaves = [...allLeaves, ...otherLeaves];
           }
@@ -150,12 +175,9 @@ export const useHolidaysQuery = () => {
   const fetchHolidays = useCallback(async () => {
     setIsLoading(true);
     try {
-      const token = typeof window !== 'undefined' ? sessionStorage.getItem('accessToken') : '';
-      const headers = { 'Authorization': `Bearer ${token}` };
-      const res = await fetch('/api/leave/holidays', { headers });
-      if (res.ok) {
-        const json = await res.json();
-        setData(json.data ?? json);
+      const holidays = await getData<{ id?: string; date: string; title?: string; name?: string }[]>('/leave/holidays');
+      if (holidays) {
+        setData(holidays);
       }
     } catch (error) {
       console.error(error);
@@ -174,20 +196,7 @@ export const useHolidaysQuery = () => {
 export const useApproveLeaveMutation = () => {
   return {
     mutateAsync: async ({ id, approverReason }: { id: string; approverName?: string; approverReason?: string }) => {
-      const token = typeof window !== 'undefined' ? sessionStorage.getItem('accessToken') : '';
-      const res = await fetch(`/api/manager/approve/${id}`, {
-        method: 'PUT',
-        headers: { 
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ comment: approverReason }),
-      });
-      if (!res.ok) {
-        const errorText = await res.text();
-        throw new Error(`Failed to approve leave: ${errorText}`);
-      }
-      return res.json();
+      return send('PUT', `/manager/approve/${id}`, 'Failed to approve leave', { comment: approverReason });
     }
   };
 };
@@ -195,20 +204,7 @@ export const useApproveLeaveMutation = () => {
 export const useRejectLeaveMutation = () => {
   return {
     mutateAsync: async ({ id, approverReason }: { id: string; approverName?: string; approverReason?: string }) => {
-      const token = typeof window !== 'undefined' ? sessionStorage.getItem('accessToken') : '';
-      const res = await fetch(`/api/manager/reject/${id}`, {
-        method: 'PUT',
-        headers: { 
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ comment: approverReason }),
-      });
-      if (!res.ok) {
-        const errorText = await res.text();
-        throw new Error(`Failed to reject leave: ${errorText}`);
-      }
-      return res.json();
+      return send('PUT', `/manager/reject/${id}`, 'Failed to reject leave', { comment: approverReason });
     }
   };
 };
@@ -233,20 +229,8 @@ export interface CreateLeavePayload {
 export const useCreateLeaveMutation = () => {
   return {
     mutateAsync: async (data: CreateLeavePayload) => {
-      const token = typeof window !== 'undefined' ? sessionStorage.getItem('accessToken') : '';
-      const res = await fetch('/api/leave', {
-        method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify(data),
-      });
-      if (!res.ok) {
-        const errJson = await res.json().catch(() => ({}));
-        throw new Error(errJson.message || 'Failed to create leave');
-      }
-      return res.json();
+      // Response is { success, message, data: <the created leave> }.
+      return send<{ data?: { id?: string }; id?: string }>('POST', '/leave', 'Failed to create leave', data);
     }
   };
 };
@@ -254,19 +238,7 @@ export const useCreateLeaveMutation = () => {
 export const useUpdateLeaveMutation = () => {
   return {
     mutateAsync: async ({ id, data }: { id: string, data: Partial<Leave> }) => {
-      const token = typeof window !== 'undefined' ? sessionStorage.getItem('accessToken') : '';
-      const res = await fetch(`/api/leave/${id}`, {
-        method: 'PUT',
-        headers: { 
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify(data),
-      });
-      if (!res.ok) {
-        const errJson = await res.json().catch(() => ({}));
-        throw new Error(errJson.message || 'Failed to update leave');
-      }
+      await send('PUT', `/leave/${id}`, 'Failed to update leave', data);
     }
   };
 };
@@ -274,14 +246,7 @@ export const useUpdateLeaveMutation = () => {
 export const useDeleteLeaveMutation = () => {
   return {
     mutateAsync: async (id: string) => {
-      const token = typeof window !== 'undefined' ? sessionStorage.getItem('accessToken') : '';
-      const res = await fetch(`/api/leave/${id}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-      if (!res.ok) throw new Error('Failed to delete leave');
+      await send('DELETE', `/leave/${id}`, 'Failed to delete leave');
     }
   };
 };
@@ -289,26 +254,7 @@ export const useDeleteLeaveMutation = () => {
 export const useVerifyLeaveMutation = () => {
   return {
     mutateAsync: async ({ id, action, comment }: { id: string; action: 'Approve' | 'Reject'; comment?: string }) => {
-      const token = typeof window !== 'undefined' ? sessionStorage.getItem('accessToken') : '';
-      const res = await fetch(`/api/hr/leaves/${id}/verify`, {
-        method: 'PUT',
-        headers: { 
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ action, comment }),
-      });
-      if (!res.ok) {
-        let errorMsg = 'Failed to verify leave';
-        try {
-          const errJson = await res.json();
-          errorMsg = errJson.message || errorMsg;
-        } catch {
-          errorMsg = await res.text();
-        }
-        throw new Error(errorMsg);
-      }
-      return res.json();
+      return send('PUT', `/hr/leaves/${id}/verify`, 'Failed to verify leave', { action, comment });
     }
   };
 };
@@ -316,24 +262,7 @@ export const useVerifyLeaveMutation = () => {
 export const useMarkLeaveViewedMutation = () => {
   return {
     mutateAsync: async ({ id, lock = true }: { id: string, lock?: boolean }) => {
-      const token = typeof window !== 'undefined' ? sessionStorage.getItem('accessToken') : '';
-      const res = await fetch(`/api/hr/leaves/${id}/view?lock=${lock}`, {
-        method: 'PATCH',
-        headers: { 
-          'Authorization': `Bearer ${token}`
-        },
-      });
-      if (!res.ok) {
-        let errorMsg = 'Failed to mark leave as viewed';
-        try {
-          const errJson = await res.json();
-          errorMsg = errJson.message || errorMsg;
-        } catch {
-          errorMsg = await res.text();
-        }
-        throw new Error(errorMsg);
-      }
-      return res.json();
+      return send('PATCH', `/hr/leaves/${id}/view?lock=${lock}`, 'Failed to mark leave as viewed');
     }
   };
 };
@@ -346,15 +275,8 @@ export const useHrPendingVerifyQuery = () => {
   const fetchLeaves = useCallback(async () => {
     setIsLoading(true);
     try {
-      const token = typeof window !== 'undefined' ? sessionStorage.getItem('accessToken') : '';
-      const headers = { 'Authorization': `Bearer ${token}` };
-      const res = await fetch('/api/hr/leaves/pending-verify', {
-        headers,
-        cache: 'no-store'
-      });
-      if (res.ok) {
-        const json = await res.json();
-        const all = (json.data ?? json) as RawLeaveItem[];
+      const all = await getData<RawLeaveItem[]>('/hr/leaves/pending-verify');
+      if (all) {
         const pendingVerify = all.filter((l) => l.status !== 'PENDING_CANCELLATION');
         setData(mapLeaveData(pendingVerify, null, false));
       }
@@ -379,12 +301,8 @@ export const usePendingCancellationQuery = () => {
   const fetchLeaves = useCallback(async () => {
     setIsLoading(true);
     try {
-      const token = typeof window !== 'undefined' ? sessionStorage.getItem('accessToken') : '';
-      const headers = { 'Authorization': `Bearer ${token}` };
-      const res = await fetch('/api/hr/leaves/pending-verify', { headers });
-      if (res.ok) {
-        const json = await res.json();
-        const all = (json.data ?? json) as RawLeaveItem[];
+      const all = await getData<RawLeaveItem[]>('/hr/leaves/pending-verify');
+      if (all) {
         const cancellations = all.filter((l) => l.status === 'PENDING_CANCELLATION');
         setData(mapLeaveData(cancellations, null, false));
       }

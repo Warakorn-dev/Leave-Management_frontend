@@ -3,17 +3,19 @@
  *
  * The server never says "this account is locked" (that would reveal which
  * usernames exist). Instead it states its global policy in the generic error,
- * e.g. "…ผิดติดต่อกัน 5 ครั้ง … ชั่วคราว 15 นาที". The page counts failed
+ * e.g. "…ผิด 5 ครั้งภายใน 15 นาที … ชั่วคราว 15 นาที". The page counts failed
  * attempts per typed username in this browser and, when the count reaches the
  * policy limit, shows a countdown — the same for every username, existing or
  * not, so nothing leaks. For a real account the timing matches the server's
- * lock, which starts on that same failed attempt.
+ * lock, which starts on that same failed attempt. Like the server (D-08,
+ * 2026-10-14), a failure more than `lockoutMinutes` after the previous one
+ * starts the count again at 1.
  */
 
 const STORAGE_KEY = 'login-lockout';
 const DEFAULT_POLICY = { maxAttempts: 5, lockoutMinutes: 15 };
 
-type Entry = { fails: number; lockedUntil?: number; totalMs?: number; maxAttempts?: number };
+type Entry = { fails: number; lastFailAt?: number; lockedUntil?: number; totalMs?: number; maxAttempts?: number };
 
 /** An active countdown: when it ends, its full length, and the attempt limit it came from. */
 export type LockState = { until: number; totalMs: number; maxAttempts: number };
@@ -43,7 +45,9 @@ export function isCredentialFailure(message: string): boolean {
 
 /** Reads the lockout policy the server states in its generic message. */
 export function parseLockoutPolicy(message: string) {
-  const m = /ติดต่อกัน\s*(\d+)\s*ครั้ง[\s\S]*?(\d+)\s*นาที/.exec(message);
+  // Current wording "ผิด 5 ครั้งภายใน 15 นาที … ชั่วคราว 15 นาที"; the older
+  // "ผิดติดต่อกัน 5 ครั้ง … ชั่วคราว 15 นาที" still parses.
+  const m = /ผิด(?:ติดต่อกัน)?\s*(\d+)\s*ครั้ง[\s\S]*?ชั่วคราว\s*(\d+)\s*นาที/.exec(message);
   return m
     ? { maxAttempts: Number(m[1]), lockoutMinutes: Number(m[2]) }
     : DEFAULT_POLICY;
@@ -79,7 +83,10 @@ export function recordFailedLogin(
   if (!username.trim()) return null;
   const store = read();
   const key = keyOf(username);
-  const fails = (store[key]?.fails ?? 0) + 1;
+  const prev = store[key];
+  const withinWindow =
+    prev?.lastFailAt !== undefined && now - prev.lastFailAt <= policy.lockoutMinutes * 60_000;
+  const fails = (withinWindow ? prev.fails : 0) + 1;
   if (fails >= policy.maxAttempts) {
     const totalMs = policy.lockoutMinutes * 60_000;
     const lock = { until: now + totalMs, totalMs, maxAttempts: policy.maxAttempts };
@@ -87,7 +94,7 @@ export function recordFailedLogin(
     write(store);
     return lock;
   }
-  store[key] = { fails };
+  store[key] = { fails, lastFailAt: now };
   write(store);
   return null;
 }

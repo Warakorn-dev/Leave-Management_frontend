@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import RoleGuard from "@/components/RoleGuard";
-import { Users, Lock, Power } from "lucide-react";
+import { Users, Lock, Power, LockOpen, KeyRound, LogOut } from "lucide-react";
 import api from "@/lib/api/axios";
 import Swal from 'sweetalert2';
 import { getErrorMessage } from "@/lib/api/utils";
@@ -94,6 +94,81 @@ export default function AdminUsersPage() {
         }
       }
     });
+  };
+
+  // ── D-07 (2026-10-14): unlock / reset password / force logout ──────────
+  // skipErrorAlert: these handlers show their own error popup (no duplicate).
+  const userLabel = (user: AdminUser) => user.email || user.username || '';
+
+  const handleUnlock = async (user: AdminUser) => {
+    const { isConfirmed } = await Swal.fire({
+      title: 'ยืนยันการปลดล็อกบัญชี',
+      text: `ปลดล็อกบัญชี ${userLabel(user)} ใช่หรือไม่? ผู้ใช้จะเข้าสู่ระบบได้ทันที`,
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonColor: '#22c55e',
+      cancelButtonColor: '#94a3b8',
+      confirmButtonText: 'ปลดล็อก',
+      cancelButtonText: 'ยกเลิก',
+    });
+    if (!isConfirmed) return;
+    try {
+      await api.patch(`/admin/users/${user.id}/unlock`, {}, { skipErrorAlert: true });
+      Swal.fire({ icon: 'success', title: 'ปลดล็อกบัญชีเรียบร้อยแล้ว', timer: 1500, showConfirmButton: false });
+      fetchUsers();
+    } catch (err) {
+      Swal.fire('ไม่สามารถปลดล็อกบัญชีได้', getErrorMessage(err, 'เกิดข้อผิดพลาด'), 'error');
+    }
+  };
+
+  const handleResetPassword = async (user: AdminUser) => {
+    const { isConfirmed } = await Swal.fire({
+      title: 'ยืนยันการรีเซ็ตรหัสผ่าน',
+      text: `รีเซ็ตรหัสผ่านของ ${userLabel(user)} ใช่หรือไม่? ระบบจะสร้างรหัสผ่านชั่วคราว และผู้ใช้จะถูกออกจากระบบทุกอุปกรณ์`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#2563eb',
+      cancelButtonColor: '#94a3b8',
+      confirmButtonText: 'รีเซ็ตรหัสผ่าน',
+      cancelButtonText: 'ยกเลิก',
+    });
+    if (!isConfirmed) return;
+    try {
+      const res = await api.post(`/admin/users/${user.id}/reset-password`, {}, { skipErrorAlert: true });
+      const tempPassword: string = res.data?.data?.tempPassword ?? res.data?.tempPassword ?? '';
+      await Swal.fire({
+        icon: 'success',
+        title: 'รีเซ็ตรหัสผ่านเรียบร้อยแล้ว',
+        text: 'คัดลอกรหัสผ่านชั่วคราวนี้ให้ผู้ใช้ (ระบบจะไม่แสดงอีก) และแนะนำให้เปลี่ยนรหัสผ่านหลังเข้าสู่ระบบ',
+        input: 'text',
+        inputValue: tempPassword,
+        inputAttributes: { readonly: 'true', 'aria-label': 'รหัสผ่านชั่วคราว' },
+        confirmButtonText: 'ปิด',
+      });
+      fetchUsers();
+    } catch (err) {
+      Swal.fire('ไม่สามารถรีเซ็ตรหัสผ่านได้', getErrorMessage(err, 'เกิดข้อผิดพลาด'), 'error');
+    }
+  };
+
+  const handleForceLogout = async (user: AdminUser) => {
+    const { isConfirmed } = await Swal.fire({
+      title: 'ยืนยันการบังคับออกจากระบบ',
+      text: `บังคับให้ ${userLabel(user)} ออกจากระบบทุกอุปกรณ์ใช่หรือไม่?`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#ef4444',
+      cancelButtonColor: '#94a3b8',
+      confirmButtonText: 'บังคับออกจากระบบ',
+      cancelButtonText: 'ยกเลิก',
+    });
+    if (!isConfirmed) return;
+    try {
+      await api.patch(`/admin/users/${user.id}/force-logout`, {}, { skipErrorAlert: true });
+      Swal.fire({ icon: 'success', title: 'บังคับออกจากระบบเรียบร้อยแล้ว', timer: 1500, showConfirmButton: false });
+    } catch (err) {
+      Swal.fire('ไม่สามารถบังคับออกจากระบบได้', getErrorMessage(err, 'เกิดข้อผิดพลาด'), 'error');
+    }
   };
 
   const handleChangeRole = async (user: AdminUser, roleId: string) => {
@@ -242,6 +317,34 @@ export default function AdminUsersPage() {
                                 }`}
                               >
                                 <Power className="w-4 h-4" strokeWidth={2} />
+                              </button>
+                              {user.lockedUntil && new Date(user.lockedUntil) > new Date() && (
+                                <button
+                                  onClick={() => handleUnlock(user)}
+                                  title="ปลดล็อกบัญชี"
+                                  aria-label="ปลดล็อกบัญชี"
+                                  className="w-8 h-8 rounded-full flex items-center justify-center transition-colors bg-red-100 text-red-600 hover:bg-green-100 hover:text-green-600"
+                                >
+                                  <LockOpen className="w-4 h-4" strokeWidth={2} />
+                                </button>
+                              )}
+                              <button
+                                onClick={() => handleResetPassword(user)}
+                                disabled={user.id === myUserId}
+                                title={user.id === myUserId ? 'เปลี่ยนรหัสผ่านของตัวเองได้ที่หน้าตั้งค่า' : 'รีเซ็ตรหัสผ่าน'}
+                                aria-label="รีเซ็ตรหัสผ่าน"
+                                className="w-8 h-8 rounded-full flex items-center justify-center transition-colors disabled:opacity-40 disabled:cursor-not-allowed bg-slate-100 text-slate-500 hover:bg-blue-100 hover:text-blue-600"
+                              >
+                                <KeyRound className="w-4 h-4" strokeWidth={2} />
+                              </button>
+                              <button
+                                onClick={() => handleForceLogout(user)}
+                                disabled={user.id === myUserId}
+                                title={user.id === myUserId ? 'ไม่สามารถบังคับออกจากระบบตัวเองได้' : 'บังคับออกจากระบบ'}
+                                aria-label="บังคับออกจากระบบ"
+                                className="w-8 h-8 rounded-full flex items-center justify-center transition-colors disabled:opacity-40 disabled:cursor-not-allowed bg-slate-100 text-slate-500 hover:bg-red-100 hover:text-red-600"
+                              >
+                                <LogOut className="w-4 h-4" strokeWidth={2} />
                               </button>
                             </div>
                           </td>

@@ -2,6 +2,17 @@ import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
 import Swal from 'sweetalert2';
 import idleState from '@/lib/idleState';
 
+declare module 'axios' {
+  interface AxiosRequestConfig {
+    /**
+     * The caller shows its own error message. The 401 token refresh and the
+     * suspended-account handling still run; only the generic error popups
+     * (400/403/409/413/5xx, network) are skipped so the user never sees two.
+     */
+    skipErrorAlert?: boolean;
+  }
+}
+
 interface QueueItem {
   resolve: (token: string | null) => void;
   reject: (error: unknown) => void;
@@ -173,6 +184,8 @@ axiosInstance.interceptors.response.use(
           idleState.showExpiredPopup();
           return Promise.reject(error);
 
+        } else if (originalRequest.skipErrorAlert) {
+          // The caller reports this error itself (see skipErrorAlert).
         } else if (status === 403) {
           Swal.fire({
             icon: 'error',
@@ -209,7 +222,7 @@ axiosInstance.interceptors.response.use(
       console.error('No response received from the server.', error.message);
       // Suppress Network Error if we are navigating to login or already there,
       // as the browser cancels pending requests during navigation, which Axios sees as a Network Error.
-      if (typeof window !== 'undefined' && window.location.pathname !== '/login') {
+      if (typeof window !== 'undefined' && window.location.pathname !== '/login' && !originalRequest.skipErrorAlert) {
         Swal.fire({
           icon: 'error',
           title: 'ข้อผิดพลาดเครือข่าย',

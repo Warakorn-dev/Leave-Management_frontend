@@ -11,54 +11,41 @@ import {
   Clock4,
   CalendarDays,
 } from 'lucide-react';
+import axiosInstance from '@/lib/api/axios';
 import { getErrorMessage } from '@/lib/api/utils';
 import type { Leave } from '@/lib/api/types';
 import { LeaveDetailModal } from '@/components/LeaveDetailModal';
 import { LeaveActionButtons, LeaveStatusBadge, type LeaveActionKind } from '@/components/LeaveActions';
 import { escapeHtml } from '@/lib/escapeHtml';
 
-const getToken = () =>
-  typeof window !== 'undefined' ? sessionStorage.getItem('accessToken') : '';
+// API calls go through axiosInstance so an expired access token is refreshed
+// automatically (D-06). skipErrorAlert: this page shows its own error messages.
 
 async function fetchPendingExecutive(): Promise<Leave[]> {
-  const res = await fetch('/api/ceo/pending', {
-    headers: { Authorization: `Bearer ${getToken()}` },
-  });
-  if (!res.ok) throw new Error('Failed to fetch pending executive requests');
-  const json = await res.json();
-  return json.data ?? json;
+  try {
+    const res = await axiosInstance.get('/ceo/pending', { skipErrorAlert: true });
+    return res.data?.data ?? res.data;
+  } catch {
+    throw new Error('Failed to fetch pending executive requests');
+  }
 }
 
 async function ceoApprove(id: string) {
-  const res = await fetch(`/api/ceo/approve/${id}`, {
-    method: 'PUT',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${getToken()}`,
-    },
-    body: JSON.stringify({ comment: '' }),
-  });
-  if (!res.ok) {
-    const e = await res.json().catch(() => ({}));
-    throw new Error(e.message || 'Approve failed');
+  try {
+    const res = await axiosInstance.put(`/ceo/approve/${id}`, { comment: '' }, { skipErrorAlert: true });
+    return res.data;
+  } catch (error) {
+    throw new Error(getErrorMessage(error, 'Approve failed'));
   }
-  return res.json();
 }
 
 async function ceoReject(id: string, comment: string) {
-  const res = await fetch(`/api/ceo/reject/${id}`, {
-    method: 'PUT',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${getToken()}`,
-    },
-    body: JSON.stringify({ comment }),
-  });
-  if (!res.ok) {
-    const e = await res.json().catch(() => ({}));
-    throw new Error(e.message || 'Reject failed');
+  try {
+    const res = await axiosInstance.put(`/ceo/reject/${id}`, { comment }, { skipErrorAlert: true });
+    return res.data;
+  } catch (error) {
+    throw new Error(getErrorMessage(error, 'Reject failed'));
   }
-  return res.json();
 }
 
 // ──────────────── helpers ────────────────

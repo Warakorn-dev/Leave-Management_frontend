@@ -6,52 +6,39 @@ import Swal from "sweetalert2";
 import { LeaveDetailModal } from "@/components/LeaveDetailModal";
 import { LeaveActionButtons, LeaveStatusBadge, type LeaveActionKind } from "@/components/LeaveActions";
 import type { Leave } from "@/lib/api/types";
+import axiosInstance from "@/lib/api/axios";
 import { getErrorMessage } from "@/lib/api/utils";
 import { escapeHtml } from "@/lib/escapeHtml";
 
-const getToken = () =>
-  typeof window !== "undefined" ? sessionStorage.getItem("accessToken") : "";
+// API calls go through axiosInstance so an expired access token is refreshed
+// automatically (D-06). skipErrorAlert: this page shows its own error messages.
 
 /** Fetch pending leave requests for the manager's department via dedicated endpoint */
 async function fetchManagerPending(): Promise<Leave[]> {
-  const res = await fetch("/api/manager/pending", {
-    headers: { Authorization: `Bearer ${getToken()}` },
-  });
-  if (!res.ok) throw new Error("Failed to fetch pending requests");
-  const json = await res.json();
-  return json.data ?? json;
+  try {
+    const res = await axiosInstance.get("/manager/pending", { skipErrorAlert: true });
+    return res.data?.data ?? res.data;
+  } catch {
+    throw new Error("Failed to fetch pending requests");
+  }
 }
 
 async function approveLeave(id: string, comment?: string) {
-  const res = await fetch(`/api/manager/approve/${id}`, {
-    method: "PUT",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${getToken()}`,
-    },
-    body: JSON.stringify({ comment: comment || "" }),
-  });
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error(err.message || "Failed to approve");
+  try {
+    const res = await axiosInstance.put(`/manager/approve/${id}`, { comment: comment || "" }, { skipErrorAlert: true });
+    return res.data;
+  } catch (error) {
+    throw new Error(getErrorMessage(error, "Failed to approve"));
   }
-  return res.json();
 }
 
 async function rejectLeave(id: string, comment: string) {
-  const res = await fetch(`/api/manager/reject/${id}`, {
-    method: "PUT",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${getToken()}`,
-    },
-    body: JSON.stringify({ comment }),
-  });
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error(err.message || "Failed to reject");
+  try {
+    const res = await axiosInstance.put(`/manager/reject/${id}`, { comment }, { skipErrorAlert: true });
+    return res.data;
+  } catch (error) {
+    throw new Error(getErrorMessage(error, "Failed to reject"));
   }
-  return res.json();
 }
 
 // ──────────────── helpers ────────────────

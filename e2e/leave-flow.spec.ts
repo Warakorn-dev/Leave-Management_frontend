@@ -21,8 +21,7 @@ import {
 // Each test uses its own leave date, so one failure does not block the rest.
 let dates: string[] = [];
 test.beforeAll(async () => {
-  // Start ~5 weeks out: past any advance-notice rule, and in a month the
-  // approval pages have to be switched to (exercises the month picker).
+  // Start ~5 weeks out: past any advance-notice rule.
   dates = await workingDays(6, 35);
 });
 
@@ -55,12 +54,25 @@ async function fileLeaveViaForm(page: Page, date: string, reason: string) {
   return leave.id;
 }
 
+/**
+ * The approval pages group requests by the month they were SUBMITTED
+ * (createdAt, business decision 2026-10-14), not the month of the leave.
+ * Returns that month (YYYY-MM-DD, Bangkok time like the browser) and the
+ * request code, so the test opens the right month and the right row.
+ */
+async function submittedRow(id: string) {
+  const leave = await db.leaveRequest.findUniqueOrThrow({ where: { id } });
+  const month = leave.createdAt.toLocaleDateString('sv-SE', { timeZone: 'Asia/Bangkok' });
+  return { month, code: leave.requestCode ?? '' };
+}
+
 /** HR takes the request (รับเรื่องตรวจสอบ), then approves or rejects it from the row. */
-async function hrDecide(page: Page, date: string, action: 'approve' | 'reject', reason = '') {
+async function hrDecide(page: Page, id: string, action: 'approve' | 'reject', reason = '') {
+  const { month, code } = await submittedRow(id);
   await page.goto('/dashboard/hr/approval');
   await settle(page);
-  await pickMonth(page, date);
-  const row = page.locator('tbody tr').first();
+  await pickMonth(page, month);
+  const row = page.locator('tbody tr').filter({ hasText: code }).first();
   await row.getByRole('button', { name: 'รับเรื่องตรวจสอบ' }).click();
   if (action === 'approve') {
     await row.getByRole('button', { name: 'อนุมัติ', exact: true }).click();
@@ -72,12 +84,13 @@ async function hrDecide(page: Page, date: string, action: 'approve' | 'reject', 
   }
 }
 
-/** Department head approves or rejects the only request of that month. */
-async function managerDecide(page: Page, date: string, action: 'approve' | 'reject', reason = '') {
+/** Department head approves or rejects the request (found by its code). */
+async function managerDecide(page: Page, id: string, action: 'approve' | 'reject', reason = '') {
+  const { month, code } = await submittedRow(id);
   await page.goto('/dashboard/manager/approve');
   await settle(page);
-  await pickMonth(page, date);
-  const row = page.locator('tbody tr').filter({ hasText: 'สมศักดิ์' }).first();
+  await pickMonth(page, month);
+  const row = page.locator('tbody tr').filter({ hasText: code }).first();
   if (action === 'approve') {
     await row.getByRole('button', { name: 'อนุมัติ', exact: true }).click();
     await page.locator('.swal2-confirm').click();
@@ -97,11 +110,11 @@ test('employee files leave → HR approves → manager approves → APPROVED', a
   await expect(page.getByText('รอฝ่ายบุคคลตรวจสอบ').first()).toBeVisible();
 
   await loginAs(page, 'hr');
-  await hrDecide(page, dates[0], 'approve');
+  await hrDecide(page, id, 'approve');
   await expect.poll(() => leaveStatus(id)).toBe('PENDING_SUPERVISOR');
 
   await loginAs(page, 'manager');
-  await managerDecide(page, dates[0], 'approve');
+  await managerDecide(page, id, 'approve');
   await expect.poll(() => leaveStatus(id)).toBe('APPROVED');
 
   await loginAs(page, 'employee');
@@ -119,7 +132,7 @@ test('HR rejects with a reason → REJECTED', async ({ page }) => {
   const id = await fileLeaveViaForm(page, dates[1], 'ธุระ (e2e HR ไม่อนุมัติ)');
 
   await loginAs(page, 'hr');
-  await hrDecide(page, dates[1], 'reject', 'เอกสารไม่ครบ (e2e)');
+  await hrDecide(page, id, 'reject', 'เอกสารไม่ครบ (e2e)');
   await expect.poll(() => leaveStatus(id)).toBe('REJECTED');
 
   await loginAs(page, 'employee');
@@ -136,11 +149,11 @@ test('manager rejects with a reason → REJECTED', async ({ page }) => {
   const id = await fileLeaveViaForm(page, dates[2], 'ธุระ (e2e หัวหน้าไม่อนุมัติ)');
 
   await loginAs(page, 'hr');
-  await hrDecide(page, dates[2], 'approve');
+  await hrDecide(page, id, 'approve');
   await expect.poll(() => leaveStatus(id)).toBe('PENDING_SUPERVISOR');
 
   await loginAs(page, 'manager');
-  await managerDecide(page, dates[2], 'reject', 'ช่วงนั้นงานเร่ง (e2e)');
+  await managerDecide(page, id, 'reject', 'ช่วงนั้นงานเร่ง (e2e)');
   await expect.poll(() => leaveStatus(id)).toBe('REJECTED');
 
   await loginAs(page, 'employee');
@@ -148,6 +161,29 @@ test('manager rejects with a reason → REJECTED', async ({ page }) => {
   await settle(page);
   await expect(page.getByText('หัวหน้าแผนกไม่อนุมัติคำขอ').first()).toBeVisible();
   await expect(page.getByText('หมายเหตุ: ช่วงนั้นงานเร่ง (e2e)')).toBeVisible();
+  expect(errors.problems, errors.problems.join('\n')).toEqual([]);
+});
+
+test('[D-06] an expired access token is refreshed when filing leave (no session-expired popup)', async ({ page }) => {
+  const errors = watchForErrors(page);
+  await loginAs(page, 'employee');
+  await page.goto('/dashboard/user/request');
+  await settle(page);
+  await page.locator('select').first().selectOption(await leaveTypeId('ลาป่วย'));
+  await fillDate(page, 'วันที่เริ่มต้น', dates[4]);
+  await fillDate(page, 'วันที่สิ้นสุด', dates[4]);
+  await page.getByPlaceholder('ระบุเหตุผลที่ชัดเจน...').fill('ไม่สบาย (e2e token หมดอายุ)');
+
+  // An unusable access token behaves like an expired one (401); the refresh token is still valid.
+  await page.evaluate(() => sessionStorage.setItem('accessToken', 'expired.access.token'));
+  await page.getByRole('button', { name: 'ส่งคำขอลา' }).click();
+  await page.getByRole('button', { name: 'ยืนยัน', exact: true }).click();
+
+  await page.waitForURL('**/dashboard/user/status');
+  const leave = await latestLeaveOf('employee');
+  expect(leave.reason).toBe('ไม่สบาย (e2e token หมดอายุ)');
+  expect(leave.status).toBe('PENDING_VERIFY');
+  expect(await page.evaluate(() => sessionStorage.getItem('accessToken'))).not.toBe('expired.access.token');
   expect(errors.problems, errors.problems.join('\n')).toEqual([]);
 });
 

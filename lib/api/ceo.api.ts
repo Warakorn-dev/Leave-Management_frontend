@@ -11,14 +11,6 @@ export const ceoApi = {
     const response = await axiosInstance.get(`/ceo/report/stats${query}`);
     return response.data;
   },
-
-  approveLeave: async (leaveId: string): Promise<ApiResponse<unknown>> => {
-    const response = await axiosInstance.put(`/ceo/approve/${leaveId}`);
-    return response.data;
-  },
-
-  rejectLeave: async (leaveId: string, reason?: string): Promise<ApiResponse<unknown>> => {
-    const response = await axiosInstance.put(`/ceo/reject/${leaveId}`, { reason });
-    return response.data;
-  }
+  // CEO approve/reject live in app/dashboard/ceo/approval/page.tsx (D-09: the old
+  // helpers here sent `reason` instead of `comment` and were never used).
 };
