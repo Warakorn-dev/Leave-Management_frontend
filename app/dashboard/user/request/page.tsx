@@ -10,6 +10,7 @@ import { DatePicker, compactDateFieldSx } from "@/components/DateAndTime";
 import { LeaveTimePicker } from "@/components/LeaveTimePicker";
 import { userApi, uploadApi } from "@/lib/api";
 import { LeaveDayAvailabilityPreview } from "@/components/LeaveDayAvailabilityPreview";
+import { AttachmentPreviewModal } from "@/components/AttachmentPreviewModal";
 import { buildTakenMap, isDayUnavailable } from "@/lib/leavePortions";
 import { getErrorMessage } from "@/lib/api/utils";
 import type { CreateLeavePayload } from "@/hooks/useLeave";
@@ -57,6 +58,7 @@ export default function RequestLeavePage() {
   } | null>(null);
   const [attachmentFile, setAttachmentFile] = useState<File | null>(null);
   const [attachmentName, setAttachmentName] = useState<string | null>(null);
+  const [showAttachmentPreview, setShowAttachmentPreview] = useState(false);
 
   const { useLeaveBalancesQuery } = useLeaveBalance();
   const { data: balancesData = [] } = useLeaveBalancesQuery();
@@ -434,6 +436,8 @@ export default function RequestLeavePage() {
                   onChange={(e) => {
                     if (e.target.files && e.target.files[0]) {
                       const file = e.target.files[0];
+                      // allow picking the same file again after it was removed
+                      e.target.value = "";
                       if (file.size > 2 * 1024 * 1024) {
                         setErrorMsg("ขนาดไฟล์ต้องไม่เกิน 2 MB");
                         setShowErrorModal(true);
@@ -446,7 +450,14 @@ export default function RequestLeavePage() {
                 />
               </div>
               {attachmentFile && (
-                <div className="mt-2 text-right">
+                <div className="mt-2 flex justify-end gap-4">
+                  <button
+                    type="button"
+                    onClick={() => setShowAttachmentPreview(true)}
+                    className="text-xs text-blue-600 hover:text-blue-800 underline"
+                  >
+                    ดูไฟล์
+                  </button>
                   <button 
                     type="button" 
                     onClick={() => {
@@ -474,6 +485,12 @@ export default function RequestLeavePage() {
           </form>
         </div>
       </div>
+
+      <AttachmentPreviewModal
+        file={attachmentFile}
+        open={showAttachmentPreview}
+        onClose={() => setShowAttachmentPreview(false)}
+      />
 
       {/* Confirmation Modal */}
       {showConfirmModal && (

@@ -16,6 +16,7 @@ import { LeaveTimePicker } from '@/components/LeaveTimePicker';
 import { userApi, uploadApi } from '@/lib/api';
 import { useLeaveType } from '@/hooks/useLeaveType';
 import { LeaveDayAvailabilityPreview } from '@/components/LeaveDayAvailabilityPreview';
+import { AttachmentPreviewModal } from '@/components/AttachmentPreviewModal';
 import { buildTakenMap, isDayUnavailable } from '@/lib/leavePortions';
 import type { CreateLeavePayload } from '@/hooks/useLeave';
 import { getErrorMessage } from '@/lib/api/utils';
@@ -55,6 +56,7 @@ export default function RequestLeavePage() {
   const [department, setDepartment] = useState('');
   const [position, setPosition] = useState('');
   const [attachmentFile, setAttachmentFile] = useState<File | null>(null);
+  const [showAttachmentPreview, setShowAttachmentPreview] = useState(false);
   const [attachmentName, setAttachmentName] = useState<string | null>(null);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
@@ -140,6 +142,8 @@ export default function RequestLeavePage() {
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
+      // allow picking the same file again after it was removed
+      e.target.value = '';
       if (file.size > 2 * 1024 * 1024) {
         alert('ขนาดไฟล์ต้องไม่เกิน 2 MB');
         return;
@@ -561,21 +565,33 @@ export default function RequestLeavePage() {
                   strokeWidth={2}
                 />
                 {attachmentName ? (
-                  <div className="text-center z-10">
+                  <div className="text-center relative z-20">
                     <p className="text-[14px] text-emerald-600 font-bold">
                       ✓ {attachmentName}
                     </p>
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setAttachmentName(null);
-                        setAttachmentFile(null);
-                      }}
-                      className="text-red-500 text-xs font-semibold mt-2 underline hover:text-red-700"
-                    >
-                      ลบไฟล์
-                    </button>
+                    <div className="flex items-center justify-center gap-4 mt-2">
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setShowAttachmentPreview(true);
+                        }}
+                        className="text-blue-600 text-xs font-semibold underline hover:text-blue-800"
+                      >
+                        ดูไฟล์
+                      </button>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setAttachmentName(null);
+                          setAttachmentFile(null);
+                        }}
+                        className="text-red-500 text-xs font-semibold underline hover:text-red-700"
+                      >
+                        ลบไฟล์
+                      </button>
+                    </div>
                   </div>
                 ) : (
                   <>
@@ -611,6 +627,12 @@ export default function RequestLeavePage() {
           </form>
         </div>
       </div>
+
+      <AttachmentPreviewModal
+        file={attachmentFile}
+        open={showAttachmentPreview}
+        onClose={() => setShowAttachmentPreview(false)}
+      />
 
       {/* Confirmation Modal */}
       {showConfirmModal && (
