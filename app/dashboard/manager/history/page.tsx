@@ -85,21 +85,6 @@ export default function LeaveHistoryPage() {
     endTime: '',
   });
   const [attachmentFile, setAttachmentFile] = useState<File | null>(null);
-  const [attachmentName, setAttachmentName] = useState<string | null>(null);
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
-      // allow picking the same file again after it was removed
-      e.target.value = '';
-      if (file.size > 2 * 1024 * 1024) {
-        alert('ขนาดไฟล์ต้องไม่เกิน 2 MB');
-        return;
-      }
-      setAttachmentName(file.name);
-      setAttachmentFile(file);
-    }
-  };
 
   const { useLeaveBalancesQuery } = useLeaveBalance();
   const { data: balances = [] } = useLeaveBalancesQuery();
@@ -390,7 +375,6 @@ export default function LeaveHistoryPage() {
           : '',
     });
     setAttachmentFile(null);
-    setAttachmentName(null);
     setIsEditing(true);
   };
 
@@ -798,19 +782,15 @@ export default function LeaveHistoryPage() {
             setIsEditing(false);
             setSelectedRequest(null);
             setAttachmentFile(null);
-            setAttachmentName(null);
-          }}
+                  }}
           showConfirmEdit={showConfirmEdit}
           setShowConfirmEdit={setShowConfirmEdit}
           onConfirmSave={confirmAndSave}
-          attachmentName={attachmentName}
+          allLeaves={Array.isArray(allLeaves) ? allLeaves : []}
+          excludeRequestId={selectedRequest?.id}
           attachmentFile={attachmentFile}
+          onAttachmentChange={setAttachmentFile}
           existingAttachment={getExistingAttachment(selectedRequest?.raw)}
-          onFileChange={handleFileChange}
-          onRemoveFile={() => {
-            setAttachmentFile(null);
-            setAttachmentName(null);
-          }}
         />
       )}
     </div>
