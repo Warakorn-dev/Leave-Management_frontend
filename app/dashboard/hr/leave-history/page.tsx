@@ -923,10 +923,7 @@ export default function LeaveHistoryPage() {
             viewMode === 'personal' &&
             !['cancelled', 'pending_cancellation'].includes(
               (selectedRequest.status || '').toLowerCase(),
-            ) &&
-            selectedRequest.raw?.startDate &&
-            new Date(selectedRequest.raw.startDate).setHours(0, 0, 0, 0) >
-              new Date().setHours(0, 0, 0, 0) ? (
+            ) ? (
               <>
                 <button
                   onClick={handleDelete}
