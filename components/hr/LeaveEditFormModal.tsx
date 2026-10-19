@@ -3,6 +3,8 @@
 import { Upload, Check } from 'lucide-react';
 import { DatePicker, compactDateFieldSx } from '@/components/DateAndTime';
 import { LeaveTimePicker } from '@/components/LeaveTimePicker';
+import { EditAttachmentStatus } from '@/components/EditAttachmentStatus';
+import type { ExistingAttachment } from '@/lib/leaveAttachment';
 
 export interface LeaveEditForm {
   type: string;
@@ -37,6 +39,12 @@ interface LeaveEditFormModalProps {
   setEditForm: React.Dispatch<React.SetStateAction<LeaveEditForm>>;
   balances: BalanceOption[];
   onFileChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  /** File picked in this form (replaces the stored file on save). */
+  newFile?: File | null;
+  /** File already stored with the leave being edited. */
+  existingAttachment?: ExistingAttachment | null;
+  /** Cancels the picked file. */
+  onRemoveFile: () => void;
   onSubmit: (e: React.FormEvent) => void;
   onClose: () => void;
   showConfirmEdit: boolean;
@@ -52,6 +60,9 @@ export function LeaveEditFormModal({
   setEditForm,
   balances,
   onFileChange,
+  newFile = null,
+  existingAttachment = null,
+  onRemoveFile,
   onSubmit,
   onClose,
   showConfirmEdit,
@@ -364,25 +375,14 @@ export function LeaveEditFormModal({
                   className="w-8 h-8 text-black mb-3 group-hover:-translate-y-1 transition-transform"
                   strokeWidth={2}
                 />
-                {editForm.attachmentName ? (
-                  <div className="text-center z-10">
+                {newFile ? (
+                  <div className="text-center">
                     <p className="text-[14px] text-emerald-600 font-bold">
-                      ✓ {editForm.attachmentName}
+                      ✓ {newFile.name}
                     </p>
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setEditForm((prev) => ({
-                          ...prev,
-                          attachment: null,
-                          attachmentName: null,
-                        }));
-                      }}
-                      className="text-red-500 text-xs font-semibold mt-2 underline hover:text-red-700"
-                    >
-                      ลบไฟล์
-                    </button>
+                    <p className="text-[11px] text-gray-400 mt-1">
+                      คลิกเพื่อเปลี่ยนไฟล์
+                    </p>
                   </div>
                 ) : (
                   <>
@@ -403,6 +403,11 @@ export function LeaveEditFormModal({
                   className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                 />
               </div>
+              <EditAttachmentStatus
+                newFile={newFile}
+                existing={existingAttachment}
+                onRemoveNew={onRemoveFile}
+              />
             </div>
 
             {/* Submit Button */}

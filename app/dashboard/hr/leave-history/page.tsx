@@ -29,6 +29,7 @@ const endOfMonth = () => {
 };
 import { getLeaveStatusBadgeColor, getLeaveStatusText, getErrorMessage } from '@/lib/api/utils';
 import { LeaveDetailModal } from '@/components/LeaveDetailModal';
+import { getExistingAttachment } from '@/lib/leaveAttachment';
 import { LeaveEditFormModal } from '@/components/hr/LeaveEditFormModal';
 
 export default function LeaveHistoryPage() {
@@ -370,6 +371,8 @@ export default function LeaveHistoryPage() {
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
+    // allow picking the same file again after it was removed
+    e.target.value = '';
     if (file) {
       if (file.size > 2 * 1024 * 1024) {
         alert('ขนาดไฟล์ต้องไม่เกิน 2 MB');
@@ -989,6 +992,16 @@ export default function LeaveHistoryPage() {
           setEditForm={setEditForm}
           balances={balances}
           onFileChange={handleFileChange}
+          newFile={editFile}
+          existingAttachment={getExistingAttachment(selectedRequest?.raw)}
+          onRemoveFile={() => {
+            setEditFile(null);
+            setEditForm((prev) => ({
+              ...prev,
+              attachment: null,
+              attachmentName: null,
+            }));
+          }}
           onSubmit={handleSaveEdit}
           onClose={() => {
             setIsEditing(false);

@@ -20,6 +20,7 @@ import { buildTakenMap, isDayUnavailable } from '@/lib/leavePortions';
 import type { LeaveMode, DayPortion } from '@/lib/leavePortions';
 import { LeaveDetailModal } from '@/components/LeaveDetailModal';
 import { UserLeaveEditFormModal } from '@/components/user/UserLeaveEditFormModal';
+import { getExistingAttachment } from '@/lib/leaveAttachment';
 
 export default function LeaveHistoryPage() {
   interface MappedRequest {
@@ -708,6 +709,7 @@ export default function LeaveHistoryPage() {
           onConflictChange={setEditHasConflict}
           editAttachment={editAttachment}
           setEditAttachment={setEditAttachment}
+          existingAttachment={getExistingAttachment(selectedRequest?.raw)}
           onSubmit={handleSaveEdit}
           onClose={() => {
             setIsEditing(false);

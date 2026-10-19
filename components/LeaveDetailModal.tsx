@@ -10,6 +10,7 @@ import {
   Download,
 } from 'lucide-react';
 import { getLeaveStatusText, getLeaveStatusBadgeColor } from '@/lib/api/utils';
+import { resolveAttachmentSrc } from '@/lib/leaveAttachment';
 
 /**
  * The one leave-detail modal for the whole system.
@@ -245,13 +246,6 @@ interface Props {
   /** extra content appended to the body, e.g. an approver-comment field */
   bodyExtra?: ReactNode;
   title?: string;
-}
-
-function resolveAttachmentSrc(filePath?: string): string {
-  if (!filePath) return '';
-  if (filePath.startsWith('data:') || filePath.startsWith('http'))
-    return filePath;
-  return `/${filePath.replace(/^\/+/, '')}`;
 }
 
 export function LeaveDetailModal({

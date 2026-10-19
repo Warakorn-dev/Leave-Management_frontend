@@ -7,6 +7,8 @@ import { LeaveDayAvailabilityPreview } from '@/components/LeaveDayAvailabilityPr
 import type { LeaveMode, DayPortion } from '@/lib/leavePortions';
 import type { Leave } from '@/lib/api/types';
 import type { LeaveBalance } from '@/hooks/useLeaveBalance';
+import { EditAttachmentStatus } from '@/components/EditAttachmentStatus';
+import type { ExistingAttachment } from '@/lib/leaveAttachment';
 
 /** DatePicker onChange can hand back a dayjs-like object or a plain date string. */
 export function formatPickerValue(val: unknown): string {
@@ -46,6 +48,8 @@ interface UserLeaveEditFormModalProps {
   onConflictChange: (hasConflict: boolean) => void;
   editAttachment: File | null;
   setEditAttachment: (file: File | null) => void;
+  /** File already stored with the leave being edited. */
+  existingAttachment?: ExistingAttachment | null;
   onSubmit: (e: React.FormEvent) => void;
   onClose: () => void;
   showConfirmEdit: boolean;
@@ -66,6 +70,7 @@ export function UserLeaveEditFormModal({
   onConflictChange,
   editAttachment,
   setEditAttachment,
+  existingAttachment = null,
   onSubmit,
   onClose,
   showConfirmEdit,
@@ -350,12 +355,23 @@ export function UserLeaveEditFormModal({
                   className="hidden"
                   accept=".pdf,.png,.jpg,.jpeg"
                   onChange={(e) => {
-                    if (e.target.files && e.target.files[0]) {
-                      setEditAttachment(e.target.files[0]);
+                    const file = e.target.files?.[0];
+                    // allow picking the same file again after it was removed
+                    e.target.value = '';
+                    if (!file) return;
+                    if (file.size > 2 * 1024 * 1024) {
+                      alert('ขนาดไฟล์ต้องไม่เกิน 2 MB');
+                      return;
                     }
+                    setEditAttachment(file);
                   }}
                 />
               </label>
+              <EditAttachmentStatus
+                newFile={editAttachment}
+                existing={existingAttachment}
+                onRemoveNew={() => setEditAttachment(null)}
+              />
             </div>
 
             {/* Submit Button */}

@@ -22,6 +22,7 @@ import {
 } from '@/lib/api/utils';
 import type { Leave } from '@/lib/api/types';
 import { LeaveDetailModal } from '@/components/LeaveDetailModal';
+import { getExistingAttachment } from '@/lib/leaveAttachment';
 import { ManagerLeaveEditFormModal } from '@/components/manager/ManagerLeaveEditFormModal';
 import { uploadApi } from '@/lib/api';
 
@@ -89,6 +90,8 @@ export default function LeaveHistoryPage() {
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
+      // allow picking the same file again after it was removed
+      e.target.value = '';
       if (file.size > 2 * 1024 * 1024) {
         alert('ขนาดไฟล์ต้องไม่เกิน 2 MB');
         return;
@@ -801,6 +804,8 @@ export default function LeaveHistoryPage() {
           setShowConfirmEdit={setShowConfirmEdit}
           onConfirmSave={confirmAndSave}
           attachmentName={attachmentName}
+          attachmentFile={attachmentFile}
+          existingAttachment={getExistingAttachment(selectedRequest?.raw)}
           onFileChange={handleFileChange}
           onRemoveFile={() => {
             setAttachmentFile(null);
