@@ -369,29 +369,6 @@ export default function LeaveHistoryPage() {
     setIsEditing(true);
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    // allow picking the same file again after it was removed
-    e.target.value = '';
-    if (file) {
-      if (file.size > 2 * 1024 * 1024) {
-        alert('ขนาดไฟล์ต้องไม่เกิน 2 MB');
-        return;
-      }
-      setEditFile(file);
-      setEditForm((prev) => ({ ...prev, attachmentName: file.name }));
-
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setEditForm((prev) => ({
-          ...prev,
-          attachment: reader.result as string,
-        }));
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
   const handleSaveEdit = (e: React.FormEvent) => {
     e.preventDefault();
     if (editForm.leaveMode === 'hourly') {
@@ -991,17 +968,17 @@ export default function LeaveHistoryPage() {
           editForm={editForm}
           setEditForm={setEditForm}
           balances={balances}
-          onFileChange={handleFileChange}
+          allLeaves={Array.isArray(allLeaves) ? allLeaves : []}
           newFile={editFile}
-          existingAttachment={getExistingAttachment(selectedRequest?.raw)}
-          onRemoveFile={() => {
-            setEditFile(null);
+          onAttachmentChange={(file) => {
+            setEditFile(file);
             setEditForm((prev) => ({
               ...prev,
               attachment: null,
-              attachmentName: null,
+              attachmentName: file ? file.name : null,
             }));
           }}
+          existingAttachment={getExistingAttachment(selectedRequest?.raw)}
           onSubmit={handleSaveEdit}
           onClose={() => {
             setIsEditing(false);
