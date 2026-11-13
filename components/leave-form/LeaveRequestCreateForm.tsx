@@ -12,6 +12,7 @@ import { useRouter } from 'next/navigation';
 import { Check, X, FilePlus2 } from 'lucide-react';
 import { useLeaveBalance } from '@/hooks/useLeaveBalance';
 import { useLeave, type CreateLeavePayload } from '@/hooks/useLeave';
+import { useLeavePreview } from '@/hooks/useLeavePreview';
 import { userApi, uploadApi } from '@/lib/api';
 import { buildTakenMap, isDayUnavailable, type LeaveMode, type DayPortion } from '@/lib/leavePortions';
 import { getErrorMessage } from '@/lib/api/utils';
@@ -21,6 +22,7 @@ import {
   type LeaveFormValues,
 } from './LeaveFormFields';
 import { LeaveAttachmentField } from './LeaveAttachmentField';
+import { LeavePreviewNotice } from './LeavePreviewNotice';
 import { RequesterInfoBox } from './RequesterInfoBox';
 
 interface Props {
@@ -60,6 +62,7 @@ export function LeaveRequestCreateForm({
   const { mutateAsync: createLeave } = useCreateLeaveMutation();
   const { data: holidaysData = [] } = useHolidaysQuery();
   const { data: myLeaves = [] } = useLeavesQuery();
+  const preview = useLeavePreview(form);
 
   const currentUserId =
     typeof window !== 'undefined' ? sessionStorage.getItem('userId') : '';
@@ -128,6 +131,11 @@ export function LeaveRequestCreateForm({
           'บางวันในช่วงที่เลือกทับซ้อนกับการลาเดิมของคุณ กรุณาปรับช่วงวันที่ หรือเปลี่ยนรูปแบบการลาให้ตรงกับช่วงเวลาที่ยังว่าง (ดูรายละเอียดรายวันในแบบฟอร์ม)',
         );
       }
+    }
+
+    // The server's dry run already said this request would be refused.
+    if (preview && !preview.ok) {
+      return showError(preview.message || 'ไม่สามารถยื่นคำขอลาตามที่เลือกได้');
     }
 
     if (!reason) return showError('กรุณากรอกเหตุผลการลา');
@@ -221,7 +229,15 @@ export function LeaveRequestCreateForm({
               currentUserId={currentUserId}
               holidays={holidaysData}
               onConflictChange={setHasRangeConflict}
+              afterDates={<LeavePreviewNotice preview={preview} />}
             />
+
+            {/* Hourly leave is switched off here; its fields sit elsewhere, so the notice keeps its old place. */}
+            {leaveMode === 'hourly' && (
+              <div className="mb-6">
+                <LeavePreviewNotice preview={preview} />
+              </div>
+            )}
 
             <LeaveAttachmentField
               file={attachmentFile}

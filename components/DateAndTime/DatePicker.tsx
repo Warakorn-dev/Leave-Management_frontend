@@ -5,7 +5,7 @@
 import React from 'react';
 import { Box, Typography } from '@mui/material';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
-import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
+import { AdapterDayjsBuddhist } from './AdapterDayjsBuddhist';
 import { DatePicker as MuiDatePicker } from '@mui/x-date-pickers/DatePicker';
 import { StaticDatePicker } from '@mui/x-date-pickers/StaticDatePicker';
 import { MobileDatePicker } from '@mui/x-date-pickers/MobileDatePicker';
@@ -20,23 +20,6 @@ import { useHolidaysQuery } from '@/hooks/useLeave';
 // Initialize dayjs plugins
 dayjs.extend(customParseFormat);
 dayjs.extend(buddhistEra);
-
-class AdapterDayjsBuddhist extends AdapterDayjs {
-  constructor(options) {
-    super(options);
-    this.formatTokenMap = {
-      ...this.formatTokenMap,
-      BBBB: 'year',
-      BB: 'year',
-    };
-    this.formats = {
-      ...this.formats,
-      year: 'BBBB',
-      monthAndYear: 'MMMM BBBB',
-      keyboardDate: 'DD/MM/BBBB',
-    };
-  }
-}
 
 // Common styles to enforce EPP's premium purple design
 const getPickerStyles = (borderless = false, customSx = {}) => {

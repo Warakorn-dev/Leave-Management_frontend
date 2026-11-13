@@ -16,7 +16,12 @@ interface OptionInfo {
   disabled: boolean;
 }
 
-/** Label rules of the employee create page: tenure, used-up quota, remaining + pending. */
+/**
+ * Label rules of the employee create page: tenure, used-up quota, remaining +
+ * pending. Only unmet tenure disables a type; a used-up quota just warns,
+ * because the balance shown is for the current year while the server checks
+ * the year the leave starts in.
+ */
 export function describeBalance(b: LeaveBalance): Omit<OptionInfo, 'id'> {
   const name = b.leaveType?.name || 'ไม่ระบุ';
   const isOutOfQuota = (b.effectiveRemainingDays ?? 0) <= 0;
@@ -39,13 +44,15 @@ export function describeBalance(b: LeaveBalance): Omit<OptionInfo, 'id'> {
         : requiredTenure + ' วัน'
     })`;
   } else if (isOutOfQuota) {
-    label += '(หมดโควตา)';
+    // Only a warning: the balance shown is this year's, but the leave may start
+    // next year (or run into it), and the server checks the right year.
+    label += '(หมดโควตาปีนี้)';
   } else {
     const pending =
       (b.pendingDays ?? 0) > 0 ? ` + รออนุมัติ ${b.pendingDays} วัน` : '';
     label += `(เหลือ ${b.effectiveRemainingDays ?? b.remainingDays ?? 0} วัน${pending})`;
   }
-  return { label, disabled: isOutOfQuota || isTenureNotMet };
+  return { label, disabled: isTenureNotMet };
 }
 
 interface Props {

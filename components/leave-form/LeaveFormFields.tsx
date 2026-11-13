@@ -7,6 +7,7 @@
  * (app/dashboard/user/request), which is the reference design.
  */
 
+import type { ReactNode } from 'react';
 import { DatePicker, compactDateFieldSx } from '@/components/DateAndTime';
 import { LeaveTimePicker } from '@/components/LeaveTimePicker';
 import { LeaveDayAvailabilityPreview } from '@/components/LeaveDayAvailabilityPreview';
@@ -82,6 +83,8 @@ interface Props {
    * An existing hourly leave still shows its hourly fields when edited.
    */
   allowHourly?: boolean;
+  /** Shown right under the per-day availability box (full-day and half-day modes). */
+  afterDates?: ReactNode;
 }
 
 export function LeaveFormFields({
@@ -96,6 +99,7 @@ export function LeaveFormFields({
   holidays,
   onConflictChange,
   allowHourly = false,
+  afterDates,
 }: Props) {
   const { leaveMode, period } = values;
   const showHourlyOption = allowHourly || leaveMode === 'hourly';
@@ -248,6 +252,7 @@ export function LeaveFormFields({
               holidays={holidays}
               onConflictChange={onConflictChange}
             />
+            {afterDates && <div className="md:col-span-2">{afterDates}</div>}
           </>
         )}
       </div>

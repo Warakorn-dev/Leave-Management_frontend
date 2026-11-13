@@ -5,7 +5,7 @@
 import React, { useRef, useEffect } from 'react';
 import { Box, Typography, Button } from '@mui/material';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
-import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
+import { AdapterDayjsBuddhist } from './AdapterDayjsBuddhist';
 import { DateTimePicker as MuiDateTimePicker } from '@mui/x-date-pickers/DateTimePicker';
 import { StaticDatePicker } from '@mui/x-date-pickers/StaticDatePicker';
 import dayjs from 'dayjs';
@@ -16,23 +16,6 @@ import buddhistEra from 'dayjs/plugin/buddhistEra';
 // Initialize dayjs plugins
 dayjs.extend(customParseFormat);
 dayjs.extend(buddhistEra);
-
-class AdapterDayjsBuddhist extends AdapterDayjs {
-  constructor(options) {
-    super(options);
-    this.formatTokenMap = {
-      ...this.formatTokenMap,
-      BBBB: 'year',
-      BB: 'year',
-    };
-    this.formats = {
-      ...this.formats,
-      year: 'BBBB',
-      monthAndYear: 'MMMM BBBB',
-      keyboardDate: 'DD/MM/BBBB',
-    };
-  }
-}
 
 // Styling matching EPP's signature purple theme
 const pickerStyles = {
