@@ -10,7 +10,12 @@ import {
   Download,
 } from 'lucide-react';
 import { getLeaveStatusText, getLeaveStatusBadgeColor } from '@/lib/api/utils';
-import { resolveAttachmentSrc } from '@/lib/leaveAttachment';
+import {
+  attachmentSource,
+  downloadAttachment,
+  isImageAttachment,
+  type StoredAttachment,
+} from '@/lib/leaveAttachment';
 
 /**
  * The one leave-detail modal for the whole system.
@@ -94,7 +99,7 @@ interface RawLeaveInput {
   startDate?: string | Date;
   endDate?: string | Date;
   leaveHours?: number;
-  attachments?: Array<{ filePath?: string; fileType?: string }>;
+  attachments?: StoredAttachment[];
   attachmentUrl?: string;
   approvals?: Array<{ comment?: string }>;
   approverReason?: string;
@@ -119,7 +124,7 @@ export interface NormalizedLeave {
   formatText: string;
   reason: string;
   status: string;
-  attachments: Array<{ filePath?: string; fileType?: string }>;
+  attachments: StoredAttachment[];
   approverComment: string | null;
   createdAt?: string | Date | null;
   updatedAt?: string | Date | null;
@@ -193,7 +198,7 @@ export function normalizeLeave(
   else if (startFormat === 'afternoon') formatText = 'ครึ่งวันบ่าย';
 
   // Attachments: either a relation array, or a single legacy url field.
-  let attachments: Array<{ filePath?: string; fileType?: string }> = [];
+  let attachments: StoredAttachment[] = [];
   if (Array.isArray(leave?.attachments) && leave.attachments.length > 0) {
     attachments = leave.attachments;
   } else if (leave?.attachmentUrl) {
@@ -265,6 +270,23 @@ export function LeaveDetailModal({
     url: string;
     isImage: boolean;
   } | null>(null);
+  const [attachmentBusy, setAttachmentBusy] = useState(false);
+
+  /** Runs `onReady` with an address for `att`, loading its content first when the list did not carry it. */
+  const withAttachment = async (
+    att: StoredAttachment,
+    onReady: (src: string) => void,
+  ) => {
+    if (attachmentBusy) return;
+    setAttachmentBusy(true);
+    try {
+      onReady(await attachmentSource(att));
+    } catch {
+      // A failed request is already reported by the axios interceptor.
+    } finally {
+      setAttachmentBusy(false);
+    }
+  };
 
   if (!open || !leave) return null;
 
@@ -394,41 +416,48 @@ export function LeaveDetailModal({
                     {info.attachments.length > 0 ? (
                       <div className="flex flex-col gap-2 min-w-0 flex-1">
                         {info.attachments.map((att, idx) => {
-                          const src = resolveAttachmentSrc(att.filePath);
-                          const isImage = Boolean(
-                            att.fileType?.startsWith('image/') ||
-                              att.filePath?.match(/\.(jpeg|jpg|gif|png)$/i),
+                          const isImage = isImageAttachment(
+                            att.filePath,
+                            att.fileType,
                           );
+                          const label = `${isImage ? 'รูปภาพแนบ' : 'ไฟล์แนบ'}${
+                            info.attachments.length > 1 ? ` (${idx + 1})` : ''
+                          }`;
                           return (
                             <div
-                              key={idx}
+                              key={att.id ?? idx}
                               className="flex items-center justify-between gap-2"
                             >
                               <button
                                 type="button"
                                 aria-label="เปิดดูไฟล์แนบ"
-                                className="text-blue-500 hover:text-blue-700 hover:underline font-medium truncate text-[13px] text-left"
-                                onClick={() => setPreview({ url: src, isImage })}
+                                disabled={attachmentBusy}
+                                className="text-blue-500 hover:text-blue-700 hover:underline font-medium truncate text-[13px] text-left disabled:opacity-60 disabled:cursor-wait"
+                                onClick={() =>
+                                  withAttachment(att, (url) =>
+                                    setPreview({ url, isImage }),
+                                  )
+                                }
                               >
-                                {isImage ? 'รูปภาพแนบ' : 'ไฟล์แนบ'}
-                                {info.attachments.length > 1
-                                  ? ` (${idx + 1})`
-                                  : ''}
+                                {label}
                               </button>
-                              <a
-                                href={src}
-                                download
-                                target="_blank"
-                                rel="noopener noreferrer"
+                              <button
+                                type="button"
                                 aria-label="ดาวน์โหลดไฟล์แนบ"
-                                onClick={(e) => e.stopPropagation()}
-                                className="p-1.5 border border-gray-300 rounded-md hover:bg-gray-100 text-black shrink-0"
+                                disabled={attachmentBusy}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  withAttachment(att, (url) =>
+                                    downloadAttachment(url, label),
+                                  );
+                                }}
+                                className="p-1.5 border border-gray-300 rounded-md hover:bg-gray-100 text-black shrink-0 disabled:opacity-60 disabled:cursor-wait"
                               >
                                 <Download
                                   className="w-[14px] h-[14px]"
                                   strokeWidth={2.5}
                                 />
-                              </a>
+                              </button>
                             </div>
                           );
                         })}

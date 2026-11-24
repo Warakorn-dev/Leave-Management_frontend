@@ -16,7 +16,6 @@ interface AddPositionModalProps {
   setForm: React.Dispatch<React.SetStateAction<NewPositionForm>>;
   departments: Department[];
   roles: Role[];
-  hasManager: boolean;
   onClose: () => void;
   onSubmit: () => void;
 }
@@ -27,7 +26,6 @@ export function AddPositionModal({
   setForm,
   departments,
   roles,
-  hasManager,
   onClose,
   onSubmit,
 }: AddPositionModalProps) {

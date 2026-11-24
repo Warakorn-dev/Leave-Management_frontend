@@ -2,12 +2,15 @@
 
 import { useEffect, useState } from 'react';
 import { X } from 'lucide-react';
+import { loadAttachmentDataUrl } from '@/lib/leaveAttachment';
 
 type Props = {
   /** A file picked on this page (not uploaded yet). Takes priority over `url`. */
   file?: File | null;
   /** A file already stored on the server (see lib/leaveAttachment.ts). */
   url?: string | null;
+  /** Server id of a stored file whose content is not loaded yet (used when `url` is empty). */
+  attachmentId?: string | null;
   /** Display name for `url`; a picked `file` uses its own name. */
   name?: string;
   /** For `url`: whether it is an image. Guessed from the address when omitted. */
@@ -26,12 +29,35 @@ type Props = {
 export function AttachmentPreviewModal({
   file,
   url,
+  attachmentId,
   name,
   isImage,
   open,
   onClose,
 }: Props) {
   const [objectUrl, setObjectUrl] = useState<string | null>(null);
+  const [loaded, setLoaded] = useState<{ id: string; url: string } | null>(
+    null,
+  );
+  const [loadFailed, setLoadFailed] = useState(false);
+
+  // A stored file listed without its content is fetched when opened.
+  const needsLoad = open && !file && !url && Boolean(attachmentId);
+  useEffect(() => {
+    if (!needsLoad || !attachmentId || loaded?.id === attachmentId) return;
+    let cancelled = false;
+    setLoadFailed(false);
+    loadAttachmentDataUrl(attachmentId)
+      .then((dataUrl) => {
+        if (!cancelled) setLoaded({ id: attachmentId, url: dataUrl });
+      })
+      .catch(() => {
+        if (!cancelled) setLoadFailed(true);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [needsLoad, attachmentId, loaded?.id]);
 
   // Created inside the effect (not useMemo) so React Strict Mode's double
   // effect run cannot revoke a URL that is still on screen.
@@ -54,8 +80,33 @@ export function AttachmentPreviewModal({
     return () => window.removeEventListener('keydown', onKey);
   }, [open, onClose]);
 
-  const src = file ? objectUrl : url || null;
-  if (!open || !src) return null;
+  const storedUrl =
+    url || (loaded && loaded.id === attachmentId ? loaded.url : null);
+  const src = file ? objectUrl : storedUrl;
+  if (!open) return null;
+  if (!src) {
+    if (!needsLoad) return null;
+    return (
+      <div
+        className="fixed inset-0 z-[140] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm"
+        onClick={onClose}
+      >
+        <div
+          className="bg-white rounded-[24px] px-8 py-6 shadow-2xl text-sm text-gray-600 flex flex-col items-center gap-3"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <p>{loadFailed ? 'โหลดไฟล์แนบไม่สำเร็จ' : 'กำลังโหลดไฟล์แนบ…'}</p>
+          <button
+            type="button"
+            onClick={onClose}
+            className="text-xs text-blue-600 underline hover:text-blue-800"
+          >
+            ปิด
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   const title = file ? file.name : name || 'ไฟล์แนบ';
   const showAsImage = file

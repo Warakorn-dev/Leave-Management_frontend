@@ -1,6 +1,7 @@
 'use client';
 
 import type { LeaveBalance } from '@/hooks/useLeaveBalance';
+import { isVacationType } from '@/lib/leaveRule';
 
 /** Sick, personal, vacation first; the rest in Thai alphabetical order. */
 function typeOrder(name: string): number {
@@ -26,7 +27,7 @@ export function describeBalance(b: LeaveBalance): Omit<OptionInfo, 'id'> {
   const name = b.leaveType?.name || 'ไม่ระบุ';
   const isOutOfQuota = (b.effectiveRemainingDays ?? 0) <= 0;
 
-  const isVacation = name.includes('พักร้อน') || name.includes('พักผ่อน');
+  const isVacation = isVacationType(b.leaveType);
   const requiredTenure = isVacation ? 365 : (b.leaveType?.minTenureDays ?? 0);
   let isTenureNotMet = false;
   if (requiredTenure > 0 && b.employeeHireDate) {

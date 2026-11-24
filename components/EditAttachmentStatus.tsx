@@ -88,6 +88,7 @@ export function EditAttachmentStatus({ newFile, existing, onRemoveNew }: Props) 
         onClose={() => setPreview(null)}
         file={preview === 'new' ? newFile : null}
         url={preview === 'existing' ? existing?.url : null}
+        attachmentId={preview === 'existing' ? existing?.id : null}
         name={existing?.name}
         isImage={existing?.isImage}
       />

@@ -3,6 +3,8 @@
 import { X, User, Calendar as CalendarIcon, Clock } from 'lucide-react';
 import { formatLeaveDateRange, formatLeaveDuration } from '@/lib/leaveDuration';
 import type { Leave, Employee } from '@/lib/api/types';
+import { useState } from 'react';
+import { attachmentSource } from '@/lib/leaveAttachment';
 
 interface CeoLeaveDetailModalProps {
   leave: Leave;
@@ -20,6 +22,11 @@ export function CeoLeaveDetailModal({
   onClose,
   onViewAttachment,
 }: CeoLeaveDetailModalProps) {
+  const [loadingAttachment, setLoadingAttachment] = useState(false);
+  // Current lists carry `attachments: [{ id, fileType }]`; the content is
+  // loaded on click. Older payloads carry it inline.
+  const stored = leave.attachments?.[0];
+  const legacy = leave.attachmentUrl || leave.attachment;
   const empName = employee
     ? `${employee.firstName} ${employee.lastName}`
     : leave.employeeName || leave.userId || 'ไม่ระบุชื่อ';
@@ -148,15 +155,24 @@ export function CeoLeaveDetailModal({
                     </svg>
                   </span>
                   <span className="font-bold min-w-[80px]">เอกสารแนบ:</span>
-                  {leave.attachmentUrl || leave.attachment ? (
+                  {stored || legacy ? (
                     <button
-                      onClick={() => {
-                        const base64 = leave.attachmentUrl || leave.attachment;
-                        if (base64) onViewAttachment(base64);
+                      disabled={loadingAttachment}
+                      onClick={async () => {
+                        if (legacy) return onViewAttachment(legacy);
+                        if (!stored) return;
+                        setLoadingAttachment(true);
+                        try {
+                          onViewAttachment(await attachmentSource(stored));
+                        } catch {
+                          // Reported by the axios interceptor.
+                        } finally {
+                          setLoadingAttachment(false);
+                        }
                       }}
-                      className="text-blue-600 font-bold hover:underline ml-2"
+                      className="text-blue-600 font-bold hover:underline ml-2 disabled:opacity-60 disabled:cursor-wait"
                     >
-                      ดูเอกสารแนบ
+                      {loadingAttachment ? 'กำลังโหลด…' : 'ดูเอกสารแนบ'}
                     </button>
                   ) : (
                     '-'

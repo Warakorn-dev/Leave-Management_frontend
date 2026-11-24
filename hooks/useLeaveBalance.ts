@@ -4,7 +4,7 @@ import axiosInstance from '@/lib/api/axios';
 export interface LeaveBalance {
   id?: string;
   leaveTypeId?: string;
-  leaveType?: { id?: string; name?: string; minTenureDays?: number; [key: string]: unknown };
+  leaveType?: { id?: string; name?: string; minTenureDays?: number; rule?: string; [key: string]: unknown };
   remainingDays?: number;
   totalDays?: number;
   usedDays?: number;

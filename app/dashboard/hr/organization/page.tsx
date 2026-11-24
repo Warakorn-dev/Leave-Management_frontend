@@ -667,7 +667,6 @@ export default function OrganizationManagementPage() {
           setForm={setNewPos}
           departments={departments}
           roles={roles}
-          hasManager={checkHasManager(newPos.departmentId)}
           onClose={() => setIsAddPosModalOpen(false)}
           onSubmit={handleCreatePosition}
         />
@@ -690,7 +689,6 @@ export default function OrganizationManagementPage() {
           setForm={setEditPos}
           departments={departments}
           roles={roles}
-          hasManager={checkHasManager(editPos.departmentId, editPos.id)}
           onClose={() => setIsEditPosModalOpen(false)}
           onSubmit={handleUpdatePosition}
         />

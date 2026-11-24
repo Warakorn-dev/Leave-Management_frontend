@@ -1,3 +1,6 @@
+import type { StoredAttachment } from '@/lib/leaveAttachment';
+import type { LeaveRule } from '@/lib/leaveRule';
+
 export interface Department {
   id: string;
   code?: string;
@@ -30,6 +33,8 @@ export interface LeaveType {
   isSpecial: boolean;
   advanceNoticeDays: number;
   minTenureDays: number;
+  /** Pay/eligibility rule, see lib/leaveRule.ts. */
+  rule?: LeaveRule;
 }
 
 export interface Employee {
@@ -142,7 +147,7 @@ export interface Leave {
   approverName?: string;
   approver?: string;
   approverReason?: string;
-  attachments?: Array<{ filePath?: string; fileType?: string }>;
+  attachments?: StoredAttachment[];
   approvals?: Array<{ id?: string; status?: string; comment?: string; createdAt?: string }>;
   createdAt?: string;
   updatedAt?: string;

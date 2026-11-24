@@ -17,7 +17,6 @@ interface EditPositionModalProps {
   setForm: React.Dispatch<React.SetStateAction<EditPositionForm>>;
   departments: Department[];
   roles: Role[];
-  hasManager: boolean;
   onClose: () => void;
   onSubmit: () => void;
 }
@@ -28,7 +27,6 @@ export function EditPositionModal({
   setForm,
   departments,
   roles,
-  hasManager,
   onClose,
   onSubmit,
 }: EditPositionModalProps) {

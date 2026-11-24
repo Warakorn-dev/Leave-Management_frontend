@@ -7,7 +7,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 
-export const BACKEND_DIR = path.resolve(__dirname, '..', '..', 'Leave-Management_backend');
+export const BACKEND_DIR = path.resolve(__dirname, '..', '..', 'leave_management_backend');
 export const BACKEND_PORT = 8100;
 export const FRONTEND_PORT = 3100;
 export const BACKEND_URL = `http://127.0.0.1:${BACKEND_PORT}`;

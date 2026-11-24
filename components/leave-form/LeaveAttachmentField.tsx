@@ -119,6 +119,7 @@ export function LeaveAttachmentField({
         onClose={() => setPreview(null)}
         file={preview === 'new' ? file : null}
         url={preview === 'existing' ? existing?.url : null}
+        attachmentId={preview === 'existing' ? existing?.id : null}
         name={existing?.name}
         isImage={existing?.isImage}
       />

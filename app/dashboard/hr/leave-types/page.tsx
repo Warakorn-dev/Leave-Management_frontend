@@ -13,7 +13,7 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import { SkeletonTable } from '@/components/ui/skeleton';
-import { useForm } from 'react-hook-form';
+import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import Swal from 'sweetalert2';
@@ -28,6 +28,11 @@ import {
   FileText,
 } from 'lucide-react';
 import { LeaveType } from '@/lib/api/types';
+import {
+  LEAVE_RULES,
+  LEAVE_RULE_VALUES,
+  leaveRuleLabel,
+} from '@/lib/leaveRule';
 
 const leaveTypeSchema = z.object({
   name: z
@@ -43,6 +48,7 @@ const leaveTypeSchema = z.object({
   isSpecial: z.boolean(),
   advanceNoticeDays: z.number().min(0, 'จำนวนวันแจ้งล่วงหน้าต้องไม่ติดลบ'),
   minTenureDays: z.number().min(0, 'อายุงานขั้นต่ำต้องไม่ติดลบ'),
+  rule: z.enum(LEAVE_RULE_VALUES),
 });
 
 type LeaveTypeFormValues = z.infer<typeof leaveTypeSchema>;
@@ -71,10 +77,12 @@ export default function HRLeaveTypes() {
     register,
     handleSubmit,
     reset,
+    control,
     formState: { errors },
   } = useForm<LeaveTypeFormValues>({
     resolver: zodResolver(leaveTypeSchema),
   });
+  const selectedRule = useWatch({ control, name: 'rule' });
 
   const handleAddOpen = () => {
     setEditingLt(null);
@@ -85,6 +93,7 @@ export default function HRLeaveTypes() {
       isSpecial: false,
       advanceNoticeDays: 0,
       minTenureDays: 0,
+      rule: 'GENERAL',
     });
     setDialogOpen(true);
   };
@@ -98,6 +107,7 @@ export default function HRLeaveTypes() {
       isSpecial: lt.isSpecial,
       advanceNoticeDays: lt.advanceNoticeDays,
       minTenureDays: lt.minTenureDays,
+      rule: lt.rule ?? 'GENERAL',
     });
     setDialogOpen(true);
   };
@@ -289,6 +299,9 @@ export default function HRLeaveTypes() {
                     </td>
                     <td className="py-4 px-6 font-bold text-slate-800 hidden md:table-cell">
                       {lt.name}
+                      <div className="text-[11px] font-medium text-slate-500 mt-0.5">
+                        กฎ: {leaveRuleLabel(lt.rule)}
+                      </div>
                     </td>
 
                     {/* Mobile View Column */}
@@ -299,6 +312,9 @@ export default function HRLeaveTypes() {
                       <div className="text-xs text-slate-500 mt-1 flex flex-wrap gap-1">
                         <span className="inline-block bg-blue-50 text-blue-600 px-2 py-0.5 rounded">
                           {lt.defaultDays} วัน
+                        </span>
+                        <span className="inline-block bg-slate-100 text-slate-600 px-2 py-0.5 rounded">
+                          กฎ: {leaveRuleLabel(lt.rule)}
                         </span>
                         {lt.requiresCertificate && (
                           <span className="inline-block bg-amber-50 text-amber-600 px-2 py-0.5 rounded">
@@ -450,6 +466,35 @@ export default function HRLeaveTypes() {
                 {errors.defaultDays && (
                   <p className="text-xs text-red-500 mt-1 font-medium">
                     {errors.defaultDays.message}
+                  </p>
+                )}
+              </div>
+
+              <div>
+                <label
+                  htmlFor="leaveRule"
+                  className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5"
+                >
+                  กฎการคำนวณสิทธิ์ *
+                </label>
+                <select
+                  {...register('rule')}
+                  id="leaveRule"
+                  className="block w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 px-3 py-2 text-sm focus:outline-hidden focus:ring-2 focus:ring-indigo-500"
+                >
+                  {LEAVE_RULES.map((r) => (
+                    <option key={r.value} value={r.value}>
+                      {r.label}
+                    </option>
+                  ))}
+                </select>
+                <p className="text-[11px] text-slate-500 mt-1">
+                  {LEAVE_RULES.find((r) => r.value === selectedRule)?.hint}
+                  {' '}— ใช้กฎนี้ตามที่เลือก แม้จะเปลี่ยนชื่อประเภทการลา
+                </p>
+                {errors.rule && (
+                  <p className="text-xs text-red-500 mt-1 font-medium">
+                    กรุณาเลือกกฎการคำนวณสิทธิ์
                   </p>
                 )}
               </div>

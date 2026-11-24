@@ -5,7 +5,7 @@ import { BACKEND_DIR, BACKEND_URL, e2eDatabaseUrl } from './env';
 
 // The e2e database is read with the backend's own Prisma client.
 const backendRequire = createRequire(path.join(BACKEND_DIR, 'package.json'));
-const { PrismaClient } = backendRequire('@prisma/client') as typeof import('../../Leave-Management_backend/node_modules/@prisma/client');
+const { PrismaClient } = backendRequire('@prisma/client') as typeof import('../../leave_management_backend/node_modules/@prisma/client');
 export const db = new PrismaClient({ datasourceUrl: e2eDatabaseUrl() });
 
 export type Role = 'employee' | 'manager' | 'hr' | 'ceo' | 'admin';

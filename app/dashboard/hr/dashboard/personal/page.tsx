@@ -24,6 +24,7 @@ import {
 import { useDashboardStats } from '@/hooks/useDashboard';
 import { useLeaveBalance } from '@/hooks/useLeaveBalance';
 import { previewAttachment } from '@/lib/api/attachmentPreview';
+import { isVacationType } from '@/lib/leaveRule';
 
 export default function HRPersonalDashboard() {
   const { user } = useAuth();
@@ -62,11 +63,12 @@ export default function HRPersonalDashboard() {
   const data = rawData?.data || rawData || {};
 
   const vacationBal = Array.isArray(balances)
-    ? (balances as { leaveType?: { name?: string }; remainingDays?: number }[]).find(
-        (b) =>
-          b.leaveType?.name?.includes('พักร้อน') ||
-          b.leaveType?.name?.includes('พักผ่อน'),
-      )
+    ? (
+        balances as {
+          leaveType?: { name?: string; rule?: string };
+          remainingDays?: number;
+        }[]
+      ).find((b) => isVacationType(b.leaveType))
     : null;
 
   const remainingVacation =
